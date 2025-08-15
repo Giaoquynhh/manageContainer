@@ -14,6 +14,7 @@ import customerRoutes from './modules/customers/controller/customerRoutes';
 import partnerRoutes from './modules/partners/controller/partnerRoutes';
 import auditRoutes from './modules/audit/controller/auditRoutes';
 import requestRoutes from './modules/requests/controller/RequestRoutes';
+import documentRoutes from './modules/requests/controller/DocumentRoutes';
 import gateRoutes from './modules/gate/controller/GateRoutes';
 import yardRoutes from './modules/yard/controller/YardRoutes';
 import forkliftRoutes from './modules/forklift/controller/ForkliftRoutes';
@@ -24,7 +25,12 @@ import reportsRoutes from './modules/reports/controller/ReportsRoutes';
 
 const app = express();
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:1100', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Logging to file
 const logDir = path.join(process.cwd(), 'logs');
@@ -43,6 +49,7 @@ app.use('/customers', authenticate, customerRoutes);
 app.use('/partners', authenticate, partnerRoutes);
 app.use('/audit', authenticate, auditRoutes);
 app.use('/requests', authenticate, requestRoutes);
+app.use('/requests', documentRoutes);
 app.use('/gate', gateRoutes);
 app.use('/yard', yardRoutes);
 app.use('/forklift', forkliftRoutes);

@@ -25,8 +25,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
-    "pg": "^8.11.5",
-    "pdfkit": "^0.14.0"
+    "pdfkit": "^0.14.0",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

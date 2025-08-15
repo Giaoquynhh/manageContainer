@@ -52,3 +52,62 @@ p,li,button,input,select{font-size:14px}
   .container{padding:var(--space-3)}
   .sidebar{position:static;width:auto;flex-direction:row;gap:8px;background:transparent;padding:8px 0}
 }
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Modern table styles */
+.table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 600;
+  text-align: left;
+  padding: 16px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.table tbody tr:hover {
+  background: #f9fafb;
+  transition: background-color 0.2s ease;
+}
+
+/* Button improvements */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Card improvements */
+.card {
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}

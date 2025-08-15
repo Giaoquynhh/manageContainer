@@ -85,6 +85,7 @@ model ServiceRequest {
     eta           DateTime?
     status        String   // PENDING | RECEIVED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
     history       Json?
+    documentsCount Int     @default(0) // Cache cho UI
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt
 
@@ -95,20 +96,22 @@ model ServiceRequest {
 model DocumentFile {
     id           String   @id @default(cuid())
     request_id   String
-    type         String   // EIR | LOLO | INVOICE
-    name         String
-    size         Int
-    version      Int
-    uploader_id  String
-    storage_key  String   // local path or object key
-    createdAt    DateTime @default(now())
-    deleted_at   DateTime?
-    deleted_by   String?
-    delete_reason String?
-
     request      ServiceRequest @relation(fields: [request_id], references: [id])
+    type         String   // DOCUMENT | EIR | LOLO | INVOICE
+    originalName String
+    storedName   String
+    mimeType     String
+    sizeBytes    Int
+    version      Int      @default(1)
+    storageKey   String   // path hoặc S3 key
+    uploaderId   String
+    createdAt    DateTime @default(now())
+    deletedAt    DateTime?
+    deletedBy    String?
+    deleteReason String?
 
     @@index([request_id])
+    @@index([createdAt])
 }
 
 model PaymentRequest {

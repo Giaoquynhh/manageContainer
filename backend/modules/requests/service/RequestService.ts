@@ -120,7 +120,7 @@ export class RequestService {
 		const doc = await repo.getDoc(id);
 		if (!doc) throw new Error('Phiếu không tồn tại');
 		// only uploader or higher role
-		if (doc.uploader_id !== actor._id && !['SystemAdmin','BusinessAdmin','SaleAdmin','Accountant'].includes(actor.role)) throw new Error('Không có quyền xóa');
+		if (doc.uploaderId !== actor._id && !['SystemAdmin','BusinessAdmin','SaleAdmin','Accountant'].includes(actor.role)) throw new Error('Không có quyền xóa');
 		const deleted = await repo.softDeleteDoc(id, actor._id, reason);
 		await audit(actor._id, 'DOC.DELETED', 'DOC', id, { reason });
 		return deleted;

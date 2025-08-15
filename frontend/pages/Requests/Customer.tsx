@@ -1,61 +1,153 @@
 import Header from '@components/Header';
-import Card from '@components/Card';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import { api } from '@services/api';
+import RequestTable from '@components/requests/RequestTable';
+import RequestForm from '@components/requests/RequestForm';
+import Modal from '@components/ui/Modal';
+import RequestSearchBar from '@components/requests/RequestSearchBar';
 
 const fetcher = (url: string) => api.get(url).then(r => r.data);
 
-export default function CustomerRequests(){
-	const [form, setForm] = useState({ type: 'IMPORT', container_no: '', eta: '' });
-	const { data } = useSWR('/requests?page=1&limit=20', fetcher);
-	const [msg, setMsg] = useState('');
-	const create = async () => {
-		setMsg('');
-		try{
-			await api.post('/requests', { ...form, eta: form.eta || undefined });
-			setMsg('Đã tạo yêu cầu');
-			mutate('/requests?page=1&limit=20');
-		}catch(e:any){ setMsg(e?.response?.data?.message || 'Lỗi'); }
-	};
-	return (
-		<>
-			<Header />
-			<main className="container">
-				<div className="grid grid-cols-2" style={{gap:16}}>
-					<Card title="Tạo yêu cầu">
-						<div className="grid" style={{gap:12}}>
-							<select value={form.type} onChange={e=>setForm({...form, type:e.target.value})}>
-								<option value="IMPORT">Nhập</option>
-								<option value="EXPORT">Xuất</option>
-								<option value="CONVERT">Chuyển đổi</option>
-							</select>
-							<input placeholder="Mã định danh container (Container ID)" value={form.container_no} onChange={e=>setForm({...form, container_no:e.target.value})} />
-							<input type="datetime-local" value={form.eta} onChange={e=>setForm({...form, eta:e.target.value})} />
-							<button className="btn" onClick={create}>Tạo yêu cầu</button>
-							{msg && <div style={{fontSize:13,color:'#065f46'}}>{msg}</div>}
-						</div>
-					</Card>
-					<Card title="Danh sách yêu cầu">
-						<table className="table">
-							<thead><tr><th>Loại</th><th>Container</th><th>ETA</th><th>Trạng thái</th></tr></thead>
-							<tbody>
-								{data?.data?.map((it: any)=>(
-									<tr key={it.id}>
-										<td>{it.type}</td>
-										<td>{it.container_no}</td>
-										<td>{it.eta ? new Date(it.eta).toLocaleString() : ''}</td>
-										<td>
-											{it.status}
-											{it.latest_payment && <span style={{marginLeft:8, padding:'2px 6px', border:'1px solid #1e3a8a', color:'#1e3a8a', borderRadius:8, fontSize:12}}>Đã gửi yêu cầu thanh toán</span>}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</Card>
-				</div>
-			</main>
-		</>
-	);
+export default function CustomerRequests() {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [userRole, setUserRole] = useState<string>('');
+
+  const { data, error, isLoading } = useSWR('/requests?page=1&limit=20', fetcher);
+
+  useEffect(() => {
+    // Get user role from localStorage or API
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        api.get('/auth/me')
+          .then(response => {
+            setUserRole(response.data?.role || response.data?.roles?.[0] || '');
+          })
+          .catch(() => {
+            setUserRole('');
+          });
+      }
+    }
+  }, []);
+
+  const handleCreateSuccess = () => {
+    setShowCreateModal(false);
+    mutate('/requests?page=1&limit=20');
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // In a real implementation, you would filter the data or make a new API call
+  };
+
+  const handleFilterChange = (filter: string) => {
+    setStatusFilter(filter);
+    // In a real implementation, you would filter the data or make a new API call
+  };
+
+  // Filter data based on search and filters
+  const filteredData = data?.data?.filter((item: any) => {
+    const matchesSearch = !searchQuery || 
+      item.container_no.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesType = typeFilter === 'all' || item.type === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
+  }) || [];
+
+  return (
+    <>
+      <Header />
+      <main className="container">
+        {/* Header with Title and Create Button */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24
+        }}>
+          <div>
+            <h1 style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 800,
+              color: '#0a2558'
+            }}>
+              Yêu cầu dịch vụ của tôi
+            </h1>
+            <p style={{
+              margin: '8px 0 0',
+              color: '#6b7280',
+              fontSize: 14
+            }}>
+              Theo dõi và quản lý các yêu cầu dịch vụ container của bạn
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              padding: '12px 24px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2563eb';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#3b82f6';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <span style={{ fontSize: 16 }}>+</span>
+            Tạo yêu cầu
+          </button>
+        </div>
+
+        {/* Search and Filter Bar */}
+        <RequestSearchBar
+          onSearch={handleSearch}
+          onFilterChange={handleFilterChange}
+          loading={isLoading}
+        />
+
+        {/* Data Table */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <RequestTable
+            data={filteredData}
+            loading={isLoading}
+            onStatusChange={() => {}} // Customers can't change status
+            onPaymentRequest={() => {}} // Customers can't send payment requests
+            loadingId=""
+            userRole={userRole}
+          />
+        </div>
+
+        {/* Create Request Modal */}
+        <Modal
+          title="Tạo yêu cầu mới"
+          visible={showCreateModal}
+          onCancel={() => setShowCreateModal(false)}
+          width={600}
+        >
+          <RequestForm
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setShowCreateModal(false)}
+          />
+        </Modal>
+      </main>
+    </>
+  );
 }

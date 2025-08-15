@@ -21,10 +21,11 @@ export default function Header(){
 
 	useEffect(()=>{
 		if (typeof document !== 'undefined'){
-			document.body.classList.toggle('with-sidebar', navOpen);
+			const shouldShowSidebar = hasToken && router.pathname !== '/Login' && router.pathname !== '/Register';
+			document.body.classList.toggle('with-sidebar', navOpen && shouldShowSidebar);
 			try{ localStorage.setItem('nav_open', navOpen ? '1' : '0'); }catch{}
 		}
-	}, [navOpen]);
+	}, [navOpen, hasToken, router.pathname]);
 
 	const onLogout = () => {
 		try{
@@ -37,10 +38,11 @@ export default function Header(){
 	};
     const showLogout = hasToken && router.pathname !== '/Login';
     const showUsersLink = canViewUsersPartners(me?.role);
+    const showSidebar = hasToken && router.pathname !== '/Login' && router.pathname !== '/Register';
     return (
         <header className="header">
             <div className="container header-inner" style={{justifyContent:'space-between'}}>
-                {hasToken && (
+                {showSidebar && (
                     <button className="nav-toggle" onClick={()=>setNavOpen(o=>!o)} title={navOpen? 'Đóng menu' : 'Mở menu'}>
                         {navOpen ? '✕' : '☰'}
                     </button>
@@ -57,7 +59,7 @@ export default function Header(){
                     {!hasToken && router.pathname !== '/Login' && <Link className="btn" href="/Login" style={{background:'#fff',color:'#0a2558'}}>Đăng nhập</Link>}
                 </div>
             </div>
-            {hasToken && (
+            {showSidebar && (
               <nav className={`sidebar${navOpen ? '' : ' closed'}`}>
                 {/* Module 1 & 9: Users & Partners */}
                 {canViewUsersPartners(me?.role) && <Link className="sidebar-link" href="/UsersPartners">Người dùng/Đối tác</Link>}

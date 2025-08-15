@@ -1,77 +1,187 @@
 import Header from '@components/Header';
-import Card from '@components/Card';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import { api } from '@services/api';
+import RequestTable from '@components/requests/RequestTable';
+import RequestForm from '@components/requests/RequestForm';
+import Modal from '@components/ui/Modal';
+import RequestSearchBar from '@components/requests/RequestSearchBar';
 
 const fetcher = (url: string) => api.get(url).then(r => r.data);
 
-export default function DepotRequests(){
-	const { data } = useSWR('/requests?page=1&limit=20', fetcher);
-	const [msg, setMsg] = useState<{ text: string; ok: boolean }|null>(null);
-	const [loadingId, setLoadingId] = useState<string>('');
-	const actLabel: Record<string,string> = {
-		RECEIVED: 'Tiếp nhận',
-		REJECTED: 'Từ chối',
-		COMPLETED: 'Hoàn tất',
-		EXPORTED: 'Đã xuất kho'
-	};
-	const change = async (id: string, status: string) => {
-		setMsg(null); setLoadingId(id+status);
-		try{ 
-			let payload: any = { status };
-			if (status === 'REJECTED') {
-				const reason = window.prompt('Nhập lý do từ chối');
-				if (!reason) { setLoadingId(''); return; }
-				payload.reason = reason;
-			}
-			await api.patch(`/requests/${id}/status`, payload); 
-			mutate('/requests?page=1&limit=20'); 
-			setMsg({ text: `${actLabel[status] || 'Cập nhật'} yêu cầu thành công`, ok: true });
-		}catch(e:any){ setMsg({ text: `Không thể ${actLabel[status]?.toLowerCase() || 'cập nhật'}: ${e?.response?.data?.message || 'Lỗi'}`, ok: false }); }
-		finally { setLoadingId(''); }
-	};
-	const sendPayment = async (id: string) => {
-		setMsg(null); setLoadingId(id+'PAY');
-		try{ 
-			await api.post(`/requests/${id}/payment-request`, {}); 
-			setMsg({ text: 'Đã gửi yêu cầu thanh toán', ok: true }); 
-		}catch(e:any){ setMsg({ text: `Gửi yêu cầu thanh toán thất bại: ${e?.response?.data?.message || 'Lỗi'}`, ok: false }); }
-		finally { setLoadingId(''); }
-	};
-	return (
-		<>
-			<Header />
-			<main className="container">
-				<Card title="Yêu cầu dịch vụ (Depot)">
-					<div style={{overflow:'hidden', borderRadius:12, border:'1px solid #e8eef6'}}>
-					<table className="table">
-						<thead style={{background:'#f7f9ff'}}><tr><th>Loại</th><th>Container</th><th>ETA</th><th>Trạng thái</th><th>Mã tra cứu Gate</th><th>Hành động</th></tr></thead>
-						<tbody>
-							{data?.data?.map((it: any)=>(
-								<tr key={it.id}>
-									<td style={{fontWeight:700}}>{it.type}</td><td>{it.container_no}</td><td>{it.eta ? new Date(it.eta).toLocaleString() : ''}</td><td><span style={{background:'#eef2ff',color:'#0a2558',padding:'4px 8px',borderRadius:8,fontWeight:700}}>{it.status}</span></td>
-									<td>
-										<div style={{display:'flex',gap:8,alignItems:'center'}}>
-											<span style={{fontSize:12,color:'#1e3a8a'}}>{it.container_no}</span>
-											<button className="btn" onClick={()=>{ try{ navigator.clipboard.writeText(it.container_no); setMsg({ text: 'Đã sao chép mã Gate (container)', ok: true }); }catch{} }}>Sao chép</button>
-										</div>
-									</td>
-									<td style={{display:'flex',gap:8}}>
-										{it.status==='PENDING' && <button className="btn" disabled={loadingId===it.id+'RECEIVED'} onClick={()=>change(it.id,'RECEIVED')}>Tiếp nhận</button>}
-										{(it.status==='PENDING' || it.status==='RECEIVED') && <button className="btn" disabled={loadingId===it.id+'REJECTED'} onClick={()=>change(it.id,'REJECTED')}>Từ chối</button>}
-										{(it.status==='RECEIVED') && <button className="btn" disabled={loadingId===it.id+'COMPLETED'} onClick={()=>change(it.id,'COMPLETED')}>Hoàn tất</button>}
-										{(it.status==='RECEIVED' || it.status==='COMPLETED') && <button className="btn" disabled={loadingId===it.id+'EXPORTED'} onClick={()=>change(it.id,'EXPORTED')}>Đã xuất kho</button>}
-										{it.status==='COMPLETED' && <button className="btn" disabled={loadingId===it.id+'PAY'} onClick={()=>sendPayment(it.id)}>Gửi yêu cầu thanh toán</button>}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-					</div>
-					{msg && <div style={{fontSize:13,marginTop:12,color: msg.ok?'#065f46':'#dc2626'}}>{msg.text}</div>}
-				</Card>
-			</main>
-		</>
-	);
+export default function DepotRequests() {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loadingId, setLoadingId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [userRole, setUserRole] = useState<string>('');
+
+  const { data, error, isLoading } = useSWR('/requests?page=1&limit=20', fetcher);
+
+  useEffect(() => {
+    // Get user role from localStorage or API
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        api.get('/auth/me')
+          .then(response => {
+            setUserRole(response.data?.role || response.data?.roles?.[0] || '');
+          })
+          .catch(() => {
+            setUserRole('');
+          });
+      }
+    }
+  }, []);
+
+  const handleStatusChange = async (id: string, status: string) => {
+    setLoadingId(id + status);
+    try {
+      let payload: any = { status };
+      if (status === 'REJECTED') {
+        const reason = window.prompt('Nhập lý do từ chối');
+        if (!reason) {
+          setLoadingId('');
+          return;
+        }
+        payload.reason = reason;
+      }
+      await api.patch(`/requests/${id}/status`, payload);
+      mutate('/requests?page=1&limit=20');
+    } catch (error: any) {
+      console.error('Error updating status:', error);
+    } finally {
+      setLoadingId('');
+    }
+  };
+
+  const handlePaymentRequest = async (id: string) => {
+    setLoadingId(id + 'PAY');
+    try {
+      await api.post(`/requests/${id}/payment-request`, {});
+      mutate('/requests?page=1&limit=20');
+    } catch (error: any) {
+      console.error('Error sending payment request:', error);
+    } finally {
+      setLoadingId('');
+    }
+  };
+
+  const handleCreateSuccess = () => {
+    setShowCreateModal(false);
+    mutate('/requests?page=1&limit=20');
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // In a real implementation, you would filter the data or make a new API call
+  };
+
+  const handleFilterChange = (filter: string) => {
+    setStatusFilter(filter);
+    // In a real implementation, you would filter the data or make a new API call
+  };
+
+  // Filter data based on search and filters
+  const filteredData = data?.data?.filter((item: any) => {
+    const matchesSearch = !searchQuery || 
+      item.container_no.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesType = typeFilter === 'all' || item.type === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
+  }) || [];
+
+  return (
+    <>
+      <Header />
+      <main className="container">
+        {/* Header with Title and Create Button */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24
+        }}>
+          <div>
+            <h1 style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 800,
+              color: '#0a2558'
+            }}>
+              Danh sách yêu cầu dịch vụ
+            </h1>
+            <p style={{
+              margin: '8px 0 0',
+              color: '#6b7280',
+              fontSize: 14
+            }}>
+              Quản lý và theo dõi các yêu cầu dịch vụ container
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              padding: '12px 24px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#2563eb';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#3b82f6';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <span style={{ fontSize: 16 }}>+</span>
+            Tạo yêu cầu
+          </button>
+        </div>
+
+        {/* Search and Filter Bar */}
+        <RequestSearchBar
+          onSearch={handleSearch}
+          onFilterChange={handleFilterChange}
+          loading={isLoading}
+        />
+
+        {/* Data Table */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <RequestTable
+            data={filteredData}
+            loading={isLoading}
+            onStatusChange={handleStatusChange}
+            onPaymentRequest={handlePaymentRequest}
+            loadingId={loadingId}
+            userRole={userRole}
+          />
+        </div>
+
+        {/* Create Request Modal */}
+        <Modal
+          title="Tạo yêu cầu mới"
+          visible={showCreateModal}
+          onCancel={() => setShowCreateModal(false)}
+          width={600}
+        >
+          <RequestForm
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setShowCreateModal(false)}
+          />
+        </Modal>
+      </main>
+    </>
+  );
 }
