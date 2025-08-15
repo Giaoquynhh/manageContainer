@@ -26,3 +26,4 @@ export function isImageFile(mimeType: string): boolean {
 export function isPdfFile(mimeType: string): boolean {
   return mimeType === 'application/pdf';
 }
+

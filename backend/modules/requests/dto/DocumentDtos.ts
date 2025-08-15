@@ -18,3 +18,4 @@ export const DocumentViewQuery = Joi.object({
   doc_id: Joi.string().required(),
   action: Joi.string().valid('view', 'download').default('view'),
 });
+

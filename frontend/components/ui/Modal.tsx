@@ -127,3 +127,4 @@ export default function Modal({ title, visible, onCancel, children, width = 600 
     </div>
   );
 }
+

@@ -196,3 +196,4 @@ export default function RequestSearchBar({ onSearch, onFilterChange, loading = f
     </div>
   );
 }
+
