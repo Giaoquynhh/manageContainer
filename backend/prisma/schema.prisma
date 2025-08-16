@@ -1,0 +1,537 @@
+generator client {
+	provider = "prisma-client-js"
+}
+
+datasource db {
+	provider = "postgresql"
+	url      = env("DATABASE_URL")
+}
+
+model User {
+    id               String   @id @default(cuid())
+    email            String   @unique
+    username         String?  @unique
+    full_name        String
+    phone            String?
+    role             String   // legacy single-role; giữ để tương thích
+    roles            Json?    // mảng roles theo spec
+    tenant_id        String?
+    partner_id       String?
+    status           String   // INVITED | ACTIVE | DISABLED | LOCKED | INVITED_EXPIRED
+    password_hash    String?
+    mfa_enabled      Boolean  @default(false)
+    email_verified   Boolean  @default(false)
+    phone_verified   Boolean  @default(false)
+    failed_attempts  Int      @default(0)
+    locked_until     DateTime?
+    last_login_at    DateTime?
+    invite_token     String?
+    invite_expires_at DateTime?
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
+
+    RefreshTokens         RefreshToken[]
+    PasswordResetTokens   PasswordResetToken[]
+    MfaSecrets            MfaSecret[]
+    EmailVerifications    EmailVerification[]
+    PhoneOtps             PhoneOtp[]
+    AuditLogs             AuditLog[]
+    ChatMessages          ChatMessage[]
+    RequestAttachments    RequestAttachment[]
+
+    @@index([role, tenant_id])
+    @@index([partner_id])
+}
+
+model Customer {
+	id            String   @id @default(cuid())
+	name          String   @unique
+	tax_code      String   @unique
+	address       String?
+	contact_email String?
+	status        String   // ACTIVE | INACTIVE
+	createdAt     DateTime @default(now())
+	updatedAt     DateTime @updatedAt
+}
+
+model Partner {
+	id            String   @id @default(cuid())
+	type          String
+	name          String   @unique
+	tax_code      String?
+	contact_email String?
+	status        String   // DRAFT | ACTIVE | INACTIVE
+	createdAt     DateTime @default(now())
+	updatedAt     DateTime @updatedAt
+}
+
+model AuditLog {
+	id        String   @id @default(cuid())
+    actor_id  String?
+    actor     User?    @relation(fields: [actor_id], references: [id])
+	action    String
+	entity    String?
+	entity_id String?
+	meta      Json?
+	createdAt DateTime @default(now())
+
+	@@index([action, createdAt])
+}
+
+model ServiceRequest {
+    id            String   @id @default(cuid())
+    tenant_id     String?
+    created_by    String
+    type          String   // IMPORT | EXPORT | CONVERT
+    container_no  String
+    eta           DateTime?
+    status        String   // PENDING | RECEIVED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
+    history       Json?
+    
+    // Soft-delete theo scope
+    depot_deleted_at     DateTime?
+    customer_deleted_at  DateTime?
+    
+    // Thông tin reject
+    rejected_reason      String?
+    rejected_by          String?
+    rejected_at          DateTime?
+    
+    // Appointment fields
+    appointment_time         DateTime?
+    appointment_location_type String? // gate | yard
+    appointment_location_id   String?
+    gate_ref                 String?
+    appointment_note         String?
+    attachments_count        Int      @default(0)
+    locked_attachments      Boolean  @default(false)
+    
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    docs             DocumentFile[]
+    paymentRequests  PaymentRequest[]
+    chatRoom         ChatRoom?
+    attachments      RequestAttachment[]
+    notifications    Notification[]
+    
+    @@index([depot_deleted_at])
+    @@index([customer_deleted_at])
+    @@index([status])
+    @@index([appointment_time])
+}
+
+model DocumentFile {
+    id           String   @id @default(cuid())
+    request_id   String
+    type         String   // EIR | LOLO | INVOICE
+    name         String
+    size         Int
+    version      Int
+    uploader_id  String
+    storage_key  String   // local path or object key
+    createdAt    DateTime @default(now())
+    deleted_at   DateTime?
+    deleted_by   String?
+    delete_reason String?
+
+    request      ServiceRequest @relation(fields: [request_id], references: [id])
+
+    @@index([request_id])
+}
+
+model PaymentRequest {
+    id          String   @id @default(cuid())
+    request_id  String
+    created_by  String
+    status      String   // SENT | RECEIVED | PAID | REJECTED
+    createdAt   DateTime @default(now())
+
+    request     ServiceRequest @relation(fields: [request_id], references: [id])
+
+    @@index([request_id])
+}
+
+// =====================
+// Module 3.1 — Chat System
+// =====================
+
+model ChatRoom {
+    id            String   @id @default(cuid())
+    request_id    String   @unique
+    participants  Json     // Array of user IDs
+    status        String   @default("active") // active | closed
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    request       ServiceRequest @relation(fields: [request_id], references: [id])
+    messages      ChatMessage[]
+
+    @@index([request_id])
+    @@index([status])
+}
+
+model ChatMessage {
+    id            String   @id @default(cuid())
+    chat_room_id  String
+    sender_id     String
+    message       String
+    type          String   @default("text") // text | file | system
+    file_url      String?  // For file type messages
+    file_name     String?  // Original filename
+    file_size     Int?     // File size in bytes
+    createdAt     DateTime @default(now())
+
+    chatRoom      ChatRoom @relation(fields: [chat_room_id], references: [id], onDelete: Cascade)
+    sender        User     @relation(fields: [sender_id], references: [id])
+
+    @@index([chat_room_id])
+    @@index([sender_id])
+    @@index([createdAt])
+}
+
+// Module 5 — Yard & Container
+model Yard {
+    id      String      @id @default(cuid())
+    name    String
+    blocks  YardBlock[]
+}
+
+model YardBlock {
+    id      String   @id @default(cuid())
+    yard_id String
+    code    String
+    yard    Yard     @relation(fields: [yard_id], references: [id])
+    slots   YardSlot[]
+
+    @@index([yard_id])
+}
+
+model YardSlot {
+    id          String   @id @default(cuid())
+    block_id    String
+    code        String
+    status      String   // EMPTY | RESERVED | OCCUPIED | UNDER_MAINTENANCE | EXPORT
+    kind        String?  // IMPORT/EXPORT/REEFER/GEN, ... optional
+    near_gate   Int      @default(0) // scoring helper
+    avoid_main  Int      @default(0)
+    is_odd      Boolean  @default(false)
+    occupant_container_no String?
+    reserved_expire_at   DateTime?
+    updatedAt   DateTime @updatedAt
+
+    block       YardBlock @relation(fields: [block_id], references: [id])
+    from_tasks  ForkliftTask[] @relation("from_slot")
+    to_tasks    ForkliftTask[] @relation("to_slot")
+
+    @@index([block_id])
+    @@index([occupant_container_no])
+}
+
+model ContainerMeta {
+    id           String   @id @default(cuid())
+    container_no String   @unique
+    dem_date     DateTime?
+    det_date     DateTime?
+    updatedAt    DateTime @updatedAt
+}
+
+model ForkliftTask {
+    id             String   @id @default(cuid())
+    container_no   String
+    from_slot_id   String?
+    to_slot_id     String?
+    status         String   // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+    assigned_driver_id String?
+    created_by     String
+    cancel_reason  String?
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    from_slot      YardSlot? @relation("from_slot", fields: [from_slot_id], references: [id])
+    to_slot        YardSlot? @relation("to_slot", fields: [to_slot_id], references: [id])
+}
+
+// =====================
+// Module 6 — Maintenance & Inventory
+// =====================
+
+enum EquipmentType {
+  CONTAINER
+  EQUIPMENT
+}
+
+enum InventoryMoveType {
+  IN
+  OUT
+}
+
+enum RepairStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model Equipment {
+  id        String        @id @default(cuid())
+  code      String        @unique
+  type      EquipmentType
+  status    String        // ACTIVE | INACTIVE
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  tickets   RepairTicket[]
+}
+
+model InventoryItem {
+  id            String               @id @default(cuid())
+  name          String               @unique
+  uom           String
+  qty_on_hand   Int                  @default(0)
+  reorder_point Int                  @default(0)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  movements     InventoryMovement[]
+  repairItems   RepairTicketItem[]
+}
+
+model InventoryMovement {
+  id                String             @id @default(cuid())
+  inventory_item_id String
+  type              InventoryMoveType
+  quantity          Int
+  ref_type          String?
+  ref_id            String?
+  createdAt         DateTime           @default(now())
+
+  item              InventoryItem      @relation(fields: [inventory_item_id], references: [id])
+
+  @@index([inventory_item_id])
+}
+
+model RepairTicket {
+  id                  String             @id @default(cuid())
+  code                String             @unique
+  equipment_id        String
+  created_by          String
+  status              RepairStatus       @default(PENDING_APPROVAL)
+  problem_description String
+  estimated_cost      Float?             @default(0)
+  manager_comment     String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  equipment           Equipment          @relation(fields: [equipment_id], references: [id])
+  items               RepairTicketItem[]
+
+  @@index([equipment_id])
+}
+
+model RepairTicketItem {
+  id                String   @id @default(cuid())
+  repair_ticket_id  String
+  inventory_item_id String
+  quantity          Int
+
+  ticket            RepairTicket  @relation(fields: [repair_ticket_id], references: [id])
+  inventoryItem     InventoryItem @relation(fields: [inventory_item_id], references: [id])
+
+  @@index([repair_ticket_id])
+  @@index([inventory_item_id])
+}
+
+// =====================
+// Module 7 — Finance & Invoicing
+// =====================
+
+model Invoice {
+  id            String   @id @default(cuid())
+  org_id        String?
+  invoice_no    String?
+  customer_id   String
+  issue_date    DateTime?
+  due_date      DateTime?
+  currency      String   @default("VND")
+  subtotal      Decimal  @db.Decimal(18, 2)
+  tax_amount    Decimal  @db.Decimal(18, 2)
+  total_amount  Decimal  @db.Decimal(18, 2)
+  status        String   @default("DRAFT")
+  paid_total    Decimal  @db.Decimal(18, 2) @default(0)
+  paid_at       DateTime?
+  notes         String?
+  source_module String?
+  source_id     String?
+  version       Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  created_by    String?
+  updated_by    String?
+
+  items         InvoiceLineItem[]
+  allocations   PaymentAllocation[]
+
+  @@unique([org_id, invoice_no])
+  @@index([org_id, status, issue_date])
+  @@index([org_id, customer_id, issue_date])
+}
+
+model InvoiceLineItem {
+  id               String   @id @default(cuid())
+  org_id           String?
+  invoice_id       String
+  service_code     String
+  description      String
+  qty              Decimal  @db.Decimal(12, 3)
+  unit_price       Decimal  @db.Decimal(18, 4)
+  line_amount      Decimal  @db.Decimal(18, 2)
+  tax_code         String?
+  tax_rate         Decimal? @db.Decimal(5, 2)
+  tax_amount       Decimal  @db.Decimal(18, 2) @default(0)
+  total_line_amount Decimal @db.Decimal(18, 2)
+
+  invoice          Invoice  @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+
+  @@index([invoice_id])
+}
+
+model Payment {
+  id               String   @id @default(cuid())
+  org_id           String?
+  payment_no       String   @unique
+  customer_id      String
+  amount           Decimal  @db.Decimal(18, 2)
+  currency         String
+  paid_date        DateTime
+  method           String
+  reference_no     String?
+  notes            String?
+  idempotency_key  String?  @unique
+  createdAt        DateTime @default(now())
+  created_by       String?
+
+  allocations      PaymentAllocation[]
+
+  @@index([org_id, paid_date])
+}
+
+model PaymentAllocation {
+  id               String   @id @default(cuid())
+  org_id           String?
+  payment_id       String
+  invoice_id       String
+  allocated_amount Decimal  @db.Decimal(18, 2)
+
+  payment          Payment  @relation(fields: [payment_id], references: [id], onDelete: Cascade)
+  invoice          Invoice  @relation(fields: [invoice_id], references: [id], onDelete: Restrict)
+
+  @@unique([payment_id, invoice_id])
+  @@index([invoice_id])
+}
+
+model ExportJob {
+  id         String   @id @default(cuid())
+  org_id     String?
+  type       String
+  params     Json
+  status     String   @default("PENDING")
+  file_key   String?
+  error      String?
+  createdAt  DateTime @default(now())
+  doneAt     DateTime?
+}
+model RefreshToken {
+    id          String   @id @default(cuid())
+    user_id     String
+    token_hash  String
+    expires_at  DateTime
+    revoked_at  DateTime?
+    created_at  DateTime @default(now())
+    user        User     @relation(fields: [user_id], references: [id])
+
+    @@index([user_id])
+}
+
+model PasswordResetToken {
+    id          String   @id @default(cuid())
+    user_id     String
+    token_hash  String
+    expires_at  DateTime
+    used_at     DateTime?
+    created_at  DateTime @default(now())
+    user        User     @relation(fields: [user_id], references: [id])
+
+    @@index([user_id])
+}
+
+model MfaSecret {
+    id          String   @id @default(cuid())
+    user_id     String
+    type        String   // 'TOTP'
+    secret      String
+    created_at  DateTime @default(now())
+    user        User     @relation(fields: [user_id], references: [id])
+
+    @@index([user_id])
+}
+
+model EmailVerification {
+    id          String   @id @default(cuid())
+    user_id     String
+    token_hash  String
+    expires_at  DateTime
+    used_at     DateTime?
+    created_at  DateTime @default(now())
+    user        User     @relation(fields: [user_id], references: [id])
+    @@index([user_id])
+}
+
+model PhoneOtp {
+    id          String   @id @default(cuid())
+    user_id     String
+    otp_hash    String
+    expires_at  DateTime
+    used_at     DateTime?
+    created_at  DateTime @default(now())
+    user        User     @relation(fields: [user_id], references: [id])
+    @@index([user_id])
+}
+
+// =====================
+// Module 3.2 — Request Attachments & Appointments
+// =====================
+
+model RequestAttachment {
+    id            String   @id @default(cuid())
+    request_id    String
+    uploader_id   String
+    uploader_role String   // customer | depot
+    file_name     String
+    file_type     String   // pdf | jpg | jpeg | png
+    file_size     Int      // bytes
+    storage_url   String   // S3/Blob URL
+    uploaded_at   DateTime @default(now())
+    deleted_at    DateTime?
+    deleted_by    String?
+    delete_reason String?
+
+    request       ServiceRequest @relation(fields: [request_id], references: [id], onDelete: Cascade)
+    uploader      User           @relation(fields: [uploader_id], references: [id])
+
+    @@index([request_id])
+    @@index([uploader_id])
+    @@index([uploaded_at])
+}
+
+model Notification {
+    id         String   @id @default(cuid())
+    request_id String
+    type       String   // APPOINTMENT_CREATED | ATTACHMENT_UPLOADED | APPOINTMENT_UPDATED
+    payload    Json
+    sent_to    String[] // Array of user IDs
+    created_at DateTime @default(now())
+
+    request    ServiceRequest @relation(fields: [request_id], references: [id], onDelete: Cascade)
+
+    @@index([request_id])
+    @@index([type])
+    @@index([created_at])
+}

@@ -1,0 +1,42 @@
+﻿# Node dependencies
+node_modules/
+**/node_modules/
+
+# Logs
+logs/
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# Next.js
+.next/
+out/
+
+# Build outputs
+build/
+dist/
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+
+# Caches
+.cache/
+
+# Prisma local databases (keep migrations tracked)
+prisma/*.db
+prisma/*.sqlite
