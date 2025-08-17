@@ -1,0 +1,253 @@
+import { audit } from '../../../shared/middlewares/audit';
+import chatService from '../../chat/service/ChatService';
+
+export interface StateTransition {
+  from: string;
+  to: string;
+  allowedRoles: string[];
+  requiresReason?: boolean;
+  description: string;
+}
+
+export class RequestStateMachine {
+  private static readonly VALID_STATES = [
+    'PENDING',
+    'SCHEDULED', 
+    'SCHEDULED_INFO_ADDED',
+    'FORWARDED',
+    'SENT_TO_GATE',
+    'REJECTED',
+    'COMPLETED'
+  ];
+
+  private static readonly TRANSITIONS: StateTransition[] = [
+    {
+      from: 'PENDING',
+      to: 'SCHEDULED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Depot tiếp nhận và đặt lịch hẹn'
+    },
+    {
+      from: 'PENDING',
+      to: 'REJECTED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      requiresReason: true,
+      description: 'Depot từ chối request'
+    },
+    {
+      from: 'SCHEDULED',
+      to: 'SCHEDULED_INFO_ADDED',
+      allowedRoles: ['CustomerAdmin', 'CustomerUser'],
+      description: 'Customer bổ sung thông tin'
+    },
+    {
+      from: 'SCHEDULED',
+      to: 'FORWARDED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Depot chuyển tiếp sau khi nhận thông tin bổ sung'
+    },
+    {
+      from: 'SCHEDULED',
+      to: 'SENT_TO_GATE',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Depot chuyển tiếp sang Gate'
+    },
+    {
+      from: 'SCHEDULED',
+      to: 'REJECTED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      requiresReason: true,
+      description: 'Depot từ chối request'
+    },
+    {
+      from: 'SCHEDULED_INFO_ADDED',
+      to: 'FORWARDED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Depot chuyển tiếp sau khi nhận thông tin bổ sung'
+    },
+    {
+      from: 'SCHEDULED_INFO_ADDED',
+      to: 'SENT_TO_GATE',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Depot chuyển tiếp sang Gate'
+    },
+    {
+      from: 'SCHEDULED_INFO_ADDED',
+      to: 'REJECTED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      requiresReason: true,
+      description: 'Depot từ chối request'
+    },
+    {
+      from: 'FORWARDED',
+      to: 'COMPLETED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin', 'System'],
+      description: 'Hoàn tất xử lý'
+    },
+    {
+      from: 'FORWARDED',
+      to: 'SENT_TO_GATE',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Chuyển tiếp sang Gate'
+    },
+    {
+      from: 'SENT_TO_GATE',
+      to: 'COMPLETED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin', 'System'],
+      description: 'Hoàn tất xử lý tại Gate'
+    }
+  ];
+
+  static isValidState(state: string): boolean {
+    return this.VALID_STATES.includes(state);
+  }
+
+  static getValidTransitions(fromState: string, userRole: string): StateTransition[] {
+    return this.TRANSITIONS.filter(transition => 
+      transition.from === fromState && 
+      transition.allowedRoles.includes(userRole)
+    );
+  }
+
+  static canTransition(fromState: string, toState: string, userRole: string): boolean {
+    const transition = this.TRANSITIONS.find(t => 
+      t.from === fromState && 
+      t.to === toState && 
+      t.allowedRoles.includes(userRole)
+    );
+    return !!transition;
+  }
+
+  static getTransition(fromState: string, toState: string, userRole: string): StateTransition | null {
+    return this.TRANSITIONS.find(t => 
+      t.from === fromState && 
+      t.to === toState && 
+      t.allowedRoles.includes(userRole)
+    ) || null;
+  }
+
+  static async validateAndTransition(
+    actor: any,
+    currentState: string,
+    newState: string,
+    reason?: string
+  ): Promise<{ valid: boolean; error?: string; transition?: StateTransition }> {
+    // Kiểm tra state hợp lệ
+    if (!this.isValidState(currentState)) {
+      return { valid: false, error: `Trạng thái hiện tại không hợp lệ: ${currentState}` };
+    }
+
+    if (!this.isValidState(newState)) {
+      return { valid: false, error: `Trạng thái mới không hợp lệ: ${newState}` };
+    }
+
+    // Kiểm tra transition hợp lệ
+    const transition = this.getTransition(currentState, newState, actor.role);
+    if (!transition) {
+      return { 
+        valid: false, 
+        error: `Không thể chuyển từ ${currentState} sang ${newState} với role ${actor.role}` 
+      };
+    }
+
+    // Kiểm tra reason nếu cần
+    if (transition.requiresReason && (!reason || !reason.trim())) {
+      return { 
+        valid: false, 
+        error: 'Vui lòng nhập lý do khi thực hiện hành động này' 
+      };
+    }
+
+    return { valid: true, transition };
+  }
+
+  static async executeTransition(
+    actor: any,
+    requestId: string,
+    currentState: string,
+    newState: string,
+    reason?: string,
+    additionalData?: any
+  ): Promise<void> {
+    const validation = await this.validateAndTransition(actor, currentState, newState, reason);
+    
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    const transition = validation.transition!;
+
+    // Ghi audit log
+    await audit(
+      actor._id, 
+      `REQUEST.${newState}`, 
+      'REQUEST', 
+      requestId, 
+      { 
+        from: currentState, 
+        to: newState, 
+        reason,
+        ...additionalData 
+      }
+    );
+
+    // Gửi system message vào chat room
+    try {
+      const chatRoom = await chatService.getChatRoom(actor, requestId);
+      if (chatRoom) {
+        let systemMessage = '';
+        switch (newState) {
+          case 'PENDING':
+            systemMessage = '📋 Yêu cầu đã được tạo và đang chờ xử lý';
+            break;
+          case 'SCHEDULED':
+            systemMessage = '📅 Lịch hẹn đã được đặt';
+            break;
+          case 'SCHEDULED_INFO_ADDED':
+            systemMessage = '📄 Thông tin bổ sung đã được cập nhật';
+            break;
+          case 'SENT_TO_GATE':
+            systemMessage = '🚪 Yêu cầu đã được chuyển tiếp sang Gate';
+            break;
+          case 'REJECTED':
+            systemMessage = `❌ Yêu cầu bị từ chối${reason ? `: ${reason}` : ''}`;
+            break;
+          case 'COMPLETED':
+            systemMessage = '✅ Yêu cầu đã hoàn tất';
+            break;
+          default:
+            systemMessage = `🔄 Trạng thái đã thay đổi thành: ${newState}`;
+        }
+        await chatService.sendSystemMessageUnrestricted(chatRoom.id, systemMessage);
+      }
+    } catch (error) {
+      console.error('Không thể gửi system message:', error);
+    }
+  }
+
+  static getStateDescription(state: string): string {
+    const descriptions: Record<string, string> = {
+      'PENDING': 'Chờ xử lý',
+      'SCHEDULED': 'Đã đặt lịch hẹn',
+      'SCHEDULED_INFO_ADDED': 'Đã bổ sung thông tin',
+      'SENT_TO_GATE': 'Đã chuyển sang Gate',
+      'REJECTED': 'Bị từ chối',
+      'COMPLETED': 'Hoàn tất'
+    };
+    return descriptions[state] || state;
+  }
+
+  static getStateColor(state: string): string {
+    const colors: Record<string, string> = {
+      'PENDING': 'yellow',
+      'SCHEDULED': 'blue',
+      'SCHEDULED_INFO_ADDED': 'cyan',
+      'SENT_TO_GATE': 'purple',
+      'REJECTED': 'red',
+      'COMPLETED': 'green'
+    };
+    return colors[state] || 'gray';
+  }
+}
+
+export default RequestStateMachine;

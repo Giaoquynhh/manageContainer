@@ -5,13 +5,14 @@ Mục tiêu: quản lý vòng đời yêu cầu dịch vụ container (tạo →
 ## 1) Data model (Prisma)
 - `ServiceRequest(id, tenant_id, created_by, type, container_no, eta, status, history, createdAt, updatedAt)`
 - `DocumentFile(id, request_id, type, name, size, version, uploader_id, storage_key, createdAt, deleted_at?, deleted_by?, delete_reason?)`
+  - Type: EIR | LOLO | INVOICE | SUPPLEMENT | INITIAL_DOC
 - `PaymentRequest(id, request_id, created_by, status, createdAt)`
 
-Status: PENDING | RECEIVED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
+Status: PENDING | RECEIVED | SCHEDULED | SCHEDULED_INFO_ADDED | FORWARDED | SENT_TO_GATE | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
 
 ## 2) RBAC
-- CustomerAdmin/CustomerUser: tạo/list yêu cầu trong tenant; xem chứng từ của tenant.
-- SaleAdmin: nhận/từ chối yêu cầu; tạo mới thay khách; upload/xóa EIR/LOLO; gửi yêu cầu thanh toán.
+- CustomerAdmin/CustomerUser: tạo/list yêu cầu trong tenant; xem chứng từ của tenant; upload tài liệu bổ sung khi status = SCHEDULED.
+- SaleAdmin: nhận/từ chối yêu cầu; tạo mới thay khách; upload/xóa EIR/LOLO; gửi yêu cầu thanh toán; chuyển tiếp yêu cầu sau khi nhận tài liệu bổ sung.
 - Accountant: upload/xóa INVOICE; xem requests/docs.
 
 ## 3) API
@@ -35,8 +36,11 @@ Base: `/requests` (JWT)
   - Body: `{ status: 'RECEIVED'|'REJECTED'|'COMPLETED'|'EXPORTED', reason? }`
   - RBAC: SaleAdmin
   - Luồng trạng thái hợp lệ (state machine):
-    - `PENDING → RECEIVED | REJECTED`
-    - `RECEIVED → COMPLETED | EXPORTED | REJECTED | IN_YARD`
+    - `PENDING → SCHEDULED | REJECTED`
+    - `SCHEDULED → SCHEDULED_INFO_ADDED | FORWARDED | REJECTED`
+    - `SCHEDULED_INFO_ADDED → FORWARDED | REJECTED`
+    - `FORWARDED → COMPLETED | SENT_TO_GATE`
+    - `SENT_TO_GATE → COMPLETED`
     - `COMPLETED → EXPORTED | IN_YARD`
     - `IN_YARD → LEFT_YARD`
     - `LEFT_YARD`/`EXPORTED`/`REJECTED` là trạng thái cuối (không chuyển tiếp)
@@ -63,16 +67,17 @@ Base: `/requests` (JWT)
 
 ### 3.7. Chứng từ
 - Upload (AC1/AC5):
-  - `POST /requests/:id/docs` (multipart: `file`, body: `{ type: 'EIR'|'LOLO'|'INVOICE' }`)
-  - Chỉ khi status ∈ { COMPLETED, EXPORTED }
+  - `POST /requests/:id/docs` (multipart: `file`, body: `{ type: 'EIR'|'LOLO'|'INVOICE'|'SUPPLEMENT' }`)
+  - EIR/LOLO/INVOICE: chỉ khi status ∈ { COMPLETED, EXPORTED }
+  - SUPPLEMENT: chỉ khi status = SCHEDULED (Customer only)
   - Mimetype: pdf/jpeg/png, size ≤ 10MB → version tăng tự động (v1, v2, ...)
-  - RBAC: EIR/LOLO (SaleAdmin), INVOICE (Accountant)
+  - RBAC: EIR/LOLO (SaleAdmin), INVOICE (Accountant), SUPPLEMENT (CustomerAdmin/CustomerUser)
 - Upload khi tạo request (Customer):
   - `POST /requests` (multipart: `document`, body: `{ type, container_no, eta? }`)
   - File được lưu với type `INITIAL_DOC`
   - Hỗ trợ: PDF, JPG, PNG (tối đa 10MB)
 - Danh sách:
-  - `GET /requests/:id/docs`
+  - `GET /requests/:id/docs?type=SUPPLEMENT` (filter theo type)
   - RBAC: SaleAdmin/Accountant/Customer* (tenant scope)
 - Serve files:
   - `GET /requests/documents/:filename`
@@ -87,6 +92,24 @@ Base: `/requests` (JWT)
 - `POST /requests/:id/payment-request` (SaleAdmin)
   - Chỉ cho phép khi `status = COMPLETED`
   - Trả `PaymentRequest` status `SENT` → Accountant tiếp nhận (luồng tiếp theo sẽ mở rộng)
+
+### 3.9. Tài liệu bổ sung & Hành động Depot
+- Upload tài liệu bổ sung (Customer):
+  - `POST /requests/:id/docs` với `type: 'SUPPLEMENT'`
+  - Chỉ khi status = SCHEDULED
+  - RBAC: CustomerAdmin/CustomerUser (tenant scope)
+- Danh sách tài liệu bổ sung:
+  - `GET /requests/:id/docs?type=SUPPLEMENT`
+  - Customer: chỉ xem file của tenant mình
+  - Depot: xem tất cả file
+- Chuyển tiếp yêu cầu (Depot):
+  - `PATCH /requests/:id/status` với `status: 'FORWARDED'`
+  - RBAC: SaleAdmin/SystemAdmin
+  - Chỉ khi status = SCHEDULED
+- Từ chối yêu cầu (Depot):
+  - `PATCH /requests/:id/reject` với `reason`
+  - RBAC: SaleAdmin/SystemAdmin
+  - Chỉ khi status ∈ {SCHEDULED, RECEIVED}
 
 ## 4) Soft-delete theo scope
 - **Mục tiêu**: Cho phép Kho và Khách hàng xóa/ẩn request theo phạm vi riêng

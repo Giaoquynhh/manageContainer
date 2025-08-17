@@ -63,7 +63,14 @@ export class RequestRepository {
 
 	// Documents
 	createDoc(data: any) { return prisma.documentFile.create({ data }); }
-	listDocs(request_id: string) { return prisma.documentFile.findMany({ where: { request_id, deleted_at: null }, orderBy: [{ type: 'asc' }, { createdAt: 'desc' }] }); }
+	listDocs(request_id: string, type?: string) { 
+		const where: any = { request_id, deleted_at: null };
+		if (type) where.type = type;
+		return prisma.documentFile.findMany({ 
+			where, 
+			orderBy: [{ type: 'asc' }, { createdAt: 'desc' }] 
+		}); 
+	}
 	getDoc(id: string) { return prisma.documentFile.findUnique({ where: { id } }); }
 	softDeleteDoc(id: string, deleted_by: string, reason?: string) { return prisma.documentFile.update({ where: { id }, data: { deleted_at: new Date(), deleted_by, delete_reason: reason } }); }
 	getLastDocVersion(request_id: string, type: string) { return prisma.documentFile.findFirst({ where: { request_id, type }, orderBy: { version: 'desc' } }); }

@@ -26,6 +26,14 @@ export { default as AppointmentWindow } from './appointment/AppointmentWindow';
 export { default as AppointmentHeader } from './appointment/AppointmentHeader';
 export { default as AppointmentForm } from './appointment/AppointmentForm';
 
+// Supplement Components
+export { default as UploadSupplementModal } from './UploadSupplementModal';
+export { default as SupplementDocuments } from './SupplementDocuments';
+export { default as SupplementMini } from './SupplementMini';
+export { default as SupplementWindow } from './SupplementWindow';
+export { default as SupplementHeader } from './SupplementHeader';
+export { default as SupplementForm } from './SupplementForm';
+
 // Legacy Components (giữ lại để không break existing imports)
 export { default as AppointmentModal } from './AppointmentModal';
 export { default as ChatBox } from './ChatBox';

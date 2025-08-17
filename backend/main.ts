@@ -17,7 +17,7 @@ import partnerRoutes from './modules/partners/controller/partnerRoutes';
 import auditRoutes from './modules/audit/controller/auditRoutes';
 import requestRoutes from './modules/requests/controller/RequestRoutes';
 import documentRoutes from './modules/requests/controller/DocumentRoutes';
-import appointmentRoutes from './modules/requests/controller/AppointmentRoutes';
+
 import attachmentRoutes from './modules/requests/controller/AttachmentRoutes';
 import chatRoutes from './modules/chat/controller/ChatRoutes';
 import gateRoutes from './modules/gate/controller/GateRoutes';
@@ -54,7 +54,7 @@ app.use('/audit', authenticate, auditRoutes);
 app.use('/requests/documents', documentRoutes);
 // All other request routes require authentication
 app.use('/requests', authenticate, requestRoutes);
-app.use('/requests', appointmentRoutes);
+
 app.use('/requests', attachmentRoutes);
 
 // Chat routes

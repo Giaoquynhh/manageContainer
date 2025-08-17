@@ -3,6 +3,8 @@ import { audit } from '../../../shared/middlewares/audit';
 import path from 'path';
 import fs from 'fs';
 import chatService from '../../chat/service/ChatService';
+import RequestStateMachine from './RequestStateMachine';
+import appointmentService from './AppointmentService';
 
 export class RequestService {
 	async createByCustomer(actor: any, payload: { type: string; container_no: string; eta?: Date }, file?: Express.Multer.File) {
@@ -111,28 +113,15 @@ export class RequestService {
 	async updateStatus(actor: any, id: string, status: string, reason?: string) {
 		const req = await repo.findById(id);
 		if (!req) throw new Error('Yêu cầu không tồn tại');
-		// SaleAdmin và SystemAdmin được phép thay đổi trạng thái
-		if (!['SaleAdmin', 'SystemAdmin'].includes(actor.role)) throw new Error('Không có quyền');
 
-		// Xác định luồng hợp lệ
-		const currentStatus: string = req.status;
-		const allowedTransitions: Record<string, string[]> = {
-			PENDING: ['RECEIVED','REJECTED'],
-			RECEIVED: ['COMPLETED','EXPORTED','REJECTED','IN_YARD'],
-			COMPLETED: ['EXPORTED','IN_YARD'],
-			IN_YARD: ['LEFT_YARD'],
-			LEFT_YARD: [],
-			EXPORTED: [],
-			REJECTED: []
-		};
-		const allowed = allowedTransitions[currentStatus] || [];
-		if (!allowed.includes(status)) {
-			throw new Error(`Không thể chuyển từ ${currentStatus} sang ${status}`);
-		}
-		// Lý do bắt buộc khi từ chối
-		if (status === 'REJECTED' && (!reason || !String(reason).trim())) {
-			throw new Error('Vui lòng nhập lý do từ chối');
-		}
+		// Sử dụng State Machine để validate và execute transition
+		await RequestStateMachine.executeTransition(
+			actor,
+			id,
+			req.status,
+			status,
+			reason
+		);
 
 		const prevHistory = Array.isArray(req.history) ? (req.history as any[]) : [];
 		const updateData: any = {
@@ -151,50 +140,6 @@ export class RequestService {
 		}
 		
 		const updated = await repo.update(id, updateData);
-		await audit(actor._id, `REQUEST.${status}`, 'REQUEST', id);
-		
-		// Gửi system message vào chat room khi status thay đổi
-		try {
-			const chatRoom = await chatService.getChatRoom(actor, id);
-			if (chatRoom) {
-				let systemMessage = '';
-				switch (status) {
-					case 'PENDING':
-						systemMessage = '📋 Đơn hàng đã được tạo và đang chờ xử lý';
-						break;
-					case 'RECEIVED':
-						systemMessage = '✅ Đơn hàng đã được tiếp nhận và đang xử lý';
-						break;
-					case 'IN_PROGRESS':
-						systemMessage = '🔄 Đơn hàng đang được xử lý tại kho';
-						break;
-					case 'COMPLETED':
-						systemMessage = '✅ Đơn hàng đã hoàn tất';
-						break;
-					case 'EXPORTED':
-						systemMessage = '📦 Đơn hàng đã xuất kho';
-						break;
-					case 'REJECTED':
-						systemMessage = `❌ Đơn hàng bị từ chối${reason ? `: ${reason}` : ''}`;
-						break;
-					case 'CANCELLED':
-						systemMessage = '❌ Đơn hàng đã bị hủy';
-						break;
-					case 'IN_YARD':
-						systemMessage = '🏭 Container đã vào kho';
-						break;
-					case 'LEFT_YARD':
-						systemMessage = '🚛 Container đã rời kho';
-						break;
-					default:
-						systemMessage = `🔄 Trạng thái đơn hàng đã thay đổi thành: ${status}`;
-				}
-				await chatService.sendSystemMessageUnrestricted(chatRoom.id, systemMessage);
-			}
-		} catch (error) {
-			console.error('Không thể gửi system message:', error);
-		}
-		
 		return updated;
 	}
 
@@ -202,15 +147,14 @@ export class RequestService {
 		const req = await repo.findById(id);
 		if (!req) throw new Error('Yêu cầu không tồn tại');
 		
-		// Chỉ SaleAdmin và SystemAdmin được phép reject
-		if (!['SaleAdmin', 'SystemAdmin'].includes(actor.role)) {
-			throw new Error('Không có quyền reject request');
-		}
-		
-		// Chỉ cho phép reject khi status hợp lệ
-		if (!['PENDING', 'RECEIVED', 'IN_YARD'].includes(req.status)) {
-			throw new Error('Không thể reject request ở trạng thái hiện tại');
-		}
+		// Sử dụng State Machine để validate và execute transition
+		await RequestStateMachine.executeTransition(
+			actor,
+			id,
+			req.status,
+			'REJECTED',
+			reason
+		);
 		
 		const prevHistory = Array.isArray(req.history) ? (req.history as any[]) : [];
 		const updated = await repo.update(id, {
@@ -223,19 +167,6 @@ export class RequestService {
 				{ at: new Date().toISOString(), by: actor._id, action: 'REJECTED', reason }
 			]
 		});
-		
-		await audit(actor._id, 'REQUEST.REJECTED', 'REQUEST', id, { reason });
-		
-		// Gửi system message vào chat room khi request bị từ chối
-		try {
-			const chatRoom = await chatService.getChatRoom(actor, id);
-			if (chatRoom) {
-				const systemMessage = `❌ Đơn hàng bị từ chối${reason ? `: ${reason}` : ''}`;
-				await chatService.sendSystemMessageUnrestricted(chatRoom.id, systemMessage);
-			}
-		} catch (error) {
-			console.error('Không thể gửi system message khi reject:', error);
-		}
 		
 		return updated;
 	}
@@ -309,17 +240,54 @@ export class RequestService {
 	}
 
 	// Documents
-	async uploadDocument(actor: any, request_id: string, type: 'EIR'|'LOLO'|'INVOICE', file: Express.Multer.File) {
+	async uploadDocument(actor: any, request_id: string, type: 'EIR'|'LOLO'|'INVOICE'|'SUPPLEMENT', file: Express.Multer.File) {
+		console.log('Upload document debug:', { actor: actor.role, request_id, type, fileSize: file?.size });
 		const req = await repo.findById(request_id);
 		if (!req) throw new Error('Yêu cầu không tồn tại');
-		// AC1: chỉ upload khi COMPLETED hoặc EXPORTED
-		if (!['COMPLETED','EXPORTED'].includes(req.status)) throw new Error('Chỉ upload khi yêu cầu đã hoàn tất hoặc đã xuất kho');
-		// Role check
-		if ((type === 'INVOICE' && actor.role !== 'Accountant') || ((type === 'EIR' || type === 'LOLO') && actor.role !== 'SaleAdmin')) {
-			throw new Error('Không có quyền upload loại phiếu này');
+		console.log('Request found:', { status: req.status, tenant_id: req.tenant_id, actor_tenant: actor.tenant_id });
+		
+		// Validation based on document type
+		if (type === 'SUPPLEMENT') {
+			// SUPPLEMENT: chỉ upload khi SCHEDULED và chỉ Customer
+			if (req.status !== 'SCHEDULED') {
+				throw new Error('Chỉ upload tài liệu bổ sung khi yêu cầu đã được lên lịch hẹn');
+			}
+			if (!['CustomerAdmin', 'CustomerUser'].includes(actor.role)) {
+				throw new Error('Chỉ khách hàng được upload tài liệu bổ sung');
+			}
+			// Scope check: customer chỉ upload cho tenant của mình
+			if (req.tenant_id !== actor.tenant_id) {
+				throw new Error('Không có quyền upload cho yêu cầu này');
+			}
+		} else {
+			// EIR/LOLO/INVOICE: chỉ upload khi COMPLETED hoặc EXPORTED
+			if (!['COMPLETED','EXPORTED'].includes(req.status)) {
+				throw new Error('Chỉ upload khi yêu cầu đã hoàn tất hoặc đã xuất kho');
+			}
+			// Role check
+			if ((type === 'INVOICE' && actor.role !== 'Accountant') || ((type === 'EIR' || type === 'LOLO') && actor.role !== 'SaleAdmin')) {
+				throw new Error('Không có quyền upload loại phiếu này');
+			}
 		}
+		
 		const last = await repo.getLastDocVersion(request_id, type);
 		const version = (last?.version || 0) + 1;
+		
+		// Xử lý file upload
+		const uploadDir = path.join(process.cwd(), 'uploads');
+		if (!fs.existsSync(uploadDir)) {
+			fs.mkdirSync(uploadDir, { recursive: true });
+		}
+		
+		// Tạo tên file unique
+		const timestamp = Date.now();
+		const fileExtension = path.extname(file.originalname);
+		const fileName = `${timestamp}_${request_id}_${type}${fileExtension}`;
+		const filePath = path.join(uploadDir, fileName);
+		
+		// Lưu file
+		fs.writeFileSync(filePath, file.buffer);
+		
 		const doc = await repo.createDoc({
 			request_id,
 			type,
@@ -327,18 +295,22 @@ export class RequestService {
 			size: file.size,
 			version,
 			uploader_id: actor._id,
-			storage_key: file.path
+			storage_key: fileName
 		});
-		await audit(actor._id, 'DOC.UPLOADED', 'DOC', doc.id, { request_id, type, version });
+		
+		// Audit log với action khác nhau cho SUPPLEMENT
+		const auditAction = type === 'SUPPLEMENT' ? 'DOC.UPLOADED_SUPPLEMENT' : 'DOC.UPLOADED';
+		await audit(actor._id, auditAction, 'DOC', doc.id, { request_id, type, version });
+		
 		return doc;
 	}
 
-	async listDocuments(actor: any, request_id: string) {
+	async listDocuments(actor: any, request_id: string, type?: string) {
 		const req = await repo.findById(request_id);
 		if (!req) throw new Error('Yêu cầu không tồn tại');
 		// scope: customer chỉ xem tenant của mình
 		if ((actor.role === 'CustomerAdmin' || actor.role === 'CustomerUser') && req.tenant_id !== actor.tenant_id) throw new Error('Không có quyền');
-		return repo.listDocs(request_id);
+		return repo.listDocs(request_id, type);
 	}
 
 	async deleteDocument(actor: any, id: string, reason?: string) {
@@ -359,6 +331,124 @@ export class RequestService {
 		const pr = await repo.createPayment({ request_id, created_by: actor._id, status: 'SENT' });
 		await audit(actor._id, 'PAYMENT.SENT', 'REQUEST', request_id);
 		return pr;
+	}
+
+	// State Machine Methods
+	async scheduleRequest(actor: any, id: string, appointmentData: any) {
+		return await appointmentService.scheduleAppointment(actor, id, appointmentData);
+	}
+
+	async addInfoToRequest(actor: any, id: string, documents: any[], notes?: string) {
+		const req = await repo.findById(id);
+		if (!req) throw new Error('Yêu cầu không tồn tại');
+
+		// Validate transition
+		await RequestStateMachine.executeTransition(
+			actor,
+			id,
+			req.status,
+			'SCHEDULED_INFO_ADDED'
+		);
+
+		const updateData: any = {
+			status: 'SCHEDULED_INFO_ADDED',
+			attachments_count: (req.attachments_count || 0) + documents.length,
+			history: [
+				...(Array.isArray(req.history) ? req.history : []),
+				{
+					at: new Date().toISOString(),
+					by: actor._id,
+					action: 'INFO_ADDED',
+					documents_count: documents.length,
+					notes
+				}
+			]
+		};
+
+		// Xử lý documents nếu có
+		if (documents && documents.length > 0) {
+			// TODO: Implement document upload logic
+			console.log('Documents to be processed:', documents);
+		}
+
+		const updated = await repo.update(id, updateData);
+		return updated;
+	}
+
+	async sendToGate(actor: any, id: string) {
+		const req = await repo.findById(id);
+		if (!req) throw new Error('Yêu cầu không tồn tại');
+
+		// Validate transition
+		await RequestStateMachine.executeTransition(
+			actor,
+			id,
+			req.status,
+			'SENT_TO_GATE'
+		);
+
+		const updateData = {
+			status: 'SENT_TO_GATE',
+			history: [
+				...(Array.isArray(req.history) ? req.history : []),
+				{
+					at: new Date().toISOString(),
+					by: actor._id,
+					action: 'SENT_TO_GATE'
+				}
+			]
+		};
+
+		const updated = await repo.update(id, updateData);
+		return updated;
+	}
+
+	async completeRequest(actor: any, id: string) {
+		const req = await repo.findById(id);
+		if (!req) throw new Error('Yêu cầu không tồn tại');
+
+		// Validate transition
+		await RequestStateMachine.executeTransition(
+			actor,
+			id,
+			req.status,
+			'COMPLETED'
+		);
+
+		const updateData = {
+			status: 'COMPLETED',
+			history: [
+				...(Array.isArray(req.history) ? req.history : []),
+				{
+					at: new Date().toISOString(),
+					by: actor._id,
+					action: 'COMPLETED'
+				}
+			]
+		};
+
+		const updated = await repo.update(id, updateData);
+		return updated;
+	}
+
+	// Helper methods
+	async getValidTransitions(actor: any, id: string) {
+		const req = await repo.findById(id);
+		if (!req) throw new Error('Yêu cầu không tồn tại');
+
+		return RequestStateMachine.getValidTransitions(req.status, actor.role);
+	}
+
+	async getStateInfo(state: string) {
+		return {
+			state,
+			description: RequestStateMachine.getStateDescription(state),
+			color: RequestStateMachine.getStateColor(state)
+		};
+	}
+
+	async getAppointmentInfo(id: string) {
+		return await appointmentService.getAppointmentInfo(id);
 	}
 }
 

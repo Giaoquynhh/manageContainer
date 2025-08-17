@@ -9,6 +9,7 @@ import RequestTable from '@components/RequestTable';
 import SearchBar from '@components/SearchBar';
 import AppointmentModal from '@components/AppointmentModal';
 import UploadModal from '@components/UploadModal';
+import SupplementMini from '@components/SupplementMini';
 
 const fetcher = (url: string) => api.get(url).then(r => r.data);
 
@@ -16,6 +17,7 @@ export default function CustomerRequests() {
 	const [showCreateModal, setShowCreateModal] = useState(false);
 	const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 	const [showUploadModal, setShowUploadModal] = useState(false);
+	const [showSupplementPopup, setShowSupplementPopup] = useState(false);
 	const [selectedRequestId, setSelectedRequestId] = useState<string>('');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [filterType, setFilterType] = useState('all');
@@ -84,25 +86,37 @@ export default function CustomerRequests() {
 		return matchesSearch && matchesFilter;
 	});
 
-	// Add action functions to each request
-	const requestsWithActions = filteredData?.map((item: any) => ({
-		...item,
-		actions: {
-			softDeleteRequest,
-			restoreRequest,
-			loadingId
-		}
-	}));
+
 
 	const handleOpenUploadModal = (requestId: string) => {
 		setSelectedRequestId(requestId);
 		setShowUploadModal(true);
 	};
 
+	const handleOpenSupplementPopup = (requestId: string) => {
+		setSelectedRequestId(requestId);
+		setShowSupplementPopup(true);
+	};
+
+	const handleSupplementSuccess = () => {
+		mutate('/requests?page=1&limit=20');
+		setMsg({ text: 'Đã upload tài liệu bổ sung thành công!', ok: true });
+	};
+
 	const handleUploadSuccess = () => {
 		mutate('/requests?page=1&limit=20');
 		setMsg({ text: 'Upload file thành công!', ok: true });
 	};
+
+	const requestsWithActions = filteredData?.map((item: any) => ({
+		...item,
+		actions: {
+			softDeleteRequest,
+			restoreRequest,
+			loadingId,
+			handleOpenSupplementPopup
+		}
+	}));
 
 	return (
 		<>
@@ -162,6 +176,13 @@ export default function CustomerRequests() {
 					visible={showUploadModal}
 					onClose={() => setShowUploadModal(false)}
 					onSuccess={handleUploadSuccess}
+				/>
+
+				{/* Supplement Popup */}
+				<SupplementMini
+					requestId={selectedRequestId}
+					visible={showSupplementPopup}
+					onClose={() => setShowSupplementPopup(false)}
 				/>
 			</main>
 		</>

@@ -100,7 +100,7 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                 appointment_time: new Date(formData.appointment_time).toISOString()
             };
             console.log('Sending appointment data:', appointmentData);
-            await api.post(`/requests/${requestId}/accept`, appointmentData);
+            await api.patch(`/requests/${requestId}/schedule`, appointmentData);
             
             // Reset form
             setFormData({
@@ -134,34 +134,61 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
 
     if (!visible) return null;
 
+    console.log('AppointmentModal rendered with date/time pickers');
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">Tạo lịch hẹn</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700 text-xl"
-                        disabled={loading}
-                    >
-                        ✕
-                    </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg w-full max-w-md max-h-[60vh] flex flex-col">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-bold">Tạo lịch hẹn</h2>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700 text-xl"
+                            disabled={loading}
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Thời gian lịch hẹn */}
+                <div className="flex-1 overflow-y-auto p-6" style={{ maxHeight: '400px' }}>
+
+                <form id="appointment-form" onSubmit={handleSubmit} className="space-y-4">
+                    {/* Ngày lịch hẹn */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Thời gian lịch hẹn *
+                            Ngày lịch hẹn *
                         </label>
                         <input
-                            type="datetime-local"
-                            value={formData.appointment_time}
-                            onChange={(e) => handleInputChange('appointment_time', e.target.value)}
+                            type="date"
+                            value={formData.appointment_time ? formData.appointment_time.split('T')[0] : ''}
+                            onChange={(e) => {
+                                const time = formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : '09:00';
+                                handleInputChange('appointment_time', `${e.target.value}T${time}`);
+                            }}
                             className={`w-full px-3 py-2 border rounded-md ${
                                 errors.appointment_time ? 'border-red-500' : 'border-gray-300'
                             }`}
-                            min={new Date().toISOString().slice(0, 16)}
+                            min={new Date().toISOString().split('T')[0]}
+                        />
+                    </div>
+
+                    {/* Giờ lịch hẹn */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Giờ lịch hẹn *
+                        </label>
+                        <input
+                            type="time"
+                            value={formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : '09:00'}
+                            onChange={(e) => {
+                                const date = formData.appointment_time ? formData.appointment_time.split('T')[0] : new Date().toISOString().split('T')[0];
+                                handleInputChange('appointment_time', `${date}T${e.target.value}`);
+                            }}
+                            className={`w-full px-3 py-2 border rounded-md ${
+                                errors.appointment_time ? 'border-red-500' : 'border-gray-300'
+                            }`}
                         />
                         {errors.appointment_time && (
                             <p className="text-red-500 text-sm mt-1">{errors.appointment_time}</p>
@@ -238,6 +265,176 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                             rows={3}
                             maxLength={500}
                         />
+                        <div className="text-xs text-gray-500 mt-1">
+                            {formData.note.length}/500 ký tự
+                        </div>
+                    </div>
+
+                    {/* Thông tin bổ sung */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Loại container
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">Chọn loại container</option>
+                            <option value="20ft">20ft Standard</option>
+                            <option value="40ft">40ft Standard</option>
+                            <option value="40hc">40ft High Cube</option>
+                            <option value="45ft">45ft High Cube</option>
+                        </select>
+                    </div>
+
+                    {/* Trọng lượng */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Trọng lượng (kg)
+                        </label>
+                        <input
+                            type="number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Nhập trọng lượng container"
+                            min="0"
+                            max="30000"
+                        />
+                    </div>
+
+                    {/* Số lượng */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Số lượng container
+                        </label>
+                        <input
+                            type="number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Nhập số lượng"
+                            min="1"
+                            max="10"
+                        />
+                    </div>
+
+                    {/* Yêu cầu đặc biệt */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Yêu cầu đặc biệt
+                        </label>
+                        <div className="space-y-2">
+                            <label className="flex items-center">
+                                <input type="checkbox" className="mr-2" />
+                                <span className="text-sm">Cần xe nâng</span>
+                            </label>
+                            <label className="flex items-center">
+                                <input type="checkbox" className="mr-2" />
+                                <span className="text-sm">Cần kiểm tra hải quan</span>
+                            </label>
+                            <label className="flex items-center">
+                                <input type="checkbox" className="mr-2" />
+                                <span className="text-sm">Cần bảo hiểm</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Thông tin liên hệ */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Người liên hệ
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Tên người liên hệ"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Số điện thoại
+                        </label>
+                        <input
+                            type="tel"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Số điện thoại liên hệ"
+                        />
+                    </div>
+
+                    {/* Thông tin bổ sung */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mô tả hàng hóa
+                        </label>
+                        <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Mô tả chi tiết hàng hóa trong container"
+                            rows={3}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ghi chú đặc biệt
+                        </label>
+                        <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Ghi chú đặc biệt cho việc xử lý"
+                            rows={2}
+                        />
+                    </div>
+
+                    {/* Thông tin vận chuyển */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Phương thức vận chuyển
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="">Chọn phương thức</option>
+                            <option value="truck">Xe tải</option>
+                            <option value="train">Tàu hỏa</option>
+                            <option value="ship">Tàu biển</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Điểm đến
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Địa chỉ điểm đến"
+                        />
+                    </div>
+
+                    {/* Thông tin bổ sung */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mô tả chi tiết
+                        </label>
+                        <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Mô tả chi tiết về yêu cầu"
+                            rows={4}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Yêu cầu đặc biệt khác
+                        </label>
+                        <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Các yêu cầu đặc biệt khác"
+                            rows={3}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ghi chú nội bộ
+                        </label>
+                        <textarea
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Ghi chú nội bộ cho nhân viên"
+                            rows={2}
+                        />
                     </div>
 
                     {/* Error message */}
@@ -247,8 +444,11 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                         </div>
                     )}
 
-                    {/* Action buttons */}
-                    <div className="flex gap-3 pt-4">
+                </form>
+                </div>
+
+                <div className="p-6 border-t border-gray-200">
+                    <div className="flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
@@ -259,13 +459,14 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                         </button>
                         <button
                             type="submit"
+                            form="appointment-form"
                             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                             disabled={loading}
                         >
-                            {loading ? 'Đang xử lý...' : 'Gửi lịch hẹn'}
+                            {loading ? 'Đang xử lý...' : 'Tạo lịch hẹn'}
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );

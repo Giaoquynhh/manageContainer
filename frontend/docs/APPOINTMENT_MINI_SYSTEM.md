@@ -307,3 +307,8 @@ setActiveAppointmentRequests(prev => new Set(prev).add(requestId));
 ✅ **Easy integration** vào existing codebase  
 
 **AppointmentMini system đã sẵn sàng thay thế hoàn toàn appointment modal cũ!** 🎯
+
+
+
+
+

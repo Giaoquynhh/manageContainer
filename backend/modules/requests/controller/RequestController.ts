@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../../shared/middlewares/auth';
 import service from '../service/RequestService';
-import { createRequestSchema, updateRequestStatusSchema, queryRequestSchema, uploadDocSchema, rejectRequestSchema, softDeleteRequestSchema, restoreRequestSchema } from '../dto/RequestDtos';
+import { createRequestSchema, updateRequestStatusSchema, queryRequestSchema, uploadDocSchema, rejectRequestSchema, softDeleteRequestSchema, restoreRequestSchema, scheduleRequestSchema, addInfoSchema, sendToGateSchema, completeRequestSchema } from '../dto/RequestDtos';
 
 export class RequestController {
 	async create(req: AuthRequest, res: Response) {
@@ -72,7 +72,12 @@ export class RequestController {
 		try { return res.status(201).json(await service.uploadDocument(req.user!, req.params.id, value.type, (req as any).file)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
 	}
 	async listDocs(req: AuthRequest, res: Response) {
-		try { return res.json(await service.listDocuments(req.user!, req.params.id)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+		try { 
+			const type = req.query.type as string;
+			return res.json(await service.listDocuments(req.user!, req.params.id, type)); 
+		} catch (e: any) { 
+			return res.status(400).json({ message: e.message }); 
+		}
 	}
 	async deleteDoc(req: AuthRequest, res: Response) {
 		try { return res.json(await service.deleteDocument(req.user!, req.params.docId, req.body?.reason)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
@@ -80,6 +85,43 @@ export class RequestController {
 	// Payment
 	async sendPayment(req: AuthRequest, res: Response) {
 		try { return res.status(201).json(await service.sendPaymentRequest(req.user!, req.params.id)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	// State Machine Methods
+	async scheduleRequest(req: AuthRequest, res: Response) {
+		const { error, value } = scheduleRequestSchema.validate(req.body);
+		if (error) return res.status(400).json({ message: error.message });
+		try { return res.json(await service.scheduleRequest(req.user!, req.params.id, value)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async addInfoToRequest(req: AuthRequest, res: Response) {
+		const { error, value } = addInfoSchema.validate(req.body);
+		if (error) return res.status(400).json({ message: error.message });
+		try { return res.json(await service.addInfoToRequest(req.user!, req.params.id, value.documents || [], value.notes)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async sendToGate(req: AuthRequest, res: Response) {
+		const { error, value } = sendToGateSchema.validate(req.body);
+		if (error) return res.status(400).json({ message: error.message });
+		try { return res.json(await service.sendToGate(req.user!, req.params.id)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async completeRequest(req: AuthRequest, res: Response) {
+		const { error, value } = completeRequestSchema.validate(req.body);
+		if (error) return res.status(400).json({ message: error.message });
+		try { return res.json(await service.completeRequest(req.user!, req.params.id)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async getValidTransitions(req: AuthRequest, res: Response) {
+		try { return res.json(await service.getValidTransitions(req.user!, req.params.id)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async getStateInfo(req: AuthRequest, res: Response) {
+		try { return res.json(await service.getStateInfo(req.params.state)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async getAppointmentInfo(req: AuthRequest, res: Response) {
+		try { return res.json(await service.getAppointmentInfo(req.params.id)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
 	}
 }
 

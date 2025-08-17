@@ -99,14 +99,17 @@ export default function AppointmentForm({
 
     setLoading(true);
     try {
-      // Convert datetime-local to ISO8601 format
+      // Convert datetime-local to ISO8601 format and map fields to match backend DTO
       const appointmentData = {
-        ...formData,
-        appointment_time: new Date(formData.appointment_time).toISOString()
+        appointment_time: new Date(formData.appointment_time).toISOString(),
+        appointment_location_type: formData.location_type,
+        appointment_location_id: formData.location_id,
+        gate_ref: formData.gate_ref,
+        appointment_note: formData.note
       };
       
       console.log('Submitting appointment data:', appointmentData);
-      await api.post(`/requests/${requestId}/accept`, appointmentData);
+      await api.patch(`/requests/${requestId}/schedule`, appointmentData);
       
       onSuccess();
     } catch (error: any) {
@@ -134,6 +137,8 @@ export default function AppointmentForm({
     return now.toISOString().slice(0, 16);
   };
 
+  console.log('AppointmentForm rendering with:', { requestId, requestData, formData });
+
   return (
     <form className="appointment-form" onSubmit={handleSubmit}>
       <div className="appointment-form-content">
@@ -149,18 +154,39 @@ export default function AppointmentForm({
           </div>
         </div>
 
+        {/* Appointment Date */}
+        <div className="appointment-form-group">
+          <label className="appointment-form-label" htmlFor="appointment_date">
+            Ngày lịch hẹn *
+          </label>
+          <input
+            type="date"
+            id="appointment_date"
+            className={`appointment-form-input ${errors.appointment_time ? 'error' : ''}`}
+            value={formData.appointment_time ? formData.appointment_time.split('T')[0] : ''}
+            onChange={(e) => {
+              const time = formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : '09:00';
+              handleInputChange('appointment_time', `${e.target.value}T${time}`);
+            }}
+            min={new Date().toISOString().split('T')[0]}
+            disabled={loading}
+          />
+        </div>
+
         {/* Appointment Time */}
         <div className="appointment-form-group">
           <label className="appointment-form-label" htmlFor="appointment_time">
-            Thời gian lịch hẹn *
+            Giờ lịch hẹn *
           </label>
           <input
-            type="datetime-local"
+            type="time"
             id="appointment_time"
             className={`appointment-form-input ${errors.appointment_time ? 'error' : ''}`}
-            value={formData.appointment_time}
-            onChange={(e) => handleInputChange('appointment_time', e.target.value)}
-            min={getMinDateTime()}
+            value={formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : '09:00'}
+            onChange={(e) => {
+              const date = formData.appointment_time ? formData.appointment_time.split('T')[0] : new Date().toISOString().split('T')[0];
+              handleInputChange('appointment_time', `${date}T${e.target.value}`);
+            }}
             disabled={loading}
           />
           {errors.appointment_time && (
@@ -237,6 +263,8 @@ export default function AppointmentForm({
             disabled={loading}
           />
         </div>
+
+
 
         {/* Note */}
         <div className="appointment-form-group">

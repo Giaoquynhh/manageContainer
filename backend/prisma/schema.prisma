@@ -85,7 +85,7 @@ model ServiceRequest {
     type          String   // IMPORT | EXPORT | CONVERT
     container_no  String
     eta           DateTime?
-    status        String   // PENDING | RECEIVED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
+    status        String   // PENDING | SCHEDULED | SCHEDULED_INFO_ADDED | SENT_TO_GATE | REJECTED | COMPLETED
     history       Json?
     
     // Soft-delete theo scope
@@ -124,7 +124,7 @@ model ServiceRequest {
 model DocumentFile {
     id           String   @id @default(cuid())
     request_id   String
-    type         String   // EIR | LOLO | INVOICE
+    type         String   // EIR | LOLO | INVOICE | SUPPLEMENT
     name         String
     size         Int
     version      Int

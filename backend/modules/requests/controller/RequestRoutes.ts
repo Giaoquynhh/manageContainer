@@ -40,11 +40,22 @@ router.delete('/:id', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','S
 router.post('/:id/restore', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','SystemAdmin','Accountant'), (req, res) => controller.restoreRequest(req as any, res));
 
 // Documents
-router.post('/:id/docs', requireRoles('SaleAdmin','Accountant'), upload.single('file'), (req, res) => controller.uploadDoc(req as any, res));
+router.post('/:id/docs', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser'), upload.single('file'), (req, res) => controller.uploadDoc(req as any, res));
 router.get('/:id/docs', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser'), (req, res) => controller.listDocs(req as any, res));
 router.delete('/:id/docs/:docId', requireRoles('SaleAdmin','Accountant','SystemAdmin','BusinessAdmin'), (req, res) => controller.deleteDoc(req as any, res));
 
 // Payment request
 router.post('/:id/payment-request', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.sendPayment(req as any, res));
+
+// State Machine Routes
+router.patch('/:id/schedule', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.scheduleRequest(req as any, res));
+router.patch('/:id/add-info', requireRoles('CustomerAdmin','CustomerUser'), (req, res) => controller.addInfoToRequest(req as any, res));
+router.patch('/:id/send-to-gate', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.sendToGate(req as any, res));
+router.patch('/:id/complete', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.completeRequest(req as any, res));
+
+// Helper routes
+router.get('/:id/transitions', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','SystemAdmin'), (req, res) => controller.getValidTransitions(req as any, res));
+router.get('/state/:state/info', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','SystemAdmin'), (req, res) => controller.getStateInfo(req as any, res));
+router.get('/:id/appointment', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','SystemAdmin'), (req, res) => controller.getAppointmentInfo(req as any, res));
 
 export default router;

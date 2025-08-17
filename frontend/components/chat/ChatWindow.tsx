@@ -76,6 +76,7 @@ export default function ChatWindow({
     const statusMessages: Record<string, string> = {
       'PENDING': '📋 Đơn hàng đã được tạo và đang chờ xử lý',
       'RECEIVED': '✅ Đơn hàng đã được tiếp nhận. Chat sẽ khả dụng khi được chấp nhận (APPROVED).',
+      'SCHEDULED': '📅 Đơn hàng đã được lên lịch hẹn',
       'IN_PROGRESS': '🔄 Đơn hàng đang được xử lý tại kho',
       'COMPLETED': '✅ Đơn hàng đã hoàn tất',
       'EXPORTED': '📦 Đơn hàng đã xuất kho',
@@ -206,7 +207,7 @@ export default function ChatWindow({
           shouldShowAppointment: realAppointmentTime && (currentRequestStatus === 'RECEIVED' || currentRequestStatus === 'APPROVED')
         });
         
-        if (realAppointmentTime && (currentRequestStatus === 'RECEIVED' || currentRequestStatus === 'APPROVED')) {
+        if (realAppointmentTime && (currentRequestStatus === 'RECEIVED' || currentRequestStatus === 'APPROVED' || currentRequestStatus === 'SCHEDULED')) {
           const appointmentMessage: ChatMessage = {
             id: 'appointment-' + Date.now(),
             message: getRealAppointmentMessage(realAppointmentTime, realAppointmentLocation, realAppointmentNote),

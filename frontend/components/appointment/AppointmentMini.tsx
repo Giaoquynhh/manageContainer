@@ -27,6 +27,19 @@ export default function AppointmentMini({
   useEffect(() => {
     console.log('AppointmentMini rendered for request:', requestId, requestData);
   }, [requestId, requestData]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
   const appointmentRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -35,8 +48,8 @@ export default function AppointmentMini({
   // Initialize position when opened
   useEffect(() => {
     if (isOpen && !isDragging) {
-      const initialX = typeof window !== 'undefined' ? window.innerWidth - 450 : 20;
-      const initialY = typeof window !== 'undefined' ? window.innerHeight - 600 : 20;
+      const initialX = typeof window !== 'undefined' ? (window.innerWidth - 420) / 2 : 20;
+      const initialY = typeof window !== 'undefined' ? Math.max(20, (window.innerHeight - 400) / 2) : 20;
       setPosition({ x: initialX, y: initialY });
     }
   }, [isOpen, isDragging]);
@@ -142,25 +155,43 @@ export default function AppointmentMini({
 
   // Full appointment window
   return (
-    <div
-      ref={appointmentRef}
-      className={`appointment-mini-container ${isDragging ? 'dragging' : ''}`}
-      style={{
-        position: 'fixed',
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        zIndex: 1000,
-        cursor: isDragging ? 'grabbing' : 'default'
-      }}
-    >
-      <AppointmentWindow
-        requestId={requestId}
-        requestData={requestData}
-        onClose={handleClose}
-        onSuccess={handleSuccess}
-        onMinimize={handleMinimize}
-        onDragStart={handleDragStart}
+    <>
+      {/* Overlay background */}
+      <div
+        className="appointment-overlay"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 999
+        }}
+        onClick={handleClose}
       />
-    </div>
+      
+      {/* Appointment container */}
+      <div
+        ref={appointmentRef}
+        className={`appointment-mini-container ${isDragging ? 'dragging' : ''}`}
+        style={{
+          position: 'fixed',
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          zIndex: 1000,
+          cursor: isDragging ? 'grabbing' : 'default'
+        }}
+      >
+        <AppointmentWindow
+          requestId={requestId}
+          requestData={requestData}
+          onClose={handleClose}
+          onSuccess={handleSuccess}
+          onMinimize={handleMinimize}
+          onDragStart={handleDragStart}
+        />
+      </div>
+    </>
   );
 }

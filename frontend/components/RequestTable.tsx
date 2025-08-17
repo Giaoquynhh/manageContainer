@@ -21,6 +21,7 @@ interface RequestTableProps {
       loadingId?: string;
       changeStatus?: (id: string, status: string) => void;
       sendPayment?: (id: string) => void;
+      		handleOpenSupplementPopup?: (id: string) => void;
       actLabel?: Record<string, string>;
     };
   })[];
@@ -216,6 +217,23 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                           title="Gửi thông tin chi tiết"
                         >
                           📎 Gửi thông tin
+                        </button>
+                      )}
+
+                      {/* Bổ sung thông tin button for SCHEDULED requests (Customer only) */}
+                      {item.status === 'SCHEDULED' && userRole && ['CustomerAdmin', 'CustomerUser'].includes(userRole) && (
+                        <button
+                          className="btn btn-sm btn-primary"
+                          onClick={() => {
+                            							if (item.actions?.handleOpenSupplementPopup) {
+								item.actions.handleOpenSupplementPopup(item.id);
+							} else {
+								alert('Tính năng bổ sung thông tin đang được phát triển!');
+							}
+                          }}
+                          title="Bổ sung thông tin"
+                        >
+                          📋 Bổ sung thông tin
                         </button>
                       )}
 

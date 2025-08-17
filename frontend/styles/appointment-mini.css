@@ -29,6 +29,20 @@
   transform: translateY(0);
 }
 
+/* Appointment Overlay */
+.appointment-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  backdrop-filter: blur(2px);
+}
+
 /* Appointment Mini Container */
 .appointment-mini-container {
   width: 420px;
@@ -41,6 +55,8 @@
   overflow: hidden;
   border: 1px solid var(--color-gray-200);
   transition: var(--transition-default);
+  position: relative;
+  z-index: 1000;
 }
 
 .appointment-mini-container.dragging {
@@ -159,6 +175,14 @@
   background: var(--color-danger);
 }
 
+/* Appointment Window */
+.appointment-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg-primary);
+}
+
 /* Appointment Content */
 .appointment-content {
   flex: 1;
@@ -230,6 +254,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
 }
 
 .appointment-form-content {
@@ -239,6 +264,27 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-300) var(--color-gray-100);
+}
+
+.appointment-form-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.appointment-form-content::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: 4px;
+}
+
+.appointment-form-content::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 4px;
+}
+
+.appointment-form-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
 }
 
 /* Request Info */
@@ -347,6 +393,31 @@
 }
 
 .appointment-radio-text {
+  color: var(--color-text-primary);
+}
+
+/* Checkbox Group */
+.appointment-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.appointment-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.appointment-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.appointment-checkbox-text {
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
 }
 

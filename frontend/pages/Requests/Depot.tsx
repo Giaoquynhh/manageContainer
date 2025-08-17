@@ -8,6 +8,7 @@ import RequestTable from '@components/RequestTable';
 import SearchBar from '@components/SearchBar';
 import AppointmentModal from '@components/AppointmentModal';
 import AppointmentMini from '@components/appointment/AppointmentMini';
+import SupplementDocuments from '@components/SupplementDocuments';
 
 const fetcher = (url: string) => api.get(url).then(r => r.data);
 
@@ -18,6 +19,7 @@ export default function DepotRequests() {
 	const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 	const [selectedRequestId, setSelectedRequestId] = useState<string>('');
 	const [activeAppointmentRequests, setActiveAppointmentRequests] = useState<Set<string>>(new Set());
+	const [activeSupplementRequests, setActiveSupplementRequests] = useState<Set<string>>(new Set());
 	const { data, error, isLoading } = useSWR('/requests?page=1&limit=20', fetcher);
 	const [msg, setMsg] = useState<{ text: string; ok: boolean }|null>(null);
 	const [loadingId, setLoadingId] = useState<string>('');
@@ -97,6 +99,49 @@ export default function DepotRequests() {
 	const handleAppointmentMiniSuccess = (requestId: string) => {
 		handleAppointmentClose(requestId);
 		handleAppointmentSuccess();
+	};
+
+	const toggleSupplement = (requestId: string) => {
+		setActiveSupplementRequests(prev => {
+			const newSet = new Set(prev);
+			if (newSet.has(requestId)) {
+				newSet.delete(requestId);
+			} else {
+				newSet.add(requestId);
+			}
+			return newSet;
+		});
+	};
+
+	const handleForward = async (id: string) => {
+		setMsg(null);
+		setLoadingId(id + 'FORWARDED');
+		try {
+			await api.patch(`/requests/${id}/status`, { status: 'FORWARDED' });
+			mutate('/requests?page=1&limit=20');
+			setMsg({ text: 'Đã chuyển tiếp yêu cầu thành công!', ok: true });
+		} catch (e: any) {
+			setMsg({ text: `Không thể chuyển tiếp: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
+		} finally {
+			setLoadingId('');
+		}
+	};
+
+	const handleReject = async (id: string) => {
+		const reason = window.prompt('Nhập lý do từ chối:');
+		if (!reason) return;
+		
+		setMsg(null);
+		setLoadingId(id + 'REJECTED');
+		try {
+			await api.patch(`/requests/${id}/reject`, { reason });
+			mutate('/requests?page=1&limit=20');
+			setMsg({ text: 'Đã từ chối yêu cầu thành công!', ok: true });
+		} catch (e: any) {
+			setMsg({ text: `Không thể từ chối: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
+		} finally {
+			setLoadingId('');
+		}
 	};
 
 	const sendPayment = async (id: string) => {
@@ -272,6 +317,33 @@ export default function DepotRequests() {
 					);
 				})}
 
+				{/* Supplement Documents Windows */}
+				{Array.from(activeSupplementRequests).map((requestId) => (
+					<div key={requestId} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+						<div className="bg-white rounded-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+							<div className="p-4 border-b border-gray-200">
+								<div className="flex justify-between items-center">
+									<h2 className="text-xl font-bold">Tài liệu bổ sung</h2>
+									<button
+										onClick={() => toggleSupplement(requestId)}
+										className="text-gray-500 hover:text-gray-700 text-xl"
+									>
+										✕
+									</button>
+								</div>
+							</div>
+							<div className="p-4">
+								<SupplementDocuments 
+									requestId={requestId}
+									onDocumentAction={() => {
+										// Refresh data if needed
+									}}
+								/>
+							</div>
+						</div>
+					</div>
+				))}
+
 				{/* Appointment Modal (Legacy - kept for compatibility) */}
 				<AppointmentModal
 					requestId={selectedRequestId}
@@ -343,7 +415,6 @@ function DepotRequestTable({ data, loading }: { data?: any[]; loading?: boolean 
 						<th>ETA</th>
 						<th>Trạng thái</th>
 						<th>Chứng từ</th>
-						<th>Mã tra cứu Gate</th>
 						<th>Chat</th>
 						<th>Hành động</th>
 					</tr>
@@ -394,22 +465,7 @@ function DepotRequestTable({ data, loading }: { data?: any[]; loading?: boolean 
 									<span className="no-document">-</span>
 								)}
 							</td>
-							<td>
-								<div className="gate-lookup">
-									<span className="gate-code">{item.container_no}</span>
-									<button
-										className="btn btn-sm btn-outline"
-										onClick={() => {
-											try {
-												navigator.clipboard.writeText(item.container_no);
-												// TODO: Show success message
-											} catch {}
-										}}
-									>
-										Sao chép
-									</button>
-								</div>
-							</td>
+
 							<td>
 								<button
 									className="btn btn-sm btn-outline"
@@ -432,6 +488,33 @@ function DepotRequestTable({ data, loading }: { data?: any[]; loading?: boolean 
 										>
 											{item.actions.loadingId === item.id + 'RECEIVED' ? '⏳' : '✅'} Tiếp nhận
 										</button>
+									)}
+									{item.status === 'SCHEDULED' && (
+										<>
+											<button
+												className="btn btn-sm btn-info"
+												onClick={() => toggleSupplement(item.id)}
+												title="Xem tài liệu bổ sung"
+											>
+												📋 Tài liệu bổ sung
+											</button>
+											<button
+												className="btn btn-sm btn-success"
+												disabled={item.actions.loadingId === item.id + 'FORWARDED'}
+												onClick={() => handleForward(item.id)}
+												title="Chuyển tiếp xử lý"
+											>
+												{item.actions.loadingId === item.id + 'FORWARDED' ? '⏳' : '➡️'} Chuyển tiếp
+											</button>
+											<button
+												className="btn btn-sm btn-danger"
+												disabled={item.actions.loadingId === item.id + 'REJECTED'}
+												onClick={() => handleReject(item.id)}
+												title="Từ chối yêu cầu"
+											>
+												{item.actions.loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
+											</button>
+										</>
 									)}
 									{(item.status === 'PENDING' || item.status === 'RECEIVED') && (
 										<button
