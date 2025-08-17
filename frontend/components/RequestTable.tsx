@@ -97,6 +97,11 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
     return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
   };
 
+  const isPdfFile = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    return ext === 'pdf';
+  };
+
   if (loading) {
     return (
       <div className="table-loading">
@@ -326,6 +331,46 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                   alt={selectedDocument.name}
                   className="document-image"
                 />
+              ) : isPdfFile(selectedDocument.storage_key) ? (
+                <div className="pdf-viewer">
+                  <iframe
+                    src={getFileUrl(selectedDocument.storage_key)}
+                    title={selectedDocument.name}
+                    className="pdf-iframe"
+                    style={{
+                      width: '100%',
+                      height: '500px',
+                      border: 'none',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <div className="pdf-info" style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
+                      File: {selectedDocument.name}
+                    </p>
+                    <p style={{ margin: '5px 0', fontSize: '12px', color: '#999' }}>
+                      Kích thước: {(selectedDocument.size / 1024).toFixed(1)} KB
+                    </p>
+                    <a
+                      href={getFileUrl(selectedDocument.storage_key)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="download-link"
+                      style={{
+                        display: 'inline-block',
+                        marginTop: '10px',
+                        padding: '8px 16px',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        textDecoration: 'none',
+                        borderRadius: '6px',
+                        fontSize: '14px'
+                      }}
+                    >
+                      📥 Tải xuống PDF
+                    </a>
+                  </div>
+                </div>
               ) : (
                 <div className="document-preview">
                   <div className="document-icon">📄</div>

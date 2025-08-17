@@ -53,9 +53,15 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Kiểm tra định dạng file
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-      if (!allowedTypes.includes(file.type)) {
+      // Kiểm tra định dạng file - kiểm tra cả MIME type và extension
+      const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+      
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      const hasValidMimeType = allowedMimeTypes.includes(file.type);
+      const hasValidExtension = fileExtension && allowedExtensions.includes(`.${fileExtension}`);
+      
+      if (!hasValidMimeType && !hasValidExtension) {
         setMessage('Chỉ chấp nhận file PDF hoặc ảnh (JPG, PNG)');
         return;
       }

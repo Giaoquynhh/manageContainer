@@ -14,6 +14,10 @@ components/
 ├── ui/                        # Basic UI components
 │   ├── Badge.tsx             # Status badges
 │   └── LoadingSpinner.tsx    # Loading states
+├── chat/                      # Chat system components
+│   ├── DepotChatWindow.tsx   # Main chat interface
+│   ├── DepotChatMini.tsx     # Chat trigger & management
+│   └── DepotChatDemo.tsx     # Demo version
 ├── Button.tsx                # Enhanced button component
 ├── Card.tsx                  # Card container component  
 ├── Header.tsx                # Main navigation header
@@ -42,6 +46,13 @@ components/
 
 - `Header` - Navigation header với sidebar
 - `SearchBar` - Search input với filters
+
+### 4. Chat Components 🆕
+**Mục đích:** Real-time communication system
+
+- `DepotChatWindow` - Main chat interface với API integration
+- `DepotChatMini` - Chat trigger và window management
+- `DepotChatDemo` - Demo version cho testing
 
 ## 🎨 Design Principles
 
@@ -271,6 +282,79 @@ function App() {
 - [ ] Responsive behavior tested
 - [ ] Accessibility features included
 - [ ] Performance optimized
+
+## 🆕 **Chat System Integration**
+
+### **Overview**
+Hệ thống chat mới được tích hợp vào component system để hỗ trợ giao tiếp real-time giữa **Depot Staff** và **Customer** về các đơn hàng container.
+
+### **Chat Components Architecture**
+
+#### **DepotChatWindow.tsx**
+**Chức năng:** Main chat interface với full API integration
+- **Props:** `requestId`, `containerNo`, `requestType`, `requestStatus`
+- **Features:** Message loading, sending, real-time polling, status-based activation
+- **API Integration:** Backend chat endpoints, fallback demo mode
+
+#### **DepotChatMini.tsx**
+**Chức năng:** Chat trigger và window management
+- **States:** Open, minimized, closed
+- **Features:** Draggable positioning, minimize/restore, status-based visibility
+- **Integration:** Renders DepotChatWindow khi mở
+
+#### **DepotChatDemo.tsx**
+**Chức năng:** Demo version cho testing và offline mode
+- **Features:** Hardcoded demo messages, simulated sending, status display
+- **Use Case:** Testing UI logic, offline functionality, development
+
+### **Integration Points**
+- **Depot Request Table:** Thay thế chat button cũ
+- **Status-based Activation:** Chat chỉ hiển thị khi request status ≥ SCHEDULED
+- **Real-time Updates:** Polling mỗi 3 giây để cập nhật tin nhắn
+- **Fallback Mechanism:** Demo mode khi backend không khả dụng
+
+### **Usage Examples**
+```tsx
+// Basic usage trong Depot Request Table
+<DepotChatMini
+  requestId={item.id}
+  containerNo={item.container_no}
+  requestType={item.type}
+  requestStatus={item.status}
+/>
+
+// Direct usage của DepotChatWindow
+<DepotChatWindow
+  requestId="REQ-123"
+  containerNo="CONT-456"
+  requestType="IMPORT"
+  requestStatus="SCHEDULED"
+  onClose={() => setChatOpen(false)}
+  onMinimize={() => setChatMinimized(true)}
+  onMouseDown={handleMouseDown}
+/>
+```
+
+### **Status Requirements**
+```typescript
+const isChatAllowed = requestStatus === 'SCHEDULED' || 
+                     requestStatus === 'APPROVED' || 
+                     requestStatus === 'IN_PROGRESS' || 
+                     requestStatus === 'COMPLETED' || 
+                     requestStatus === 'EXPORTED';
+```
+
+### **API Endpoints Used**
+- `GET /chat/request/${requestId}` - Initialize chat room
+- `GET /chat/${chatRoomId}/messages` - Load messages
+- `POST /chat/${chatRoomId}/messages` - Send message
+
+### **CSS Integration**
+- **File:** `styles/globals.css`
+- **Classes:** `.depot-chat-*` series
+- **Features:** Responsive design, draggable positioning, animations
+
+**Tham chiếu chi tiết:** Xem `docs/CHAT_MINI_SYSTEM.md`
 
 ### Pull Request Template
 ```markdown

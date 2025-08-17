@@ -59,6 +59,7 @@ Hệ thống **Tobe Depot Management System (TDMS)** là nền tảng phần m�
 - Xuất phiếu EIR/LOLO & hóa đơn.
 - Gửi yêu cầu thanh toán.
 - Kết nối hệ thống Reuse container.
+- **🆕 Hệ thống Chat:** Giao tiếp real-time giữa depot staff và customer về đơn hàng.
 
 ### 3.4 Quản lý cổng bãi (Module 4)
 - Đối chiếu phiếu hẹn với lịch hẹn.
@@ -98,6 +99,43 @@ Hệ thống **Tobe Depot Management System (TDMS)** là nền tảng phần m�
 ## 4. Các điểm kiểm soát quan trọng
 - **Tài liệu**: Booking, hải quan, EIR/LOLO, hóa đơn.
 - **Chất lượng**: Container, seal, hàng hóa.
+
+## 5. 🆕 **Hệ thống Chat (Module Chat)**
+
+### **Tổng quan**
+Hệ thống chat mới được tích hợp vào TDMS để hỗ trợ giao tiếp real-time giữa **Depot Staff** và **Customer** về các đơn hàng container.
+
+### **Features chính**
+- ✅ **Status-based Activation:** Chat chỉ hoạt động khi request status ≥ SCHEDULED
+- ✅ **Real-time Communication:** WebSocket integration cho instant messaging
+- ✅ **Message Persistence:** Lưu trữ tin nhắn vào database
+- ✅ **Role-based Access:** Kiểm tra quyền theo user role và tenant
+- ✅ **Container-specific Chat:** Mỗi container có chat room riêng biệt
+
+### **Trạng thái được phép chat**
+```typescript
+const allowedStatuses = [
+  'SCHEDULED',        // Đơn hàng đã được lên lịch
+  'APPROVED',         // Đơn hàng đã được chấp nhận
+  'IN_PROGRESS',      // Đơn hàng đang được xử lý
+  'COMPLETED',        // Đơn hàng đã hoàn tất
+  'EXPORTED'          // Đơn hàng đã xuất kho
+];
+```
+
+### **API Endpoints**
+- `POST /chat` - Tạo chat room mới
+- `GET /chat/request/:request_id` - Lấy chat room theo request
+- `POST /chat/:chat_room_id/messages` - Gửi tin nhắn
+- `GET /chat/:chat_room_id/messages` - Lấy danh sách tin nhắn
+- `GET /chat/user/rooms` - Lấy chat rooms của user
+
+### **Tích hợp với Frontend**
+- **DepotChatWindow:** Main chat interface với API integration
+- **DepotChatMini:** Chat trigger và window management
+- **DepotChatDemo:** Demo version cho testing
+
+**Tham chiếu chi tiết:** Xem `backend/docs/CHAT_SYSTEM.md`
 - **An ninh**: Camera, kiểm soát niêm phong, giám sát nâng/hạ.
 
 ---

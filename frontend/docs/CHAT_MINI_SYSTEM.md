@@ -4,6 +4,102 @@
 
 Hệ thống **Chat Mini** là một giao diện chat hiện đại, dễ sử dụng được thiết kế để thay thế giao diện chat thô sơ hiện tại. System này cung cấp trải nghiệm người dùng tốt hơn với khả năng di chuyển, thu nhỏ và thiết kế responsive.
 
+## 🆕 **Depot Chat System (Mới)**
+
+### **Tổng quan Depot Chat**
+Hệ thống chat mới được thiết kế đặc biệt cho **Depot Staff** để giao tiếp với **Customer** về các đơn hàng container. Chat được kích hoạt khi đơn hàng ở trạng thái `SCHEDULED` trở lên.
+
+### **Components Depot Chat**
+
+```
+components/chat/
+├── DepotChatWindow.tsx         # Main chat window với API integration
+├── DepotChatMini.tsx           # Chat trigger và window management
+└── DepotChatDemo.tsx           # Demo version cho testing
+```
+
+### **Depot Chat Features**
+- ✅ **Status-based Activation:** Chat chỉ hoạt động khi request status ≥ SCHEDULED
+- ✅ **Real-time API Integration:** Kết nối với backend chat system
+- ✅ **Message Polling:** Tự động cập nhật tin nhắn mới mỗi 3 giây
+- ✅ **Draggable Interface:** Cửa sổ chat có thể di chuyển tự do
+- ✅ **Minimize/Restore:** Khả năng thu nhỏ và khôi phục chat window
+- ✅ **Fallback Demo Mode:** Hoạt động offline khi backend không khả dụng
+- ✅ **🆕 Supplement Notification:** Tự động thông báo khi khách hàng bổ sung thông tin
+
+### **Status Requirements**
+```typescript
+const isChatAllowed = requestStatus === 'SCHEDULED' || 
+                     requestStatus === 'APPROVED' || 
+                     requestStatus === 'IN_PROGRESS' || 
+                     requestStatus === 'COMPLETED' || 
+                     requestStatus === 'EXPORTED';
+```
+
+### **API Endpoints Used**
+- `GET /chat/request/${requestId}` - Khởi tạo hoặc lấy chat room
+- `GET /chat/${chatRoomId}/messages` - Lấy danh sách tin nhắn
+- `POST /chat/${chatRoomId}/messages` - Gửi tin nhắn mới
+
+### **Message Structure**
+```typescript
+interface ChatMessage {
+  id: string;
+  message: string;
+  sender: {
+    id: string;
+    full_name: string;
+    email: string;
+    role: string;
+  };
+  createdAt: string;
+}
+```
+
+### **🆕 Supplement Notification System**
+```typescript
+interface DepotChatWindowProps {
+  // ... existing props
+  hasSupplementDocuments?: boolean;      // Có tài liệu bổ sung không
+  lastSupplementUpdate?: string;         // Thời gian cập nhật cuối cùng
+}
+```
+
+**Tính năng:** Tự động hiển thị thông báo system message khi khách hàng bổ sung thông tin cho đơn hàng.
+
+**Message Format:**
+```
+📋 **THÔNG BÁO:** Khách hàng đã bổ sung thông tin cho đơn hàng!
+
+📅 Thời gian cập nhật: 17/08/2025 11:56:39
+📦 Container: ISO 1236
+
+Vui lòng kiểm tra và xử lý thông tin mới.
+```
+
+**Styling:** System message có background màu vàng cam với border và shadow đặc biệt để nổi bật.
+
+### **Usage trong Depot Request Table**
+```tsx
+<DepotChatMini
+  requestId={item.id}
+  containerNo={item.container_no}
+  requestType={item.type}
+  requestStatus={item.status}
+/>
+```
+
+### **Integration với Depot.tsx**
+```tsx
+// Thay thế chat button cũ
+<DepotChatMini
+  requestId={item.id}
+  containerNo={item.container_no}
+  requestType={item.type}
+  requestStatus={item.status}
+/>
+```
+
 ## 📁 Cấu trúc Components
 
 ```
@@ -420,6 +516,16 @@ function RequestPage() {
 - [x] Error handling
 - [x] Responsive design
 
+### ✅ Depot Chat Features (Mới)
+- [x] **Status-based Activation:** Chat chỉ hoạt động từ SCHEDULED trở lên
+- [x] **Backend Integration:** Kết nối với chat API thật
+- [x] **Message Persistence:** Tin nhắn được lưu vào database
+- [x] **Real-time Updates:** Polling mỗi 3 giây để cập nhật tin nhắn
+- [x] **Fallback Demo Mode:** Hoạt động offline khi backend fail
+- [x] **Container-specific Chat:** Mỗi container có chat room riêng
+- [x] **Role-based Access:** Depot staff và customer có thể chat
+- [x] **Request Status Integration:** Chat status theo trạng thái đơn hàng
+
 ### ✅ UI/UX Features
 - [x] Smooth animations (fade-in, scale)
 - [x] Hover effects
@@ -531,6 +637,28 @@ useEffect(() => {
    - Test trên different screen sizes
    - Check CSS media queries
    - Verify viewport meta tag
+
+### Depot Chat Specific Issues
+
+5. **Chat không kích hoạt:**
+   - Kiểm tra `requestStatus` có ≥ SCHEDULED không
+   - Verify `isChatAllowed` logic
+   - Check backend chat service status
+
+6. **Tin nhắn không gửi được:**
+   - Kiểm tra backend chat API endpoints
+   - Verify chat room creation
+   - Check user permissions và role
+
+7. **Customer không thấy tin nhắn:**
+   - Verify backend message persistence
+   - Check chat room participants
+   - Verify real-time polling hoạt động
+
+8. **Demo mode không hoạt động:**
+   - Check fallback logic trong DepotChatWindow
+   - Verify demo message structure
+   - Check console errors
 
 ### Debug Tips
 ```tsx

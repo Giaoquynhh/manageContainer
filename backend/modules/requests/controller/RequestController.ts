@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../../../shared/middlewares/auth';
 import service from '../service/RequestService';
 import { createRequestSchema, updateRequestStatusSchema, queryRequestSchema, uploadDocSchema, rejectRequestSchema, softDeleteRequestSchema, restoreRequestSchema, scheduleRequestSchema, addInfoSchema, sendToGateSchema, completeRequestSchema } from '../dto/RequestDtos';
+import path from 'path';
 
 export class RequestController {
 	async create(req: AuthRequest, res: Response) {
@@ -16,8 +17,14 @@ export class RequestController {
 			
 			// Validate file nếu có
 			if (file) {
-				const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-				if (!allowedTypes.includes(file.mimetype)) {
+				const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+				const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+				
+				const fileExtension = path.extname(file.originalname).toLowerCase();
+				const hasValidMimeType = allowedMimeTypes.includes(file.mimetype);
+				const hasValidExtension = allowedExtensions.includes(fileExtension);
+				
+				if (!hasValidMimeType && !hasValidExtension) {
 					return res.status(400).json({ message: 'Chỉ chấp nhận file PDF hoặc ảnh (JPG, PNG)' });
 				}
 				

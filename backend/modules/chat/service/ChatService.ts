@@ -59,10 +59,10 @@ export class ChatService {
 		const chatRoom = await repo.findChatRoomById(chat_room_id);
 		if (chatRoom && chatRoom.request) {
 			const requestStatus = chatRoom.request.status;
-			const allowedStatuses = ['APPROVED', 'IN_PROGRESS', 'COMPLETED', 'EXPORTED'];
+			const allowedStatuses = ['SCHEDULED', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'EXPORTED'];
 			
 			if (!allowedStatuses.includes(requestStatus)) {
-				throw new Error('Chỉ có thể chat khi đơn hàng đã được chấp nhận');
+				throw new Error('Chỉ có thể chat khi đơn hàng đã được lên lịch (SCHEDULED) trở lên');
 			}
 		}
 

@@ -27,7 +27,8 @@ export default function UploadModal({ requestId, visible, onClose, onSuccess }: 
         // Validate files
         const validFiles = selectedFiles.filter(file => {
             const maxSize = 10 * 1024 * 1024; // 10MB
-            const allowedTypes = ['pdf', 'jpg', 'jpeg', 'png'];
+            const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+            const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
             const fileExtension = file.name.split('.').pop()?.toLowerCase();
             
             if (file.size > maxSize) {
@@ -35,7 +36,10 @@ export default function UploadModal({ requestId, visible, onClose, onSuccess }: 
                 return false;
             }
             
-            if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+            const hasValidMimeType = allowedMimeTypes.includes(file.type);
+            const hasValidExtension = fileExtension && allowedExtensions.includes(fileExtension);
+            
+            if (!hasValidMimeType && !hasValidExtension) {
                 alert(`File ${file.name} không được hỗ trợ. Chỉ chấp nhận PDF, JPG, JPEG, PNG`);
                 return false;
             }
@@ -148,10 +152,14 @@ export default function UploadModal({ requestId, visible, onClose, onSuccess }: 
         // Validate and add dropped files
         const validFiles = droppedFiles.filter(file => {
             const maxSize = 10 * 1024 * 1024;
-            const allowedTypes = ['pdf', 'jpg', 'jpeg', 'png'];
+            const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+            const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
             const fileExtension = file.name.split('.').pop()?.toLowerCase();
             
-            return file.size <= maxSize && fileExtension && allowedTypes.includes(fileExtension);
+            const hasValidMimeType = allowedMimeTypes.includes(file.type);
+            const hasValidExtension = fileExtension && allowedExtensions.includes(fileExtension);
+            
+            return file.size <= maxSize && (hasValidMimeType || hasValidExtension);
         });
 
         const newFiles: FileInfo[] = validFiles.map(file => ({

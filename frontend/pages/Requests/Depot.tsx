@@ -1,211 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Header from '@components/Header';
-import useSWR, { mutate } from 'swr';
+import useSWR from 'swr';
 import { api } from '@services/api';
 import Modal from '@components/Modal';
 import Button from '@components/Button';
-import RequestTable from '@components/RequestTable';
 import SearchBar from '@components/SearchBar';
 import AppointmentModal from '@components/AppointmentModal';
 import AppointmentMini from '@components/appointment/AppointmentMini';
 import SupplementDocuments from '@components/SupplementDocuments';
+import DepotRequestTable from './components/DepotRequestTable';
+import DocumentViewerModal from './components/DocumentViewerModal';
+import { useDepotActions } from './hooks/useDepotActions';
 
 const fetcher = (url: string) => api.get(url).then(r => r.data);
 
 export default function DepotRequests() {
-	const [searchQuery, setSearchQuery] = useState('');
-	const [filterType, setFilterType] = useState('all');
-	const [filterStatus, setFilterStatus] = useState('all');
-	const [showAppointmentModal, setShowAppointmentModal] = useState(false);
-	const [selectedRequestId, setSelectedRequestId] = useState<string>('');
-	const [activeAppointmentRequests, setActiveAppointmentRequests] = useState<Set<string>>(new Set());
-	const [activeSupplementRequests, setActiveSupplementRequests] = useState<Set<string>>(new Set());
 	const { data, error, isLoading } = useSWR('/requests?page=1&limit=20', fetcher);
-	const [msg, setMsg] = useState<{ text: string; ok: boolean }|null>(null);
-	const [loadingId, setLoadingId] = useState<string>('');
-	const [me, setMe] = useState<any>(null);
-
-	const actLabel: Record<string, string> = {
-		RECEIVED: 'Tiếp nhận',
-		REJECTED: 'Từ chối',
-		COMPLETED: 'Hoàn tất',
-		EXPORTED: 'Đã xuất kho'
-	};
-
-	// Load user info
-	useEffect(() => {
-		api.get('/auth/me').then(r => setMe(r.data)).catch(() => {});
-	}, []);
-
-	const changeStatus = async (id: string, status: string) => {
-		setMsg(null);
-		setLoadingId(id + status);
-		try {
-			let payload: any = { status };
-			if (status === 'REJECTED') {
-				const reason = window.prompt('Nhập lý do từ chối');
-				if (!reason) {
-					setLoadingId('');
-					return;
-				}
-				payload.reason = reason;
-				await api.patch(`/requests/${id}/status`, payload);
-					} else if (status === 'RECEIVED') {
-			// Open appointment mini for RECEIVED status
-			setActiveAppointmentRequests(prev => {
-				const newSet = new Set(prev).add(id);
-				console.log('Opening AppointmentMini for request:', id, 'Active requests:', Array.from(newSet));
-				return newSet;
-			});
-			setLoadingId('');
-			return;
-			} else {
-				await api.patch(`/requests/${id}/status`, payload);
-			}
-			mutate('/requests?page=1&limit=20');
-			setMsg({ text: `${actLabel[status] || 'Cập nhật'} yêu cầu thành công`, ok: true });
-		} catch (e: any) {
-			setMsg({ text: `Không thể ${actLabel[status]?.toLowerCase() || 'cập nhật'}: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
-		} finally {
-			setLoadingId('');
-		}
-	};
-
-	const handleAppointmentSuccess = () => {
-		mutate('/requests?page=1&limit=20');
-		setMsg({ text: 'Đã tiếp nhận yêu cầu và tạo lịch hẹn thành công!', ok: true });
-	};
-
-	const toggleAppointment = (requestId: string) => {
-		setActiveAppointmentRequests(prev => {
-			const newSet = new Set(prev);
-			if (newSet.has(requestId)) {
-				newSet.delete(requestId);
-			} else {
-				newSet.add(requestId);
-			}
-			return newSet;
-		});
-	};
-
-	const handleAppointmentClose = (requestId: string) => {
-		setActiveAppointmentRequests(prev => {
-			const newSet = new Set(prev);
-			newSet.delete(requestId);
-			return newSet;
-		});
-	};
-
-	const handleAppointmentMiniSuccess = (requestId: string) => {
-		handleAppointmentClose(requestId);
-		handleAppointmentSuccess();
-	};
-
-	const toggleSupplement = (requestId: string) => {
-		setActiveSupplementRequests(prev => {
-			const newSet = new Set(prev);
-			if (newSet.has(requestId)) {
-				newSet.delete(requestId);
-			} else {
-				newSet.add(requestId);
-			}
-			return newSet;
-		});
-	};
-
-	const handleForward = async (id: string) => {
-		setMsg(null);
-		setLoadingId(id + 'FORWARDED');
-		try {
-			await api.patch(`/requests/${id}/status`, { status: 'FORWARDED' });
-			mutate('/requests?page=1&limit=20');
-			setMsg({ text: 'Đã chuyển tiếp yêu cầu thành công!', ok: true });
-		} catch (e: any) {
-			setMsg({ text: `Không thể chuyển tiếp: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
-		} finally {
-			setLoadingId('');
-		}
-	};
-
-	const handleReject = async (id: string) => {
-		const reason = window.prompt('Nhập lý do từ chối:');
-		if (!reason) return;
-		
-		setMsg(null);
-		setLoadingId(id + 'REJECTED');
-		try {
-			await api.patch(`/requests/${id}/reject`, { reason });
-			mutate('/requests?page=1&limit=20');
-			setMsg({ text: 'Đã từ chối yêu cầu thành công!', ok: true });
-		} catch (e: any) {
-			setMsg({ text: `Không thể từ chối: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
-		} finally {
-			setLoadingId('');
-		}
-	};
-
-	const sendPayment = async (id: string) => {
-		setMsg(null);
-		setLoadingId(id + 'PAY');
-		try {
-			await api.post(`/requests/${id}/payment-request`, {});
-			setMsg({ text: 'Đã gửi yêu cầu thanh toán', ok: true });
-		} catch (e: any) {
-			setMsg({ text: `Gửi yêu cầu thanh toán thất bại: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
-		} finally {
-			setLoadingId('');
-		}
-	};
-
-	const softDeleteRequest = async (id: string, scope: 'depot' | 'customer') => {
-		setMsg(null);
-		setLoadingId(id + 'DELETE');
-		try {
-			await api.delete(`/requests/${id}?scope=${scope}`);
-			mutate('/requests?page=1&limit=20');
-			setMsg({ text: `Đã xóa khỏi danh sách ${scope === 'depot' ? 'Kho' : 'Khách hàng'}`, ok: true });
-		} catch (e: any) {
-			setMsg({ text: `Xóa thất bại: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
-		} finally {
-			setLoadingId('');
-		}
-	};
-
-	const restoreRequest = async (id: string, scope: 'depot' | 'customer') => {
-		setMsg(null);
-		setLoadingId(id + 'RESTORE');
-		try {
-			await api.post(`/requests/${id}/restore?scope=${scope}`);
-			mutate('/requests?page=1&limit=20');
-			setMsg({ text: `Đã khôi phục trong danh sách ${scope === 'depot' ? 'Kho' : 'Khách hàng'}`, ok: true });
-		} catch (e: any) {
-			setMsg({ text: `Khôi phục thất bại: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
-		} finally {
-			setLoadingId('');
-		}
-	};
-
-	const handleSearch = (query: string) => {
-		setSearchQuery(query);
-		// TODO: Implement search functionality
-	};
-
-	const handleFilterChange = (filter: string) => {
-		setFilterType(filter);
-		// TODO: Implement filter functionality
-	};
-
-	const handleStatusFilterChange = (status: string) => {
-		setFilterStatus(status);
-		// TODO: Implement status filter functionality
-	};
+	const [state, actions] = useDepotActions();
 
 	// Filter data based on search and filter
 	const filteredData = data?.data?.filter((item: any) => {
-		const matchesSearch = searchQuery === '' ||
-			item.container_no.toLowerCase().includes(searchQuery.toLowerCase());
-		const matchesTypeFilter = filterType === 'all' || item.type === filterType;
-		const matchesStatusFilter = filterStatus === 'all' || item.status === filterStatus;
+		const matchesSearch = state.searchQuery === '' ||
+			item.container_no.toLowerCase().includes(state.searchQuery.toLowerCase());
+		const matchesTypeFilter = state.filterType === 'all' || item.type === state.filterType;
+		const matchesStatusFilter = state.filterStatus === 'all' || item.status === state.filterStatus;
 		return matchesSearch && matchesTypeFilter && matchesStatusFilter;
 	});
 
@@ -213,14 +31,31 @@ export default function DepotRequests() {
 	const requestsWithActions = filteredData?.map((item: any) => ({
 		...item,
 		actions: {
-			changeStatus,
-			sendPayment,
-			softDeleteRequest,
-			restoreRequest,
-			loadingId,
-			actLabel
+			changeStatus: actions.changeStatus,
+			sendPayment: actions.sendPayment,
+			softDeleteRequest: actions.softDeleteRequest,
+			restoreRequest: actions.restoreRequest,
+			loadingId: state.loadingId,
+			actLabel: {
+				RECEIVED: 'Tiếp nhận',
+				REJECTED: 'Từ chối',
+				COMPLETED: 'Hoàn tất',
+				EXPORTED: 'Đã xuất kho'
+			}
 		}
 	}));
+
+	const handleSearch = (query: string) => {
+		actions.setSearchQuery(query);
+	};
+
+	const handleFilterChange = (filter: string) => {
+		actions.setFilterType(filter);
+	};
+
+	const handleStatusFilterChange = (status: string) => {
+		actions.setFilterStatus(status);
+	};
 
 	return (
 		<>
@@ -253,13 +88,13 @@ export default function DepotRequests() {
 							type="text"
 							className="search-input"
 							placeholder="Tìm kiếm theo mã container..."
-							value={searchQuery}
+							value={state.searchQuery}
 							onChange={(e) => handleSearch(e.target.value)}
 						/>
 					</div>
 					<select
 						className="filter-select"
-						value={filterType}
+						value={state.filterType}
 						onChange={(e) => handleFilterChange(e.target.value)}
 					>
 						<option value="all">Tất cả loại</option>
@@ -269,7 +104,7 @@ export default function DepotRequests() {
 					</select>
 					<select
 						className="filter-select"
-						value={filterStatus}
+						value={state.filterStatus}
 						onChange={(e) => handleStatusFilterChange(e.target.value)}
 					>
 						<option value="all">Tất cả trạng thái</option>
@@ -285,18 +120,32 @@ export default function DepotRequests() {
 				<DepotRequestTable
 					data={requestsWithActions}
 					loading={isLoading}
-					userRole={me?.role || me?.roles?.[0]}
+					userRole={state.me?.role || state.me?.roles?.[0]}
+					onDocumentClick={actions.handleDocumentClick}
+					onToggleSupplement={actions.toggleSupplement}
+					onForward={actions.handleForward}
+					onReject={actions.handleReject}
+					onChangeStatus={actions.changeStatus}
+					onSendPayment={actions.sendPayment}
+					onSoftDelete={(id: string, scope: string) => actions.softDeleteRequest(id, scope as 'depot' | 'customer')}
+					loadingId={state.loadingId}
+					actLabel={{
+						RECEIVED: 'Tiếp nhận',
+						REJECTED: 'Từ chối',
+						COMPLETED: 'Hoàn tất',
+						EXPORTED: 'Đã xuất kho'
+					}}
 				/>
 
 				{/* Status Message */}
-				{msg && (
-					<div className={`status-message ${msg.ok ? 'success' : 'error'}`}>
-						{msg.text}
+				{state.msg && (
+					<div className={`status-message ${state.msg.ok ? 'success' : 'error'}`}>
+						{state.msg.text}
 					</div>
 				)}
 
 				{/* Appointment Mini Windows */}
-				{Array.from(activeAppointmentRequests).map((requestId, index) => {
+				{Array.from(state.activeAppointmentRequests).map((requestId, index) => {
 					const request = data?.data?.find((r: any) => r.id === requestId);
 					if (!request) return null;
 					
@@ -311,21 +160,21 @@ export default function DepotRequests() {
 								status: request.status,
 								created_by: request.created_by
 							}}
-							onClose={() => handleAppointmentClose(requestId)}
-							onSuccess={() => handleAppointmentMiniSuccess(requestId)}
+							onClose={() => actions.handleAppointmentClose(requestId)}
+							onSuccess={() => actions.handleAppointmentMiniSuccess(requestId)}
 						/>
 					);
 				})}
 
 				{/* Supplement Documents Windows */}
-				{Array.from(activeSupplementRequests).map((requestId) => (
+				{Array.from(state.activeSupplementRequests).map((requestId) => (
 					<div key={requestId} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 						<div className="bg-white rounded-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
 							<div className="p-4 border-b border-gray-200">
 								<div className="flex justify-between items-center">
 									<h2 className="text-xl font-bold">Tài liệu bổ sung</h2>
 									<button
-										onClick={() => toggleSupplement(requestId)}
+										onClick={() => actions.toggleSupplement(requestId)}
 										className="text-gray-500 hover:text-gray-700 text-xl"
 									>
 										✕
@@ -344,236 +193,22 @@ export default function DepotRequests() {
 					</div>
 				))}
 
+				{/* Document Viewer Modal */}
+				<DocumentViewerModal
+					document={state.selectedDocument}
+					visible={state.showImageModal}
+					onClose={actions.closeDocumentModal}
+				/>
+
 				{/* Appointment Modal (Legacy - kept for compatibility) */}
 				<AppointmentModal
-					requestId={selectedRequestId}
-					visible={showAppointmentModal}
-					onClose={() => setShowAppointmentModal(false)}
-					onSuccess={handleAppointmentSuccess}
+					requestId={state.selectedRequestId}
+					visible={state.showAppointmentModal}
+					onClose={() => actions.setShowAppointmentModal(false)}
+					onSuccess={actions.handleAppointmentSuccess}
 				/>
 			</main>
 		</>
-	);
-}
-
-// Custom Depot Request Table Component
-function DepotRequestTable({ data, loading }: { data?: any[]; loading?: boolean }) {
-	const getStatusBadge = (status: string) => {
-		const statusConfig: Record<string, { label: string; className: string }> = {
-			PENDING: { label: 'Chờ xử lý', className: 'status-pending' },
-			RECEIVED: { label: 'Đã nhận', className: 'status-received' },
-			COMPLETED: { label: 'Hoàn thành', className: 'status-completed' },
-			EXPORTED: { label: 'Đã xuất', className: 'status-exported' },
-			REJECTED: { label: 'Từ chối', className: 'status-rejected' },
-			IN_YARD: { label: 'Trong kho', className: 'status-in-yard' },
-			LEFT_YARD: { label: 'Đã rời kho', className: 'status-left-yard' }
-		};
-
-		const config = statusConfig[status] || { label: status, className: 'status-default' };
-		return (
-			<span className={`status-badge ${config.className}`}>
-				{config.label}
-			</span>
-		);
-	};
-
-	const getTypeLabel = (type: string) => {
-		const typeLabels: Record<string, string> = {
-			IMPORT: 'Nhập',
-			EXPORT: 'Xuất',
-			CONVERT: 'Chuyển đổi'
-		};
-		return typeLabels[type as keyof typeof typeLabels] || type;
-	};
-
-	if (loading) {
-		return (
-			<div className="table-loading">
-				<div className="loading-spinner"></div>
-				<p>Đang tải dữ liệu...</p>
-			</div>
-		);
-	}
-
-	if (!data || data.length === 0) {
-		return (
-			<div className="table-empty">
-				<div className="empty-icon">📋</div>
-				<p>Chưa có yêu cầu nào</p>
-				<small>Không có yêu cầu nào để xử lý</small>
-			</div>
-		);
-	}
-
-	return (
-		<div className="table-container">
-			<table className="table table-modern">
-				<thead>
-					<tr>
-						<th>Loại</th>
-						<th>Container</th>
-						<th>ETA</th>
-						<th>Trạng thái</th>
-						<th>Chứng từ</th>
-						<th>Chat</th>
-						<th>Hành động</th>
-					</tr>
-				</thead>
-				<tbody>
-					{data.map((item) => (
-						<tr key={item.id} className="table-row">
-							<td>
-								<span className="type-label">
-									{getTypeLabel(item.type)}
-								</span>
-							</td>
-							<td>
-								<span className="container-id">
-									{item.container_no}
-								</span>
-							</td>
-							<td>
-								{item.eta ? (
-									<span className="eta-date">
-										{new Date(item.eta).toLocaleString('vi-VN')}
-									</span>
-								) : (
-									<span className="eta-empty">-</span>
-								)}
-							</td>
-							<td>
-								{getStatusBadge(item.status)}
-							</td>
-							<td>
-								{item.documents && item.documents.length > 0 ? (
-									<div className="document-badges">
-										{item.documents.map((doc: any) => (
-											<button
-												key={doc.id}
-												className="document-badge clickable"
-												onClick={() => {
-													// TODO: Implement document viewer
-													window.open(`/backend/requests/documents/${doc.storage_key}`, '_blank');
-												}}
-												title={`Xem ${doc.name}`}
-											>
-												📎 {doc.name}
-											</button>
-										))}
-									</div>
-								) : (
-									<span className="no-document">-</span>
-								)}
-							</td>
-
-							<td>
-								<button
-									className="btn btn-sm btn-outline"
-									onClick={() => {
-										// TODO: Implement chat functionality
-										alert('Chat feature coming soon!');
-									}}
-									title="Mở chat"
-								>
-									💬 Chat
-								</button>
-							</td>
-							<td>
-								<div className="action-buttons">
-									{item.status === 'PENDING' && (
-										<button
-											className="btn btn-sm btn-primary"
-											disabled={item.actions.loadingId === item.id + 'RECEIVED'}
-											onClick={() => item.actions.changeStatus(item.id, 'RECEIVED')}
-										>
-											{item.actions.loadingId === item.id + 'RECEIVED' ? '⏳' : '✅'} Tiếp nhận
-										</button>
-									)}
-									{item.status === 'SCHEDULED' && (
-										<>
-											<button
-												className="btn btn-sm btn-info"
-												onClick={() => toggleSupplement(item.id)}
-												title="Xem tài liệu bổ sung"
-											>
-												📋 Tài liệu bổ sung
-											</button>
-											<button
-												className="btn btn-sm btn-success"
-												disabled={item.actions.loadingId === item.id + 'FORWARDED'}
-												onClick={() => handleForward(item.id)}
-												title="Chuyển tiếp xử lý"
-											>
-												{item.actions.loadingId === item.id + 'FORWARDED' ? '⏳' : '➡️'} Chuyển tiếp
-											</button>
-											<button
-												className="btn btn-sm btn-danger"
-												disabled={item.actions.loadingId === item.id + 'REJECTED'}
-												onClick={() => handleReject(item.id)}
-												title="Từ chối yêu cầu"
-											>
-												{item.actions.loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
-											</button>
-										</>
-									)}
-									{(item.status === 'PENDING' || item.status === 'RECEIVED') && (
-										<button
-											className="btn btn-sm btn-danger"
-											disabled={item.actions.loadingId === item.id + 'REJECTED'}
-											onClick={() => item.actions.changeStatus(item.id, 'REJECTED')}
-										>
-											{item.actions.loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
-										</button>
-									)}
-									{item.status === 'RECEIVED' && (
-										<button
-											className="btn btn-sm btn-success"
-											disabled={item.actions.loadingId === item.id + 'COMPLETED'}
-											onClick={() => item.actions.changeStatus(item.id, 'COMPLETED')}
-										>
-											{item.actions.loadingId === item.id + 'COMPLETED' ? '⏳' : '✅'} Hoàn tất
-										</button>
-									)}
-									{(item.status === 'RECEIVED' || item.status === 'COMPLETED') && (
-										<button
-											className="btn btn-sm btn-warning"
-											disabled={item.actions.loadingId === item.id + 'EXPORTED'}
-											onClick={() => item.actions.changeStatus(item.id, 'EXPORTED')}
-										>
-											{item.actions.loadingId === item.id + 'EXPORTED' ? '⏳' : '📦'} Xuất kho
-										</button>
-									)}
-									{item.status === 'COMPLETED' && (
-										<button
-											className="btn btn-sm btn-info"
-											disabled={item.actions.loadingId === item.id + 'PAY'}
-											onClick={() => item.actions.sendPayment(item.id)}
-										>
-											{item.actions.loadingId === item.id + 'PAY' ? '⏳' : '💰'} Thanh toán
-										</button>
-									)}
-									{/* Soft delete buttons */}
-									{['REJECTED', 'COMPLETED', 'EXPORTED'].includes(item.status) && (
-										<button
-											className="btn btn-sm btn-outline"
-											disabled={item.actions.loadingId === item.id + 'DELETE'}
-											onClick={() => {
-												if (window.confirm('Xóa khỏi danh sách Kho?\nRequest vẫn hiển thị trạng thái Từ chối bên Khách hàng.')) {
-													item.actions.softDeleteRequest(item.id, 'depot');
-												}
-											}}
-											title="Xóa khỏi danh sách Kho"
-										>
-											{item.actions.loadingId === item.id + 'DELETE' ? '⏳' : '🗑️'} Xóa
-										</button>
-									)}
-								</div>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-		</div>
 	);
 }
 

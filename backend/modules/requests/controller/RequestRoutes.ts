@@ -13,9 +13,24 @@ const upload = multer({
 	storage: multer.memoryStorage(), // Lưu file trong memory để xử lý
 	limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 	fileFilter: (_req: any, file: any, cb: any) => {
-		const allowed = ['application/pdf','image/jpeg','image/png','image/jpg'];
-		if (allowed.includes(file.mimetype)) cb(null, true); 
-		else cb(new Error('Định dạng không hỗ trợ'));
+		// Kiểm tra MIME type và extension
+		const allowedMimeTypes = ['application/pdf','image/jpeg','image/png','image/jpg'];
+		const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+		
+		// Kiểm tra MIME type
+		if (allowedMimeTypes.includes(file.mimetype)) {
+			cb(null, true);
+			return;
+		}
+		
+		// Kiểm tra extension nếu MIME type không khớp
+		const fileExtension = path.extname(file.originalname).toLowerCase();
+		if (allowedExtensions.includes(fileExtension)) {
+			cb(null, true);
+			return;
+		}
+		
+		cb(new Error('Định dạng không hỗ trợ. Chỉ chấp nhận PDF, JPG, JPEG, PNG'));
 	}
 });
 
