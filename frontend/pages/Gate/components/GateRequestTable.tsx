@@ -9,6 +9,7 @@ interface GateRequest {
   status: string;
   eta?: string;
   forwarded_at?: string;
+  license_plate?: string; // Thêm trường biển số xe
   docs: any[];
   attachments: any[];
 }
@@ -69,6 +70,7 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
               <th>Loại</th>
               <th>Trạng thái</th>
               <th>ETA</th>
+              <th>Biển số xe</th>
               <th>Chứng từ</th>
               <th>Hành động</th>
             </tr>
@@ -91,25 +93,54 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
                 </td>
                 <td>{request.eta ? new Date(request.eta).toLocaleString('vi-VN') : 'N/A'}</td>
                 <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <span style={{ 
-                      background: 'var(--color-blue-100)', 
-                      color: 'var(--color-blue-800)',
-                      padding: 'var(--space-1) var(--space-2)',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: 'var(--font-size-xs)',
-                      fontWeight: 'var(--font-weight-medium)'
-                    }}>
-                      {request.docs?.length || 0} chứng từ
-                    </span>
-                    {request.docs && request.docs.length > 0 && (
-                      <button
-                        className="action-btn action-btn-secondary"
-                        onClick={() => handleViewDocuments(request)}
-                        title="Xem danh sách chứng từ"
-                      >
-                        👁️ Xem
-                      </button>
+                  <span className="license-plate">
+                    {request.license_plate || 'N/A'}
+                  </span>
+                </td>
+                <td>
+                  <div className="documents-cell">
+                    {request.docs && request.docs.length > 0 ? (
+                      <>
+                        <div className="document-count-badge">
+                          <div className="document-count-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                              <polyline points="14,2 14,8 20,8"></polyline>
+                              <line x1="16" y1="13" x2="8" y2="13"></line>
+                              <line x1="16" y1="17" x2="8" y2="17"></line>
+                              <polyline points="10,9 9,9 8,9"></polyline>
+                            </svg>
+                          </div>
+                          <div className="document-count-content">
+                            <span className="document-count-number">{request.docs.length}</span>
+                            <span className="document-count-label">chứng từ</span>
+                          </div>
+                        </div>
+                        <button
+                          className="view-documents-btn"
+                          onClick={() => handleViewDocuments(request)}
+                          title="Xem danh sách chứng từ"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                          Xem chi tiết
+                        </button>
+                      </>
+                    ) : (
+                      <div className="no-documents">
+                        <div className="no-documents-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14,2 14,8 20,8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10,9 9,9 8,9"></polyline>
+                          </svg>
+                        </div>
+                        <span className="no-documents-text">Không có</span>
+                      </div>
                     )}
                   </div>
                 </td>

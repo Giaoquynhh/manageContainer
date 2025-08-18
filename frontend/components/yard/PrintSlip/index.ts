@@ -1,0 +1,1 @@
+export { PrintSlip } from './PrintSlip';

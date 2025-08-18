@@ -1,0 +1,1 @@
+export { PDFSlip } from './PDFSlip';

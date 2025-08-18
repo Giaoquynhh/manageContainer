@@ -1,0 +1,53 @@
+/* Message Banner */
+.message-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  border: 1px solid;
+}
+
+.message-banner.success {
+  background: var(--color-green-50);
+  border-color: var(--color-green-200);
+  color: var(--color-green-800);
+}
+
+.message-banner.error {
+  background: var(--color-red-50);
+  border-color: var(--color-red-200);
+  color: var(--color-red-800);
+}
+
+.message-banner p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s ease;
+}
+
+.message-banner.success .close-btn {
+  color: var(--color-green-600);
+}
+
+.message-banner.success .close-btn:hover {
+  background: var(--color-green-100);
+}
+
+.message-banner.error .close-btn {
+  color: var(--color-red-600);
+}
+
+.message-banner.error .close-btn:hover {
+  background: var(--color-red-100);
+}

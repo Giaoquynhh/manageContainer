@@ -1,0 +1,80 @@
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .yard-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  
+  .yard-left {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .yard-container {
+    margin: var(--space-4);
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+  
+  .yard-slot {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .search-input-group {
+    flex-direction: column;
+  }
+  
+  .search-btn {
+    width: 100%;
+  }
+
+  /* Responsive Modal */
+  .modal-content {
+    margin: var(--space-4);
+    max-height: calc(100vh - 2 * var(--space-4));
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--space-4);
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .container-form {
+    padding: var(--space-3);
+  }
+  
+  .form-group {
+    margin-bottom: var(--space-3);
+  }
+  
+  .container-info-display {
+    padding: var(--space-3);
+  }
+}

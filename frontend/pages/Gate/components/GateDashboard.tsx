@@ -10,6 +10,7 @@ interface GateRequest {
   status: string;
   eta?: string;
   forwarded_at?: string;
+  license_plate?: string; // Thêm trường biển số xe
   docs: any[];
   attachments: any[];
 }
@@ -22,6 +23,7 @@ export default function GateDashboard() {
     status: '',
     container_no: '',
     type: '',
+    license_plate: '', // Thêm trường biển số xe
     page: 1,
     limit: 20
   });
@@ -161,6 +163,10 @@ export default function GateDashboard() {
     setSearchParams(prev => ({ ...prev, type, page: 1 }));
   };
 
+  const handleLicensePlateSearch = (license_plate: string) => {
+    setSearchParams(prev => ({ ...prev, license_plate, page: 1 }));
+  };
+
   return (
     <main className={`main-content ${sidebarVisible ? 'sidebar-visible' : 'sidebar-hidden'}`}>
       
@@ -175,6 +181,7 @@ export default function GateDashboard() {
         onStatusChange={handleStatusChange}
         onContainerSearch={handleContainerSearch}
         onTypeChange={handleTypeChange}
+        onLicensePlateSearch={handleLicensePlateSearch}
       />
 
       <GateRequestTable
