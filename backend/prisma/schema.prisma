@@ -85,7 +85,12 @@ model ServiceRequest {
     type          String   // IMPORT | EXPORT | CONVERT
     container_no  String
     eta           DateTime?
-    status        String   // PENDING | SCHEDULED | SCHEDULED_INFO_ADDED | SENT_TO_GATE | REJECTED | COMPLETED
+    status        String   // PENDING | SCHEDULED | FORWARDED | GATE_IN | GATE_REJECTED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
+    forwarded_at    DateTime?
+    forwarded_by    String?
+    gate_checked_at DateTime?
+    gate_checked_by String?
+    gate_reason     String?
     history       Json?
     
     // Soft-delete theo scope

@@ -59,7 +59,7 @@ app.use('/requests', attachmentRoutes);
 
 // Chat routes
 app.use('/chat', authenticate, chatRoutes);
-app.use('/gate', gateRoutes);
+app.use('/gate', authenticate, gateRoutes);
 app.use('/yard', yardRoutes);
 app.use('/forklift', forkliftRoutes);
 app.use('/containers', containerRoutes);

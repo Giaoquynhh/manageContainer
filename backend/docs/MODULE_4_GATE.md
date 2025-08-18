@@ -1,4 +1,229 @@
-# Module 4 — Quản lý Cổng (Gate Management)
+# Module 4: Gate - Quản lý cổng ra/vào
+
+## Tổng quan
+
+Module Gate xử lý việc kiểm soát xe ra/vào cổng container yard. Sau khi bộ phận kho chuyển tiếp chứng từ, Gate sẽ so sánh thông tin tài xế với chứng từ gốc để quyết định cho xe vào hay từ chối.
+
+## State Machine
+
+```mermaid
+flowchart LR
+  PENDING --> SCHEDULED
+  SCHEDULED --> FORWARDED
+  FORWARDED --> GATE_IN
+  FORWARDED --> GATE_REJECTED
+  GATE_IN --> IN_YARD
+  GATE_REJECTED --> SCHEDULED
+```
+
+### Các trạng thái mới:
+- `FORWARDED`: Chứng từ đã được chuyển tiếp từ Kho sang Gate
+- `GATE_IN`: Gate xác nhận cho xe vào cổng
+- `GATE_REJECTED`: Gate từ chối xe, có lý do cụ thể
+
+## Database Schema
+
+### ServiceRequest Model
+```prisma
+model ServiceRequest {
+  // ... existing fields
+  status            String   // PENDING | SCHEDULED | FORWARDED | GATE_IN | GATE_REJECTED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
+  forwarded_at      DateTime?
+  forwarded_by      String?
+  gate_checked_at   DateTime?
+  gate_checked_by   String?
+  gate_reason       String?
+  // ... other fields
+}
+
+Ghi chú:
+- Từ nay không dùng trạng thái `RECEIVED`; trạng thái khởi tạo do SaleAdmin tạo là `SCHEDULED`.
+- Migration đã cập nhật dữ liệu cũ: `RECEIVED` → `SCHEDULED`, `SENT_TO_GATE` → `FORWARDED`.
+```
+
+## API Endpoints
+
+Tất cả endpoint của module Gate đều được mount dưới tiền tố `/gate` và được bảo vệ bởi middleware `authenticate` ở `main.ts`:
+
+```ts
+app.use('/gate', authenticate, gateRoutes);
+```
+
+### 1. Forward Request (Kho → Gate)
+```http
+PATCH /gate/requests/:id/forward
+Authorization: Bearer <token>
+Role: SaleAdmin
+```
+
+**Chức năng**: Chuyển tiếp request từ trạng thái `SCHEDULED` sang `FORWARDED`
+
+**Response**:
+```json
+{
+  "message": "Đã chuyển tiếp request sang Gate thành công",
+  "data": {
+    "id": "req_123",
+    "status": "FORWARDED",
+    "forwarded_at": "2025-01-17T10:00:00Z",
+    "forwarded_by": "user_456"
+  }
+}
+```
+
+### 2. Gate Approve (Gate → GATE_IN/GATE_OUT)
+```http
+PATCH /gate/requests/:id/approve
+Authorization: Bearer <token>
+Role: SaleAdmin
+```
+
+**Chức năng**: Gate approve request, chuyển trạng thái dựa trên loại:
+- `IMPORT` → `GATE_IN`
+- `EXPORT` → `GATE_OUT`
+
+**Response**:
+```json
+{
+  "message": "Đã approve request thành công",
+  "data": {
+    "id": "req_123",
+    "status": "GATE_IN",
+    "gate_checked_at": "2025-01-17T10:30:00Z",
+    "gate_checked_by": "sale_admin_456"
+  }
+}
+```
+
+### 3. Gate Reject
+```http
+PATCH /gate/requests/:id/reject
+Authorization: Bearer <token>
+Role: SaleAdmin
+```
+
+**Body**:
+```json
+{
+  "reason": "Thiếu chứng từ hải quan"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Đã từ chối request thành công",
+  "data": {
+    "id": "req_123",
+    "status": "REJECTED",
+    "gate_reason": "Thiếu chứng từ hải quan",
+    "rejected_reason": "Thiếu chứng từ hải quan",
+    "rejected_by": "sale_admin_456",
+    "rejected_at": "2025-01-17T10:35:00Z"
+  }
+}
+```
+
+### 4. Search Requests
+```http
+GET /gate/requests/search?status=FORWARDED&container_no=ISO123&type=IMPORT&page=1&limit=20
+Authorization: Bearer <token>
+Role: YardManager | SaleAdmin
+```
+
+**Query Parameters**:
+- `status`: FORWARDED | GATE_IN | GATE_REJECTED
+- `container_no`: Tìm kiếm theo mã container
+- `type`: IMPORT | EXPORT | CONVERT
+- `page`: Số trang (default: 1)
+- `limit`: Số item mỗi trang (default: 20)
+
+### 5. Get Request Details
+```http
+GET /gate/requests/:id
+Authorization: Bearer <token>
+Role: YardManager | SaleAdmin
+```
+
+## Business Logic
+
+### 1. Forward Request
+- Kiểm tra request có tồn tại và có trạng thái `SCHEDULED`
+- Cập nhật trạng thái thành `FORWARDED`
+- Ghi nhận thời gian và người chuyển tiếp
+- Audit log: `REQUEST.FORWARDED` (entity: `ServiceRequest`)
+
+### 2. Gate Processing
+- Chỉ xử lý request có trạng thái `FORWARDED`
+- So sánh thông tin tài xế với chứng từ gốc
+- Nếu khớp → `GATE_IN`
+- Nếu không khớp → `GATE_REJECTED` với lý do cụ thể
+
+### 3. Validation Rules
+- Tên tài xế: Bắt buộc, 2-100 ký tự
+- Biển số xe: Bắt buộc, 5-20 ký tự
+- CMND/CCCD: Bắt buộc, 9-20 ký tự
+- Số seal: Tùy chọn, tối đa 50 ký tự
+- Lý do từ chối: Bắt buộc, 10-500 ký tự
+
+## Audit & Security
+
+### Audit Logs
+- `REQUEST.FORWARDED`: Khi kho chuyển tiếp sang Gate
+- `REQUEST.GATE_IN`: Khi Gate chấp nhận xe vào
+- `REQUEST.GATE_REJECTED`: Khi Gate từ chối xe
+
+### Role-based Access Control
+- Sử dụng middleware `requireRoles(...roles)`
+- **SaleAdmin**: Có thể forward request
+- **YardManager**: Có thể gate-accept, gate-reject, search, get details
+- **SaleAdmin + YardManager**: Đều có thể search và xem chi tiết
+
+Ví dụ định tuyến:
+
+```ts
+router.patch('/requests/:id/forward', requireRoles('SaleAdmin'), gateController.forwardRequest);
+router.patch('/requests/:id/gate-accept', requireRoles('YardManager'), gateController.acceptGate);
+router.patch('/requests/:id/gate-reject', requireRoles('YardManager'), gateController.rejectGate);
+router.get('/requests/search', requireRoles('YardManager', 'SaleAdmin'), gateController.searchRequests);
+router.get('/requests/:id', requireRoles('YardManager', 'SaleAdmin'), gateController.getRequestDetails);
+```
+
+## Error Handling
+
+### Common Errors
+- `Request không tồn tại`: ID request không hợp lệ
+- `Chỉ có thể forward request có trạng thái SCHEDULED`: Trạng thái không phù hợp
+- `Chỉ có thể xử lý request có trạng thái FORWARDED`: Request chưa được forward
+- `Dữ liệu không hợp lệ`: Validation error từ DTO
+
+### Error Response Format
+```json
+{
+  "message": "Mô tả lỗi",
+  "error": "Chi tiết validation error (nếu có)"
+}
+```
+
+## Integration Points
+
+### 1. Với Module Requests
+- Sử dụng chung `ServiceRequest` model
+- Kế thừa validation và business rules
+
+### 2. Với Module Audit
+- Sử dụng hàm `audit(actorId, action, entity, entityId, meta)` thay vì lớp `AuditService`
+- Tự động log tất cả actions với entity `ServiceRequest`
+- Tracking đầy đủ thông tin người thực hiện
+
+### 4. Prisma & Migration
+- Sau khi thay đổi schema, chạy `npx prisma generate` để cập nhật types
+- Khi triển khai, dùng `npx prisma migrate deploy` để áp dụng migration
+- Migration chuyển đổi trạng thái lịch sử: `RECEIVED` → `SCHEDULED`, `SENT_TO_GATE` → `FORWARDED`
+
+### 3. Với Frontend
+- Real-time updates qua WebSocket (future)
+- Notification system cho kho khi Gate từ chối
 
 ## 1) Mục tiêu
 - Check-in/Check-out tại cổng, tốc độ và chính xác

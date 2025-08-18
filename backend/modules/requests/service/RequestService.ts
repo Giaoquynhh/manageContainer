@@ -47,7 +47,7 @@ export class RequestService {
 			});
 		}
 		
-		await audit(actor._id, 'REQUEST.CREATED', 'REQUEST', req.id);
+		await audit(actor._id, 'REQUEST.CREATED', 'ServiceRequest', req.id);
 		
 		// Tự động tạo chat room cho request mới
 		try {
@@ -60,9 +60,36 @@ export class RequestService {
 	}
 
 	async createBySaleAdmin(actor: any, payload: any) {
-		const req = await repo.create({ ...payload, created_by: actor._id, status: 'RECEIVED', history: [{ at: new Date().toISOString(), by: actor._id, action: 'RECEIVED' }] });
-		await audit(actor._id, 'REQUEST.RECEIVED', 'REQUEST', req.id);
+		const req = await repo.create({ ...payload, created_by: actor._id, status: 'SCHEDULED', history: [{ at: new Date().toISOString(), by: actor._id, action: 'SCHEDULED' }] });
+		await audit(actor._id, 'REQUEST.SCHEDULED', 'ServiceRequest', req.id);
 		return req;
+	}
+
+	/**
+	 * Forward request từ Kho sang Gate
+	 */
+	async forwardToGate(actor: any, requestId: string) {
+		const request = await repo.findById(requestId);
+		if (!request) {
+			throw new Error('Request không tồn tại');
+		}
+
+		if (request.status !== 'SCHEDULED') {
+			throw new Error('Chỉ có thể forward request có trạng thái SCHEDULED');
+		}
+
+		const updatedRequest = await repo.update(requestId, {
+			status: 'FORWARDED',
+			forwarded_at: new Date(),
+			forwarded_by: actor._id,
+			history: [
+				...(Array.isArray(request.history) ? request.history : []),
+				{ at: new Date().toISOString(), by: actor._id, action: 'FORWARDED' }
+			]
+		});
+
+		await audit(actor._id, 'REQUEST.FORWARDED', 'ServiceRequest', requestId);
+		return updatedRequest;
 	}
 
 	async list(actor: any, query: any) {
@@ -199,7 +226,7 @@ export class RequestService {
 		}
 		
 		await repo.softDelete(id, scope);
-		await audit(actor._id, 'REQUEST.DELETED', 'REQUEST', id, { scope });
+		await audit(actor._id, 'REQUEST.DELETED', 'ServiceRequest', id, { scope });
 		
 		return { 
 			ok: true, 
@@ -229,7 +256,7 @@ export class RequestService {
 		}
 		
 		await repo.restore(id, scope);
-		await audit(actor._id, 'REQUEST.RESTORED', 'REQUEST', id, { scope });
+		await audit(actor._id, 'REQUEST.RESTORED', 'ServiceRequest', id, { scope });
 		
 		return { 
 			ok: true, 
@@ -329,7 +356,7 @@ export class RequestService {
 		if (!req) throw new Error('Yêu cầu không tồn tại');
 		if (req.status !== 'COMPLETED') throw new Error('Chỉ gửi yêu cầu thanh toán khi yêu cầu đã hoàn tất');
 		const pr = await repo.createPayment({ request_id, created_by: actor._id, status: 'SENT' });
-		await audit(actor._id, 'PAYMENT.SENT', 'REQUEST', request_id);
+		await audit(actor._id, 'PAYMENT.SENT', 'ServiceRequest', request_id);
 		return pr;
 	}
 

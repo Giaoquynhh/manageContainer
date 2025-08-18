@@ -97,6 +97,19 @@ export default function Header() {
   const showLogout = hasToken && router.pathname !== '/Login';
   const showSidebar = hasToken && router.pathname !== '/Login' && router.pathname !== '/Register';
 
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Debug Header State:', {
+      hasToken,
+      showSidebar,
+      navOpen,
+      userRole: me?.role,
+      pathname: router.pathname,
+      canUseGate: canUseGate(me?.role),
+      isSecurity: isSecurity(me?.role)
+    });
+  }, [hasToken, showSidebar, navOpen, me?.role, router.pathname]);
+
   return (
     <header className="header">
       <div className="container header-inner">

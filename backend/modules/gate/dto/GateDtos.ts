@@ -1,22 +1,65 @@
 import Joi from 'joi';
 
-export const gateLookupSchema = Joi.object({
-	code: Joi.string().min(4).required()
+// DTO cho việc forward request từ Kho sang Gate
+export const forwardRequestSchema = Joi.object({
+  // Không cần body, chỉ cần request ID
 });
 
-export const checkinSchema = Joi.object({
-	request_id: Joi.string().required(),
-	plate_no: Joi.string().min(5).max(20).required()
+// DTO cho việc Gate chấp nhận xe vào
+export const gateAcceptSchema = Joi.object({
+  driver_name: Joi.string().required().min(2).max(100),
+  license_plate: Joi.string().required().min(5).max(20),
+  id_card: Joi.string().required().min(9).max(20),
+  seal_number: Joi.string().optional().max(50),
+  note: Joi.string().optional().max(500)
 });
 
-export const checkoutSchema = Joi.object({
-	request_id: Joi.string().required(),
-	supervisor_pin: Joi.string().optional()
+// Gate Approve DTO
+export const gateApproveSchema = Joi.object({
+  // Không cần body data cho approve
 });
 
-export const printSchema = Joi.object({
-	request_id: Joi.string().required(),
-	type: Joi.string().valid('IN','OUT').required()
+export interface GateApproveData {
+  // Empty interface for approve
+}
+
+// Gate Reject DTO  
+export const gateRejectSchema = Joi.object({
+  reason: Joi.string().min(5).max(500).required().messages({
+    'string.min': 'Lý do từ chối phải có ít nhất 5 ký tự',
+    'string.max': 'Lý do từ chối không được quá 500 ký tự',
+    'any.required': 'Lý do từ chối là bắt buộc'
+  })
 });
+
+export interface GateRejectData {
+  reason: string;
+}
+
+// DTO cho việc tìm kiếm requests ở Gate
+export const gateSearchSchema = Joi.object({
+  status: Joi.string().valid('FORWARDED', 'GATE_IN', 'GATE_REJECTED').optional(),
+  container_no: Joi.string().optional(),
+  type: Joi.string().valid('IMPORT', 'EXPORT', 'CONVERT').optional(),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(20)
+});
+
+// Types
+export interface GateAcceptData {
+  driver_name: string;
+  license_plate: string;
+  id_card: string;
+  seal_number?: string;
+  note?: string;
+}
+
+export interface GateSearchParams {
+  status?: string;
+  container_no?: string;
+  type?: string;
+  page?: number;
+  limit?: number;
+}
 
 

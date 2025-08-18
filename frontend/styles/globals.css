@@ -5,7 +5,8 @@
   --color-navy-light: #6366f1;
   --color-navy-dark: #0b2b6d;
   
-  --color-primary: #007BFF;
+  --color-primary: #001F3F; /* Thay đổi thành navy */
+  --color-primary-dark: #0b2b6d; /* Thay đổi thành navy dark */
   --color-secondary: #6C757D;
   --color-success: #28A745;
   --color-warning: #FFC107;
@@ -19,6 +20,20 @@
   --color-gray-500: #6b7280;
   --color-gray-700: #374151;
   --color-gray-900: #111827;
+
+  /* Extended palette used by Gate module */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-yellow-100: #fef3c7;
+  --color-yellow-800: #92400e;
+  --color-green-100: #d1fae5;
+  --color-green-800: #065f46;
+  --color-red-100: #fee2e2;
+  --color-red-800: #991b1b;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-800: #065f46;
   
   --color-text-primary: #1f2937;
   --color-text-secondary: #6b7280;
@@ -40,6 +55,8 @@
   --font-size-lg: 18px;    /* H3 */
   --font-size-xl: 20px;    /* H2 */
   --font-size-2xl: 24px;   /* H1 */
+  --font-size-3xl: 30px;   /* Large H1 */
+  --font-size-4xl: 36px;   /* Extra Large H1 */
   
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -2011,4 +2028,62 @@ button, input, select {
 .chat-send-btn:disabled {
   background: #9ca3af;
   cursor: not-allowed;
+}
+
+/* Main Content Layout */
+.main-content {
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+  margin-left: 250px; /* Space for the fixed sidebar */
+  transition: margin-left 0.3s ease-in-out;
+}
+
+.main-content.full-width {
+  margin-left: 0; /* When sidebar is hidden */
+}
+
+/* Khi sidebar bị ẩn - Giao diện to hơn */
+.main-content.sidebar-hidden {
+  margin-left: 0 !important; /* Force margin 0 */
+  width: 100% !important; /* Sử dụng toàn bộ width */
+  max-width: 100%; /* Mở rộng tối đa */
+}
+
+/* Khi sidebar mở - Giao diện nhỏ hơn */
+.main-content.sidebar-visible {
+  margin-left: 250px !important; /* Force margin 250px */
+  width: calc(100% - 250px) !important; /* Điều chỉnh width khi sidebar mở */
+  max-width: calc(100% - 250px); /* Giới hạn width */
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: var(--space-4);
+    margin-left: 0 !important; /* Force margin 0 trên màn hình nhỏ */
+    width: 100% !important; /* Force width 100% */
+  }
+  
+  .main-content.sidebar-visible,
+  .main-content.sidebar-hidden {
+    margin-left: 0 !important; /* Không cần margin trên màn hình nhỏ */
+    width: 100% !important; /* Sử dụng toàn bộ width */
+    max-width: 100% !important; /* Mở rộng tối đa */
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important; /* Force margin 0 trên mobile */
+    width: 100% !important; /* Force width 100% */
+    padding: var(--space-3); /* Giảm padding trên mobile */
+  }
+  
+  .main-content.sidebar-visible,
+  .main-content.sidebar-hidden {
+    margin-left: 0 !important; /* Không cần margin trên mobile */
+    width: 100% !important; /* Sử dụng toàn bộ width */
+    max-width: 100% !important; /* Mở rộng tối đa */
+  }
 }

@@ -4,6 +4,7 @@ import '../styles/globals.css';
 import '../styles/chat-mini.css';
 import '../styles/appointment-mini.css';
 import '../styles/supplement-mini.css';
+import '../styles/gate.css';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
 	return (
