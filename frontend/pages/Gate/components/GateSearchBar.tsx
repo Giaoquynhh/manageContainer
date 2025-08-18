@@ -5,6 +5,7 @@ interface GateSearchBarProps {
     status: string;
     container_no: string;
     type: string;
+    license_plate: string; // Thêm trường biển số xe
     page: number;
     limit: number;
   };
@@ -12,6 +13,7 @@ interface GateSearchBarProps {
   onStatusChange: (status: string) => void;
   onContainerSearch: (container_no: string) => void;
   onTypeChange: (type: string) => void;
+  onLicensePlateChange: (license_plate: string) => void; // Thêm handler
 }
 
 export default function GateSearchBar({
@@ -19,7 +21,8 @@ export default function GateSearchBar({
   onSearch,
   onStatusChange,
   onContainerSearch,
-  onTypeChange
+  onTypeChange,
+  onLicensePlateChange
 }: GateSearchBarProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +34,7 @@ export default function GateSearchBar({
       status: '',
       container_no: '',
       type: '',
+      license_plate: '', // Thêm clear license_plate
       page: 1,
       limit: 20
     });
@@ -48,6 +52,17 @@ export default function GateSearchBar({
               placeholder="Tìm kiếm theo mã container..."
               value={searchParams.container_no}
               onChange={(e) => onContainerSearch(e.target.value)}
+            />
+          </div>
+
+          {/* License Plate Search */}
+          <div className="search-section">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Tìm kiếm theo biển số xe..."
+              value={searchParams.license_plate}
+              onChange={(e) => onLicensePlateChange(e.target.value)}
             />
           </div>
 

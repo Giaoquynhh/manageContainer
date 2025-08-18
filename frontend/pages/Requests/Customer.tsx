@@ -127,7 +127,7 @@ export default function CustomerRequests() {
 					<h1 className="page-title">Danh sách yêu cầu</h1>
 					<div className="page-actions">
 						<Button 
-							variant="primary" 
+							variant="outline" 
 							icon="➕"
 							onClick={() => setShowCreateModal(true)}
 						>

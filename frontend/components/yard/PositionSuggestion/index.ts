@@ -1,0 +1,1 @@
+export { PositionSuggestionCard } from './PositionSuggestionCard';

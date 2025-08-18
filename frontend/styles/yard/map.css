@@ -1,0 +1,123 @@
+/* Yard Map Component */
+.yard-map {
+  padding: var(--space-4);
+}
+
+.yard-header {
+  margin-bottom: var(--space-4);
+}
+
+.yard-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.yard-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.yard-block {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-white);
+}
+
+.block-header {
+  margin-bottom: var(--space-2);
+}
+
+.block-code {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.block-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.yard-slot {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.yard-slot:hover {
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.yard-slot.empty {
+  cursor: pointer;
+}
+
+.yard-slot.occupied,
+.yard-slot.under_maintenance {
+  cursor: not-allowed;
+}
+
+.yard-slot.suggested {
+  box-shadow: 0 0 0 2px var(--color-blue-300);
+}
+
+.yard-slot.selected {
+  box-shadow: 0 0 0 3px var(--color-blue-600);
+}
+
+.maintenance-icon {
+  font-size: 12px;
+}
+
+.suggested-label,
+.selected-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-blue-600);
+  color: white;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 8px;
+  white-space: nowrap;
+  z-index: 20;
+}
+
+.yard-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-300);
+}

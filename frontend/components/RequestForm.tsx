@@ -10,7 +10,8 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
   const [form, setForm] = useState({ 
     type: 'IMPORT', 
     container_no: '', 
-    eta: '' 
+    etaDate: '', 
+    etaTime: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,8 +27,9 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
       const formData = new FormData();
       formData.append('type', form.type);
       formData.append('container_no', form.container_no);
-      if (form.eta) {
-        formData.append('eta', form.eta);
+      if (form.etaDate && form.etaTime) {
+        const etaDateTime = `${form.etaDate}T${form.etaTime}`;
+        formData.append('eta', etaDateTime);
       }
       if (selectedFile) {
         formData.append('document', selectedFile);
@@ -112,13 +114,26 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
 
       <div className="form-group">
         <label htmlFor="eta">Thời gian dự kiến (ETA) <span className="required">*</span></label>
-        <input 
-          id="eta"
-          type="datetime-local" 
-          value={form.eta} 
-          onChange={e => setForm({...form, eta: e.target.value})}
-          required
-        />
+        <div className="eta-inputs">
+          <div className="eta-date">
+            <input 
+              id="etaDate"
+              type="date" 
+              value={form.etaDate} 
+              onChange={e => setForm({...form, etaDate: e.target.value})}
+              required
+            />
+          </div>
+          <div className="eta-time">
+            <input 
+              id="etaTime"
+              type="time" 
+              value={form.etaTime} 
+              onChange={e => setForm({...form, etaTime: e.target.value})}
+              required
+            />
+          </div>
+        </div>
       </div>
 
       <div className="form-group">

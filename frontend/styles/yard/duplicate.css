@@ -1,0 +1,112 @@
+/* Duplicate Warning */
+.duplicate-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-6);
+}
+
+.warning-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.warning-content h4 {
+  margin: 0 0 var(--space-2) 0;
+  color: #92400e;
+  font-size: var(--font-size-base);
+}
+
+.warning-content p {
+  margin: 0;
+  color: #92400e;
+  font-size: var(--font-size-sm);
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-3);
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.info-item .label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.info-item .value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Duplicate List */
+.duplicate-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.duplicate-item {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-gray-50);
+  transition: all 0.2s ease;
+}
+
+.duplicate-item:hover {
+  border-color: var(--color-blue-300);
+  background: var(--color-blue-50);
+}
+
+.duplicate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.duplicate-header .container-no {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  color: var(--color-blue-600);
+  font-size: var(--font-size-base);
+}
+
+.status-badge {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+}
+
+.duplicate-details {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.duplicate-details span {
+  background: var(--color-white);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-200);
+}

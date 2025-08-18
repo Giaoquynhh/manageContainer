@@ -1,0 +1,30 @@
+/* Yard Layout */
+.yard-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.yard-left {
+  min-height: 600px;
+}
+
+.yard-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.yard-right-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Yard Container - New Simple Layout */
+.yard-container {
+  max-width: 800px;
+  margin: 0 auto;
+  margin-top: var(--space-6);
+}

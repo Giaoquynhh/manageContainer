@@ -55,7 +55,12 @@ export default function Dashboard(){
 					)}
 					{isSaleAdmin(role) && (
 						<Card title="Điều độ bãi" actions={<Link className="btn" href="/Yard">Mở</Link>}>
-							Sơ đồ bãi, gợi ý & gán vị trí, quản lý công việc xe nâng.
+							Sơ đồ bãi, gợi ý & gán vị trí, quản lý container.
+						</Card>
+					)}
+					{isSaleAdmin(role) && (
+						<Card title="Quản lý Xe nâng" actions={<Link className="btn" href="/Forklift">Mở</Link>}>
+							Theo dõi và quản lý công việc xe nâng, gán xe cho công việc.
 						</Card>
 					)}
 					{isSaleAdmin(role) && (
