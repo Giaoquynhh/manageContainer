@@ -543,6 +543,14 @@ a, a:visited {
   color: var(--color-text-inverse) !important;
 }
 
+/* Ensure header buttons are visible on navy background (override btn-outline) */
+.header .header-account-btn,
+.header .header-login-btn,
+.header .header-logout-btn {
+  color: var(--color-text-inverse) !important;
+  border-color: var(--color-text-inverse) !important;
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--color-navy-primary);
@@ -806,10 +814,6 @@ button, input, select {
     min-width: 200px;
   }
   
-  .header-account-btn span {
-    display: none;
-  }
-  
   .header-account-btn {
     padding: var(--space-2) !important;
     min-width: 36px;
@@ -858,6 +862,11 @@ button, input, select {
   .header-logout-btn span,
   .header-login-btn span {
     display: none; /* Show only icon on mobile */
+  }
+  
+  /* On small mobile screens, hide the text label inside the account button */
+  .header-account-btn span {
+    display: none;
   }
 }
 

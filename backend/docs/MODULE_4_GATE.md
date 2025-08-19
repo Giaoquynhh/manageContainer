@@ -78,9 +78,14 @@ Authorization: Bearer <token>
 Role: SaleAdmin
 ```
 
-**Chức năng**: Gate approve request, chuyển trạng thái dựa trên loại:
+**Chức năng**: Gate approve request, chuyển trạng thái dựa trên loại. Từ nay bắt buộc truyền `license_plate` trong body để lưu lại biển số.
 - `IMPORT` → `GATE_IN`
 - `EXPORT` → `GATE_OUT`
+
+**Body**:
+```json
+{ "license_plate": "51C-123.45" }
+```
 
 **Response**:
 ```json

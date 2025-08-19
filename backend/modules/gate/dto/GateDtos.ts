@@ -14,13 +14,16 @@ export const gateAcceptSchema = Joi.object({
   note: Joi.string().optional().max(500)
 });
 
-// Gate Approve DTO
+// Gate Approve DTO - yêu cầu nhập biển số
 export const gateApproveSchema = Joi.object({
-  // Không cần body data cho approve
+  license_plate: Joi.string().required().min(5).max(20).messages({
+    'any.required': 'Biển số xe là bắt buộc',
+    'string.min': 'Biển số xe phải có ít nhất 5 ký tự'
+  })
 });
 
 export interface GateApproveData {
-  // Empty interface for approve
+  license_plate: string;
 }
 
 // Gate Reject DTO  

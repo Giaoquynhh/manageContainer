@@ -17,22 +17,37 @@ export default function GateActionButtons({
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [plateNo, setPlateNo] = useState('');
 
-  const handleApprove = async () => {
+  const confirmApprove = async () => {
     try {
+      const normalized = plateNo.trim().toUpperCase();
+      // Validate cơ bản: 5-20 ký tự, chữ/số/gạch/space/dấu chấm
+      const valid = /^[A-Z0-9\-\s\.]{5,20}$/.test(normalized);
+      if (!valid) {
+        alert('Vui lòng nhập biển số xe hợp lệ (tối thiểu 5 ký tự).');
+        return;
+      }
       setIsLoading(true);
-      await api.patch(`/gate/requests/${requestId}/approve`);
+      await api.patch(`/gate/requests/${requestId}/approve`, { license_plate: normalized });
       
       // Hiển thị thông báo thành công
       const newStatus = requestType === 'EXPORT' ? 'GATE_OUT' : 'GATE_IN';
-      alert(`Đã chuyển trạng thái: ${newStatus}`);
+      alert(`Đã chuyển trạng thái: ${newStatus}. Biển số: ${normalized}`);
       
+      setIsApproveModalOpen(false);
+      setPlateNo('');
       onActionSuccess();
     } catch (error: any) {
       alert(`Lỗi khi approve: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleApprove = () => {
+    setIsApproveModalOpen(true);
   };
 
   const handleReject = async () => {
@@ -94,6 +109,73 @@ export default function GateActionButtons({
           Từ chối
         </button>
       </div>
+
+      {/* Approve Modal - yêu cầu nhập biển số */}
+      {isApproveModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: 'var(--space-6)',
+            borderRadius: 'var(--radius-lg)',
+            width: '90%',
+            maxWidth: '420px',
+            boxShadow: 'var(--shadow-xl)'
+          }}>
+            <h3 style={{
+              fontSize: 'var(--font-size-lg)',
+              fontWeight: 'var(--font-weight-semibold)',
+              marginBottom: 'var(--space-4)',
+              color: 'var(--color-gray-900)'
+            }}>
+              Nhập biển số xe để cho phép
+            </h3>
+
+            <input
+              type="text"
+              value={plateNo}
+              onChange={(e) => setPlateNo(e.target.value.toUpperCase())}
+              placeholder="VD: 51C-123.45"
+              style={{
+                width: '100%',
+                padding: 'var(--space-3)',
+                border: '2px solid var(--color-gray-200)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 'var(--space-4)'
+              }}
+              disabled={isLoading}
+              autoFocus
+            />
+
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setIsApproveModalOpen(false); setPlateNo(''); }}
+                disabled={isLoading}
+                className="action-btn action-btn-secondary"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmApprove}
+                disabled={isLoading}
+                className="action-btn action-btn-primary"
+              >
+                {isLoading ? 'Đang xử lý...' : 'Xác nhận cho phép'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Modal */}
       {isRejectModalOpen && (

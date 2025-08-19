@@ -95,7 +95,13 @@ export class GateController {
         return res.status(401).json({ message: 'Không có quyền truy cập' });
       }
 
-      const result = await this.gateService.approveGate(id, actorId);
+      // Validate yêu cầu có biển số xe
+      const { error } = gateApproveSchema.validate(req.body || {});
+      if (error) {
+        return res.status(400).json({ message: error.details?.[0]?.message || 'Biển số xe không hợp lệ' });
+      }
+
+      const result = await this.gateService.approveGate(id, actorId, req.body);
       
       res.json({
         message: 'Đã approve request thành công',

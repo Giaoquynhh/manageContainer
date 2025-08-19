@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
 import { canViewUsersPartners, isSaleAdmin, isAccountant, canUseGate, isSystemAdmin, isBusinessAdmin, isYardManager, isMaintenanceManager, isSecurity, isCustomerRole } from '@utils/rbac';
 import { api } from '@services/api';
@@ -17,6 +18,9 @@ export default function Header() {
   const [navOpen, setNavOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const accountBtnRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{top:number; right:number}>({ top: 0, right: 12 });
 
   // Initialize auth state
   useEffect(() => {
@@ -78,9 +82,12 @@ export default function Header() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (accountDropdownOpen) {
-        setAccountDropdownOpen(false);
-      }
+      if (!accountDropdownOpen) return;
+      const target = event.target as Node | null;
+      // Nếu click trong menu hoặc nút, thì không đóng để onClick của item hoạt động
+      if (dropdownMenuRef.current && target && dropdownMenuRef.current.contains(target)) return;
+      if (accountBtnRef.current && target && accountBtnRef.current.contains(target)) return;
+      setAccountDropdownOpen(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -96,6 +103,7 @@ export default function Header() {
         localStorage.removeItem('refresh_token');
         setHasToken(false);
         setMe(null);
+        setAccountDropdownOpen(false);
         window.location.href = '/Login';
       }
     } catch (error) {
@@ -112,6 +120,29 @@ export default function Header() {
   const toggleAccountDropdown = () => {
     setAccountDropdownOpen(prev => !prev);
   };
+
+  // Recalculate dropdown position on resize/scroll when open
+  useEffect(() => {
+    if (!accountDropdownOpen) return;
+    const updatePosition = () => {
+      try {
+        const rect = accountBtnRef.current?.getBoundingClientRect();
+        if (rect) {
+          setDropdownPos({
+            top: Math.round(rect.bottom + 8), // viewport coords for position: fixed
+            right: Math.max(12, Math.round(window.innerWidth - rect.right - 12))
+          });
+        }
+      } catch {}
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [accountDropdownOpen]);
 
   // Component state calculations
   const showLogout = hasToken && router.pathname !== '/Login';
@@ -198,9 +229,21 @@ export default function Header() {
               <div className="account-dropdown-container">
                 <button 
                   className="btn btn-outline header-account-btn" 
-                  onClick={toggleAccountDropdown}
+                  onClick={() => {
+                    try{
+                      const rect = accountBtnRef.current?.getBoundingClientRect();
+                      if (rect) {
+                        setDropdownPos({
+                          top: Math.round(rect.bottom + 8),
+                          right: Math.max(12, Math.round(window.innerWidth - rect.right - 12))
+                        });
+                      }
+                    }catch{}
+                    toggleAccountDropdown();
+                  }}
                   type="button"
                   title="Quản lý tài khoản"
+                  ref={accountBtnRef}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -224,8 +267,17 @@ export default function Header() {
                 </button>
                 
                 {/* Account Dropdown Menu */}
-                {accountDropdownOpen && (
-                  <div className="account-dropdown-menu">
+                {accountDropdownOpen && typeof document !== 'undefined' && createPortal(
+                  <div 
+                    className="account-dropdown-menu"
+                    style={{
+                      position: 'fixed',
+                      top: dropdownPos.top,
+                      right: dropdownPos.right,
+                      zIndex: 2000
+                    }}
+                    ref={dropdownMenuRef}
+                  >
                     <Link 
                       href="/Account" 
                       className="dropdown-item"
@@ -237,7 +289,6 @@ export default function Header() {
                       </svg>
                       <span>Thông tin tài khoản</span>
                     </Link>
-                    
                     {canViewUsersPartners(me?.role) && (
                       <Link 
                         href="/UsersPartners" 
@@ -253,9 +304,7 @@ export default function Header() {
                         <span>Quản lý người dùng</span>
                       </Link>
                     )}
-                    
                     <div className="dropdown-divider"></div>
-                    
                     <button 
                       className="dropdown-item dropdown-item-danger" 
                       onClick={handleLogout}
@@ -268,7 +317,8 @@ export default function Header() {
                       </svg>
                       <span>Đăng xuất</span>
                     </button>
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
             )}

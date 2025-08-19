@@ -1,14 +1,30 @@
-# Gate Module - Tính năng Xem Chứng từ
+# Gate Module - Tính năng Gate & Chứng từ
 
 ## Tổng quan
 
-Module Gate đã được cập nhật để hỗ trợ xem danh sách chứng từ và xem trực tiếp file trên server. Thay vì chỉ hiển thị số lượng chứng từ, người dùng giờ đây có thể:
+Module Gate được cập nhật với 2 nhóm tính năng:
+
+1) Xử lý ra/vào cổng có bắt buộc nhập biển số
+2) Xem danh sách chứng từ và xem trực tiếp file trên server
 
 1. **Xem danh sách chứng từ**: Hiển thị tất cả chứng từ của một request
 2. **Xem trực tiếp file**: Xem preview của PDF và hình ảnh ngay trong ứng dụng
 3. **Tải xuống file**: Tải xuống file để xem offline
 
-## Các Component Mới
+## Luồng “Cho phép” – Bắt buộc nhập biển số
+
+- Khi bấm nút "Cho phép" ở hàng request trạng thái `FORWARDED`, hệ thống mở modal yêu cầu nhập biển số xe.
+- Chỉ khi nhập biển số hợp lệ (5–20 ký tự, chữ/số/gạch/space/dấu chấm), hệ thống mới gửi yêu cầu approve.
+- FE gửi API:
+
+```http
+PATCH /gate/requests/:id/approve
+Body: { "license_plate": "51C-123.45" }
+```
+
+- BE lưu biển số trong trường `history.gate_approve.license_plate` của `ServiceRequest` và phản hồi ở API search/details dưới dạng trường `license_plate` để hiển thị tại cột "Biển số xe".
+
+## Các Component giao diện
 
 ### 1. DocumentsModal
 - Hiển thị danh sách tất cả chứng từ của một request
@@ -22,6 +38,11 @@ Module Gate đã được cập nhật để hỗ trợ xem danh sách chứng t
 - Responsive design cho mobile
 
 ## Cách Sử Dụng
+
+### Cho phép (Approve) với biển số
+1. Trên Gate Dashboard, với request trạng thái `FORWARDED`, bấm nút "Cho phép".
+2. Nhập biển số trong modal và xác nhận.
+3. Trạng thái chuyển thành `GATE_IN` (IMPORT) hoặc `GATE_OUT` (EXPORT). Cột "Biển số xe" hiển thị giá trị vừa nhập.
 
 ### Xem Danh Sách Chứng Từ
 1. Trong Gate Dashboard, tìm request cần xem chứng từ
@@ -41,6 +62,9 @@ Module Gate đã được cập nhật để hỗ trợ xem danh sách chứng t
 ## API Endpoints
 
 ### Backend (Gate Service)
+- `PATCH /gate/requests/:id/approve` body `{ license_plate }` - Cho phép vào/ra, lưu biển số
+- `GET /gate/requests/search` - Trả về danh sách request kèm `license_plate` (nếu có)
+- `GET /gate/requests/:id` - Chi tiết request kèm `license_plate` (nếu có)
 - `GET /gate/requests/:id/documents` - Lấy danh sách chứng từ
 - `GET /gate/requests/:requestId/documents/:documentId/view` - Xem file
 

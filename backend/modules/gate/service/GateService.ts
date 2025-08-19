@@ -86,7 +86,7 @@ export class GateService {
   /**
    * Gate approve request (Import → GATE_IN, Export → GATE_OUT)
    */
-  async approveGate(requestId: string, actorId: string): Promise<any> {
+  async approveGate(requestId: string, actorId: string, data?: GateApproveData): Promise<any> {
     const request = await prisma.serviceRequest.findUnique({
       where: { id: requestId },
       include: { docs: true }
@@ -115,7 +115,16 @@ export class GateService {
       data: {
         status: newStatus,
         gate_checked_at: new Date(),
-        gate_checked_by: actorId
+        gate_checked_by: actorId,
+        // Lưu biển số vào history meta (vì schema chưa có cột). Nếu có cột, cập nhật thêm.
+        history: {
+          ...(request.history as any || {}),
+          gate_approve: {
+            ...(request as any).history?.gate_approve,
+            license_plate: data?.license_plate || null,
+            approved_at: new Date().toISOString()
+          }
+        }
       }
     });
 
@@ -123,7 +132,8 @@ export class GateService {
     await audit(actorId, 'REQUEST.GATE_APPROVED', 'ServiceRequest', requestId, {
       previous_status: request.status,
       new_status: newStatus,
-      request_type: request.type
+      request_type: request.type,
+      license_plate: data?.license_plate || undefined
     });
 
     return updatedRequest;
@@ -205,8 +215,14 @@ export class GateService {
       prisma.serviceRequest.count({ where })
     ]);
 
+    // Bổ sung license_plate từ history.gate_approve
+    const mapped = requests.map((r: any) => {
+      const licensePlate = (r.history as any)?.gate_approve?.license_plate || null;
+      return { ...r, license_plate: licensePlate };
+    });
+
     return {
-      data: requests,
+      data: mapped,
       pagination: {
         page,
         limit,
@@ -232,7 +248,8 @@ export class GateService {
       throw new Error('Request không tồn tại');
     }
 
-    return request;
+    const licensePlate = (request.history as any)?.gate_approve?.license_plate || null;
+    return { ...request, license_plate: licensePlate };
   }
 
   /**
