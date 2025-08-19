@@ -316,7 +316,8 @@ model InventoryMovement {
 model RepairTicket {
   id                  String             @id @default(cuid())
   code                String             @unique
-  equipment_id        String
+  container_no        String?            // Container number (optional)
+  equipment_id        String?            // Làm cho equipment_id optional
   created_by          String
   status              RepairStatus       @default(PENDING_APPROVAL)
   problem_description String
@@ -325,10 +326,11 @@ model RepairTicket {
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
-  equipment           Equipment          @relation(fields: [equipment_id], references: [id])
+  equipment           Equipment?         @relation(fields: [equipment_id], references: [id]) // Làm cho relation optional
   items               RepairTicketItem[]
 
   @@index([equipment_id])
+  @@index([container_no])
 }
 
 model RepairTicketItem {

@@ -2,7 +2,8 @@ import Joi from 'joi';
 
 export const createRepairSchema = Joi.object({
   code: Joi.string().required(),
-  equipment_id: Joi.string().required(),
+  container_no: Joi.string().optional(), // Container number (optional)
+  equipment_id: Joi.string().optional(), // Làm cho equipment_id optional thay vì required
   problem_description: Joi.string().required(),
   estimated_cost: Joi.number().min(0).optional(),
   items: Joi.array().items(Joi.object({

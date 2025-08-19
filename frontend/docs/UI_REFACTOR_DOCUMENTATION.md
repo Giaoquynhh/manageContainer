@@ -210,6 +210,110 @@ interface SearchBarProps {
 </PageLayout>
 ```
 
+### 2. Maintenance/Repairs Page Refactor
+**File cập nhật:** `manageContainer/frontend/pages/Maintenance/Repairs.tsx`
+
+**Thay đổi chính:**
+- ✅ **Layout mới:** Bỏ layout 2 cột, table chính chiếm toàn bộ width
+- ✅ **Modal tạo phiếu:** Chuyển từ inline form sang popup modal
+- ✅ **Danh sách container đang chờ:** Thêm option mới với popup modal
+- ✅ **API integration:** Kết nối với backend port 1000 cho Gate module
+- ✅ **Status management:** Chuyển trạng thái từ GATE_IN → CHECKING
+
+**Tính năng mới:**
+
+**Modal "Danh sách container đang chờ":**
+- Hiển thị container có trạng thái `GATE_IN`
+- 5 cột: Container No, Loại, Trạng thái, Biển số xe, Hành động
+- Nút "Bắt đầu kiểm tra" để chuyển sang trạng thái `CHECKING`
+- API endpoint: `PATCH /gate/requests/{id}/check`
+- Error handling chi tiết với retry mechanism
+
+**Modal "Tạo phiếu sửa chữa":**
+- Form tạo phiếu trong popup riêng biệt
+- Fields: Mã phiếu, Thiết bị, Mô tả lỗi, Chi phí dự toán
+- Validation và error handling
+- Reset form sau khi submit thành công
+
+**UI Improvements:**
+- Table styling với proper padding, border và spacing
+- Status badges với màu sắc phân biệt
+- Responsive design cho mobile/tablet
+- Loading states và empty states
+- Consistent button styling theo design system
+
+**API Integration:**
+- Backend server: `http://localhost:1000`
+- Gate module endpoints: `/gate/requests/search`, `/gate/requests/{id}/check`
+- Authentication với Bearer token
+- Error handling cho network issues, authentication, authorization
+
+**Luồng vào module backend:**
+
+1. **Frontend gọi API:**
+   ```typescript
+   // Lấy danh sách container đang chờ
+   GET /gate/requests/search?status=GATE_IN&limit=100
+   
+   // Chuyển trạng thái sang CHECKING
+   PATCH /gate/requests/{id}/check
+   ```
+
+2. **Backend Gate Module xử lý:**
+   - **Controller:** `GateController` nhận request
+   - **Service:** `GateService` xử lý business logic
+   - **Repository:** `GateRepository` tương tác với database
+   - **Validation:** Joi schema validation cho input data
+
+3. **Database Operations:**
+   - **Search:** Query container requests với status = 'GATE_IN'
+   - **Update:** Cập nhật status từ 'GATE_IN' → 'CHECKING'
+   - **Audit:** Log thay đổi trạng thái với timestamp
+
+4. **Response Flow:**
+   - Success: Return updated data với status mới
+   - Error: Return error message với HTTP status code
+   - Frontend: Cập nhật UI dựa trên response
+
+**Flow xử lý container mới (Updated):**
+
+1. **Container GATE_IN → Click "Bắt đầu kiểm tra"**
+   - Trạng thái chuyển thành `CHECKING`
+   - Hiển thị 2 option: "Đạt chuẩn" / "Không đạt chuẩn"
+
+2. **Option "Đạt chuẩn":**
+   - Container được xóa khỏi danh sách chờ
+   - Thông báo: "Container đã được xóa khỏi danh sách chờ"
+   - Không còn hiển thị trong modal
+
+3. **Option "Không đạt chuẩn":**
+   - Hiển thị 2 sub-options:
+     - **"Không thể sửa"** → Xóa khỏi danh sách + Lý do: "Container không đạt chuẩn"
+     - **"Có thể sửa"** → Hiển thị popup tạo phiếu sửa chữa
+
+4. **Popup "Tạo phiếu sửa chữa":**
+   - Fields: Container No, Loại, Mô tả lỗi, Chi phí dự toán
+   - Validation: Mô tả không được để trống, chi phí không âm
+   - API call: `POST /maintenance/repairs` (không gửi equipment_id)
+   - Sau khi tạo thành công: Xóa container khỏi danh sách chờ
+
+5. **Kết quả cuối cùng:**
+   - Tất cả container đã xử lý đều bị xóa khỏi danh sách chờ
+   - Danh sách chỉ hiển thị container cần xử lý
+   - UI sạch sẽ, không còn container đã xử lý
+
+**Sử dụng:**
+```tsx
+// Trong trang Repairs
+<button onClick={() => setIsPendingContainersModalOpen(true)}>
+  📋 Danh sách container đang chờ
+</button>
+
+<button onClick={() => setIsModalOpen(true)}>
+  + Tạo phiếu mới
+</button>
+```
+
 ### 2. LoadingSpinner (`components/ui/LoadingSpinner.tsx`)
 **File mới** - Consistent loading states
 
@@ -615,6 +719,84 @@ import AppointmentMini from '@components/appointment/AppointmentMini';
 
 **Result:** ETA field hiện là bắt buộc với visual indicator (*) màu đỏ và validation cả frontend lẫn backend
 
+### Maintenance/Repairs Page Backend Integration
+
+**New Feature:** Integration với Gate module backend để quản lý container status và tạo phiếu sửa chữa
+
+**Backend Requirements:**
+1. **Gate Module Endpoints:**
+   ```typescript
+   // Search container requests
+   GET /gate/requests/search?status=GATE_IN&limit=100
+   
+   // Update container status
+   PATCH /gate/requests/{id}/check
+   ```
+
+2. **Maintenance Module Endpoints:**
+   ```typescript
+   // Create repair ticket (equipment_id optional)
+   POST /maintenance/repairs
+   
+   // List repair tickets
+   GET /maintenance/repairs?status=PENDING_APPROVAL
+   ```
+
+3. **Database Schema Updates:**
+   ```sql
+   -- Container requests table
+   CREATE TABLE gate_requests (
+     id VARCHAR(36) PRIMARY KEY,
+     container_no VARCHAR(20) NOT NULL,
+     type ENUM('IMPORT', 'EXPORT') NOT NULL,
+     status ENUM('GATE_IN', 'CHECKING', 'IN_YARD', 'COMPLETED') NOT NULL,
+     license_plate VARCHAR(20),
+     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+   );
+   
+   -- Repair tickets table (updated)
+   CREATE TABLE repair_tickets (
+     id VARCHAR(36) PRIMARY KEY,
+     code VARCHAR(50) UNIQUE NOT NULL,
+     equipment_id VARCHAR(36) NULL, -- Made optional
+     created_by VARCHAR(36) NOT NULL,
+     status ENUM('PENDING_APPROVAL', 'APPROVED', 'REJECTED') DEFAULT 'PENDING_APPROVAL',
+     problem_description TEXT NOT NULL,
+     estimated_cost DECIMAL(10,2) DEFAULT 0,
+     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+   );
+   ```
+
+4. **Status Flow (Updated):**
+   ```
+   GATE_IN → CHECKING → COMPLETED (PASS) hoặc CHECKING (FAIL) → REJECTED (UNREPAIRABLE) hoặc CHECKING (REPAIRABLE)
+   ```
+
+5. **Authentication:**
+   - Bearer token required
+   - Role-based access control (GateManager, MaintenanceAdmin, SaleAdmin)
+   - Token validation middleware
+
+**Error Handling:**
+- **401:** Unauthorized - Token missing/invalid
+- **403:** Forbidden - Insufficient permissions
+- **404:** Not found - Request ID không tồn tại
+- **422:** Validation error - Invalid input data
+- **500:** Server error - Database/network issues
+
+**Recent Backend Changes:**
+1. **Equipment ID Optional:** 
+   - `equipment_id` field trong `createRepairSchema` đã được chuyển từ `required` sang `optional`
+   - Database migration: `equipment_id` column trong `RepairTicket` table đã được chuyển thành `NULLABLE`
+   - Service logic: Chỉ kiểm tra equipment ACTIVE khi có `equipment_id`
+
+2. **Container Processing Flow:**
+   - Container đã xử lý sẽ được xóa khỏi danh sách chờ
+   - Không còn hiển thị container có trạng thái `COMPLETED`, `REJECTED`, hoặc đã tạo phiếu sửa chữa
+   - UI tự động refresh sau mỗi action
+
 ### Search Bar Layout Balance Improvement
 
 **Problem:** Search input quá nhỏ so với filter dropdowns, layout không cân đối
@@ -679,6 +861,18 @@ import AppointmentMini from '@components/appointment/AppointmentMini';
   - Fixed `acceptRequest` method để lưu appointment vào database
   - Fixed `getAppointmentByRequestId` để return real data thay vì demo
 
+**New Backend Requirements (Gate Module):**
+- **Controller:** `manageContainer/backend/modules/gate/controllers/GateController.ts`
+  - `searchRequests()` - Search container requests by status
+  - `checkContainer()` - Update container status to CHECKING
+- **Service:** `manageContainer/backend/modules/gate/services/GateService.ts`
+  - Business logic cho container status management
+  - Validation và error handling
+- **Repository:** `manageContainer/backend/modules/gate/repositories/GateRepository.ts`
+  - Database operations cho gate_requests table
+- **DTOs:** `manageContainer/backend/modules/gate/dto/GateDtos.ts`
+  - Request/response schemas với Joi validation
+
 ### Frontend Files
 
 **Core Components:**
@@ -710,17 +904,31 @@ import AppointmentMini from '@components/appointment/AppointmentMini';
 **Configuration:**
 - `manageContainer/frontend/components/index.ts` - Component exports
 
+**Pages Refactored:**
+- `manageContainer/frontend/pages/Maintenance/Repairs.tsx` - Complete refactor với modal system
+
 **Documentation:**
 - `manageContainer/frontend/docs/UI_REFACTOR_DOCUMENTATION.md` - This file (updated)
 - `manageContainer/frontend/docs/CHAT_MINI_SYSTEM.md` - Chat system documentation
 - `manageContainer/frontend/docs/COMPONENT_SYSTEM.md` - Component usage guide
 - `manageContainer/frontend/docs/APPOINTMENT_MINI_SYSTEM.md` - Appointment system documentation (new)
 
-**Total Files Modified:** 26 files (2 backend + 24 frontend)
+**Total Files Modified:** 28 files (3 backend + 25 frontend)
 - **New Components Added:** 4 appointment components
 - **Bug Fixes Applied:** 4 critical runtime errors
 - **Form Validation Enhanced:** ETA field made required
+- **Maintenance Page Refactored:** Repairs page với modal system mới
+- **Container Processing Flow:** Auto-remove processed containers from waiting list
+- **Backend Schema Updated:** equipment_id made optional in repair tickets
 - **Documentation Updated:** 2 files updated, 1 file added
+
+**Backend Requirements Added:**
+- **Gate Module:** 4 new files cần tạo cho container management
+- **Maintenance Module:** Updated để hỗ trợ equipment_id optional
+- **Database Schema:** gate_requests table với status flow, repair_tickets với equipment_id nullable
+- **API Endpoints:** 2 new endpoints cho search và status update, 1 updated endpoint cho create repair
+- **Authentication:** Role-based access control cho Gate operations
+- **Database Migration:** equipment_id column trong RepairTicket table đã được chuyển thành NULLABLE
 
 ---
 
@@ -738,5 +946,5 @@ import AppointmentMini from '@components/appointment/AppointmentMini';
 
 ---
 
-*Tài liệu được cập nhật lần cuối: 2024-12-19*  
-*Version: 1.1.0 - Appointment Mini System + Bug Fixes*
+*Tài liệu được cập nhật lần cuối: 2024-08-19*  
+*Version: 1.3.0 - Container Processing Flow + Equipment ID Optional*

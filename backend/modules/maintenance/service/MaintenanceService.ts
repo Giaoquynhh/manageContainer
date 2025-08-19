@@ -9,17 +9,21 @@ export class MaintenanceService {
   }
 
   async createRepair(actor: any, payload: any) {
-    // Equipment must be ACTIVE
-    const eq = await prisma.equipment.findUnique({ where: { id: payload.equipment_id } });
-    if (!eq || eq.status !== 'ACTIVE') throw new Error('Thiết bị không hợp lệ hoặc không ACTIVE');
-    const ticket = await prisma.repairTicket.create({ data: {
-      code: payload.code,
-      equipment_id: payload.equipment_id,
-      created_by: actor._id,
-      problem_description: payload.problem_description,
-      estimated_cost: payload.estimated_cost || 0,
-      items: payload.items ? { create: payload.items.map((it: any)=>({ inventory_item_id: it.inventory_item_id, quantity: it.quantity })) } : undefined
-    }, include: { items: true } });
+    // Nếu có equipment_id thì kiểm tra equipment phải ACTIVE
+    if (payload.equipment_id) {
+      const eq = await prisma.equipment.findUnique({ where: { id: payload.equipment_id } });
+      if (!eq || eq.status !== 'ACTIVE') throw new Error('Thiết bị không hợp lệ hoặc không ACTIVE');
+    }
+    
+          const ticket = await prisma.repairTicket.create({ data: {
+        code: payload.code,
+        container_no: payload.container_no || null, // Lưu container number nếu có
+        equipment_id: payload.equipment_id || null, // Cho phép null nếu không có equipment_id
+        created_by: actor._id,
+        problem_description: payload.problem_description,
+        estimated_cost: payload.estimated_cost || 0,
+        items: payload.items ? { create: payload.items.map((it: any)=>({ inventory_item_id: it.inventory_item_id, quantity: it.quantity })) } : undefined
+      }, include: { items: true } });
     await audit(actor._id, 'REPAIR.CREATED', 'REPAIR', ticket.id);
     return ticket;
   }
