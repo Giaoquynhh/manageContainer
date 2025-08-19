@@ -10,6 +10,20 @@ interface PDFSlipProps {
 export const PDFSlip: React.FC<PDFSlipProps> = ({ containerInfo, selectedPosition }) => {
   const slipRef = useRef<HTMLDivElement>(null);
 
+  // Chuẩn hóa dữ liệu vị trí để compatible với 2 dạng:
+  // 1) Dạng cũ: { block: 'B1', slot: '11', yard: '...' }
+  // 2) Dạng mới từ API suggest: { slot: { id, code, block_code?, block? }, score }
+  const normalized = (() => {
+    const slotObj: any = selectedPosition?.slot || selectedPosition || {};
+    const positionCode: string = slotObj.code || (
+      selectedPosition?.block && selectedPosition?.slot
+        ? `${selectedPosition.block}-${selectedPosition.slot}`
+        : 'UNKNOWN'
+    );
+    const blockLabel: string = slotObj.block?.code || slotObj.block_code || 'Bãi';
+    return { slotObj, positionCode, blockLabel };
+  })();
+
   const generatePDF = async () => {
     if (!slipRef.current) return;
 
@@ -47,7 +61,7 @@ export const PDFSlip: React.FC<PDFSlipProps> = ({ containerInfo, selectedPositio
       }
 
       // Tải xuống PDF
-      const fileName = `Container_${containerInfo.container_no}_${selectedPosition.block}-${selectedPosition.slot}.pdf`;
+      const fileName = `Container_${containerInfo.container_no}_${normalized.positionCode}.pdf`;
       pdf.save(fileName);
 
     } catch (error) {
@@ -264,11 +278,9 @@ export const PDFSlip: React.FC<PDFSlipProps> = ({ containerInfo, selectedPositio
           <div className="position-section">
             <h2>VỊ TRÍ ĐÃ CHỌN</h2>
             <div className="position-highlight">
-              <div className="position-code-large">
-                {selectedPosition.block}-{selectedPosition.slot}
-              </div>
+              <div className="position-code-large">{normalized.positionCode}</div>
               <div className="position-details">
-                <span className="yard-name">{selectedPosition.yard}</span>
+                <span className="yard-name">{normalized.blockLabel}</span>
                 <span className="status">Trạng thái: Trống</span>
               </div>
             </div>
@@ -277,7 +289,7 @@ export const PDFSlip: React.FC<PDFSlipProps> = ({ containerInfo, selectedPositio
           <div className="instructions-section">
             <h2>HƯỚNG DẪN</h2>
             <ul>
-              <li>Đưa container đến vị trí: <strong>{selectedPosition.block}-{selectedPosition.slot}</strong></li>
+              <li>Đưa container đến vị trí: <strong>{normalized.positionCode}</strong></li>
               <li>Đặt container theo hướng dẫn của nhân viên bãi</li>
               <li>Xác nhận vị trí đã đặt với nhân viên quản lý</li>
               <li>Giữ phiếu này để đối chiếu</li>

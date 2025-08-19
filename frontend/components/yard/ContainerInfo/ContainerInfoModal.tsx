@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/router';
 import { getGateStatusText, getStatusColor } from '../../utils/containerUtils';
 import { PDFSlip } from '../PDFSlip/PDFSlip';
+import { forkliftApi } from '@services/forklift';
+import { yardApi } from '@services/yard';
+import { mutate } from 'swr';
 
 interface ContainerInfoModalProps {
   isOpen: boolean;
@@ -20,6 +24,9 @@ export const ContainerInfoModal: React.FC<ContainerInfoModalProps> = ({
   const [showPositionSuggestions, setShowPositionSuggestions] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<any>(null);
   const [showPDFSlip, setShowPDFSlip] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [suggestions, setSuggestions] = useState<Array<{ slot: any; score: number }>>([]);
+  const router = useRouter();
 
   console.log('🔍 ContainerInfoModal render:', {
     isOpen,
@@ -39,8 +46,17 @@ export const ContainerInfoModal: React.FC<ContainerInfoModalProps> = ({
     { id: 5, block: 'C1', slot: '03', yard: 'Bãi C1', status: 'Trống', distance: 'Trung bình' }
   ];
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     setShowPositionSuggestions(true);
+    if (containerInfo?.container_no) {
+      try {
+        const data = await yardApi.suggest(containerInfo.container_no);
+        setSuggestions(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error('Lỗi lấy gợi ý vị trí:', e);
+        setSuggestions([]);
+      }
+    }
   };
 
   const handleSelectPosition = (position: any) => {
@@ -65,6 +81,25 @@ export const ContainerInfoModal: React.FC<ContainerInfoModalProps> = ({
     setShowPDFSlip(false);
   };
 
+  const handleFinish = async () => {
+    if (!containerInfo) return;
+    try {
+      setSubmitting(true);
+      if (selectedPosition?.slot?.id) {
+        await yardApi.assign(containerInfo.container_no, selectedPosition.slot.id);
+        await mutate('yard_map');
+      }
+      await forkliftApi.assign({ container_no: containerInfo.container_no, to_slot_id: selectedPosition?.slot?.id });
+      onClose();
+      router.push('/Forklift');
+    } catch (error) {
+      console.error('Lỗi khi tạo công việc xe nâng:', error);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (showPDFSlip) {
     return (
       <div className="modal-overlay" onClick={onClose}>
@@ -85,6 +120,9 @@ export const ContainerInfoModal: React.FC<ContainerInfoModalProps> = ({
             <button className="btn btn-secondary" onClick={handleBackToSuggestions}>
               Quay lại
             </button>
+            <button className="btn btn-primary" onClick={handleFinish} disabled={submitting}>
+              {submitting ? 'Đang xử lý...' : 'Hoàn tất'}
+            </button>
           </div>
         </div>
       </div>
@@ -104,19 +142,19 @@ export const ContainerInfoModal: React.FC<ContainerInfoModalProps> = ({
             <div className="position-suggestions">
               <h4>Chọn vị trí phù hợp cho container:</h4>
               <div className="suggestions-grid">
-                {positionSuggestions.map((position) => (
-                  <div 
-                    key={position.id} 
-                    className={`suggestion-card ${selectedPosition?.id === position.id ? 'selected' : ''}`}
-                    onClick={() => handleSelectPosition(position)}
+                {suggestions.map((s) => (
+                  <div
+                    key={s.slot.id}
+                    className={`suggestion-card ${selectedPosition?.slot?.id === s.slot.id ? 'selected' : ''}`}
+                    onClick={() => handleSelectPosition(s)}
                   >
                     <div className="suggestion-header">
-                      <span className="position-code">{position.block}-{position.slot}</span>
+                      <span className="position-code">{s.slot.code}</span>
                       <span className="status-badge available">Trống</span>
                     </div>
                     <div className="suggestion-details">
-                      <span className="yard-name">{position.yard}</span>
-                      <span className="distance">{position.distance}</span>
+                      <span className="yard-name">{s.slot.block?.code || s.slot.block_code || 'Bãi'}</span>
+                      <span className="distance">Điểm: {Math.round((s.score || 0) * 100) / 100}</span>
                     </div>
                   </div>
                 ))}
