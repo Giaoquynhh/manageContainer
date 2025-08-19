@@ -1,4 +1,5 @@
 import { ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
   title: string;
@@ -75,7 +76,7 @@ export default function Modal({
     }
   };
 
-  return (
+  const content = (
     <div className={overlayClasses} onClick={handleOverlayClick}>
       <div 
         className="modal-content" 
@@ -106,6 +107,12 @@ export default function Modal({
       </div>
     </div>
   );
+
+  // Render qua portal để tránh bị clip bởi các container (vd: card với overflow hidden)
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(content, document.body);
+  }
+  return content;
 }
 
 

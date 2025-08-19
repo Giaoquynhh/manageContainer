@@ -16,6 +16,7 @@ export default function Header() {
   const [me, setMe] = useState<User | null>(null);
   const [navOpen, setNavOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
 
   // Initialize auth state
   useEffect(() => {
@@ -74,6 +75,20 @@ export default function Header() {
     }
   }, [navOpen, hasToken, router.pathname]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountDropdownOpen) {
+        setAccountDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [accountDropdownOpen]);
+
   const handleLogout = () => {
     try {
       if (typeof window !== 'undefined') {
@@ -93,6 +108,11 @@ export default function Header() {
   const toggleNavigation = () => {
     setNavOpen(prev => !prev);
   };
+
+  const toggleAccountDropdown = () => {
+    setAccountDropdownOpen(prev => !prev);
+  };
+
   // Component state calculations
   const showLogout = hasToken && router.pathname !== '/Login';
   const showSidebar = hasToken && router.pathname !== '/Login' && router.pathname !== '/Register';
@@ -173,19 +193,84 @@ export default function Header() {
 
           {/* Action Buttons */}
           <div className="header-buttons">
+            {/* Account Dropdown */}
             {showLogout && (
-              <button 
-                className="btn btn-outline header-logout-btn" 
-                onClick={handleLogout}
-                type="button"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16,17 21,12 16,7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span>Đăng xuất</span>
-              </button>
+              <div className="account-dropdown-container">
+                <button 
+                  className="btn btn-outline header-account-btn" 
+                  onClick={toggleAccountDropdown}
+                  type="button"
+                  title="Quản lý tài khoản"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <span>Tài khoản</span>
+                  <svg 
+                    width="12" 
+                    height="12" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2"
+                    style={{
+                      transform: accountDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease'
+                    }}
+                  >
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                  </svg>
+                </button>
+                
+                {/* Account Dropdown Menu */}
+                {accountDropdownOpen && (
+                  <div className="account-dropdown-menu">
+                    <Link 
+                      href="/Account" 
+                      className="dropdown-item"
+                      onClick={() => setAccountDropdownOpen(false)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      <span>Thông tin tài khoản</span>
+                    </Link>
+                    
+                    {canViewUsersPartners(me?.role) && (
+                      <Link 
+                        href="/UsersPartners" 
+                        className="dropdown-item"
+                        onClick={() => setAccountDropdownOpen(false)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>Quản lý người dùng</span>
+                      </Link>
+                    )}
+                    
+                    <div className="dropdown-divider"></div>
+                    
+                    <button 
+                      className="dropdown-item dropdown-item-danger" 
+                      onClick={handleLogout}
+                      type="button"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
             
             {!hasToken && router.pathname !== '/Login' && (
