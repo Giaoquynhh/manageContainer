@@ -325,6 +325,69 @@ export class RequestService {
 			storage_key: fileName
 		});
 		
+		// Nếu là SUPPLEMENT document, tự động chuyển trạng thái sang FORWARDED
+		if (type === 'SUPPLEMENT') {
+			try {
+				console.log(`Attempting to auto-forward request ${request_id} from ${req.status} to FORWARDED`);
+				console.log(`Actor role: ${actor.role}, Actor ID: ${actor._id}`);
+				
+				// Kiểm tra xem có thể chuyển trạng thái không
+				const canTransition = RequestStateMachine.canTransition(req.status, 'FORWARDED', actor.role);
+				console.log(`Can transition from ${req.status} to FORWARDED: ${canTransition}`);
+				
+				if (!canTransition) {
+					console.warn(`Cannot transition from ${req.status} to FORWARDED for role ${actor.role}`);
+					return doc; // Upload thành công nhưng không chuyển trạng thái
+				}
+				
+				// Sử dụng State Machine để chuyển trạng thái
+				await RequestStateMachine.executeTransition(
+					actor,
+					request_id,
+					req.status,
+					'FORWARDED',
+					'Tự động chuyển tiếp sau khi khách hàng bổ sung tài liệu'
+				);
+				
+				console.log(`State machine transition successful, updating database...`);
+				
+				// Cập nhật trạng thái request
+				const updatedRequest = await repo.update(request_id, {
+					status: 'FORWARDED',
+					forwarded_at: new Date(),
+					forwarded_by: actor._id,
+					history: [
+						...(Array.isArray(req.history) ? req.history : []),
+						{
+							at: new Date().toISOString(),
+							by: actor._id,
+							action: 'FORWARDED',
+							reason: 'Tự động chuyển tiếp sau khi khách hàng bổ sung tài liệu',
+							document_id: doc.id,
+							document_type: 'SUPPLEMENT'
+						}
+					]
+				});
+				
+				console.log(`Request ${request_id} successfully updated to FORWARDED:`, {
+					newStatus: updatedRequest.status,
+					forwardedAt: updatedRequest.forwarded_at,
+					forwardedBy: updatedRequest.forwarded_by
+				});
+				
+			} catch (error) {
+				console.error('Error auto-forwarding request after SUPPLEMENT upload:', error);
+				console.error('Error details:', {
+					message: error instanceof Error ? error.message : String(error),
+					stack: error instanceof Error ? error.stack : 'No stack trace',
+					actorRole: actor.role,
+					requestId: request_id,
+					currentStatus: req.status
+				});
+				// Không throw error để upload vẫn thành công, chỉ log warning
+			}
+		}
+		
 		// Audit log với action khác nhau cho SUPPLEMENT
 		const auditAction = type === 'SUPPLEMENT' ? 'DOC.UPLOADED_SUPPLEMENT' : 'DOC.UPLOADED';
 		await audit(actor._id, auditAction, 'DOC', doc.id, { request_id, type, version });
@@ -363,6 +426,10 @@ export class RequestService {
 	// State Machine Methods
 	async scheduleRequest(actor: any, id: string, appointmentData: any) {
 		return await appointmentService.scheduleAppointment(actor, id, appointmentData);
+	}
+
+	async updateAppointment(actor: any, id: string, appointmentData: any) {
+		return await appointmentService.updateAppointment(actor, id, appointmentData);
 	}
 
 	async addInfoToRequest(actor: any, id: string, documents: any[], notes?: string) {

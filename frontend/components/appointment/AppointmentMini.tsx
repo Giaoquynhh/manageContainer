@@ -12,6 +12,7 @@ interface AppointmentMiniProps {
   };
   onClose?: () => void;
   onSuccess?: () => void;
+  mode?: 'create' | 'change'; // Thêm mode để phân biệt tạo mới hay thay đổi
 }
 
 export default function AppointmentMini({
@@ -19,6 +20,7 @@ export default function AppointmentMini({
   requestData,
   onClose,
   onSuccess,
+  mode = 'create',
 }: AppointmentMiniProps) {
   const [isOpen, setIsOpen] = useState(true); // Auto-open when component is rendered
   const [isMinimized, setIsMinimized] = useState(false);
@@ -190,6 +192,7 @@ export default function AppointmentMini({
           onSuccess={handleSuccess}
           onMinimize={handleMinimize}
           onDragStart={handleDragStart}
+          mode={mode}
         />
       </div>
     </>

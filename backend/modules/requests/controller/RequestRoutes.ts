@@ -64,6 +64,7 @@ router.post('/:id/payment-request', requireRoles('SaleAdmin','SystemAdmin'), (re
 
 // State Machine Routes
 router.patch('/:id/schedule', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.scheduleRequest(req as any, res));
+router.patch('/:id/update-appointment', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.updateAppointment(req as any, res));
 router.patch('/:id/add-info', requireRoles('CustomerAdmin','CustomerUser'), (req, res) => controller.addInfoToRequest(req as any, res));
 router.patch('/:id/send-to-gate', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.sendToGate(req as any, res));
 router.patch('/:id/complete', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.completeRequest(req as any, res));

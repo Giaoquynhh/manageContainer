@@ -19,25 +19,39 @@ export default function GateActionButtons({
   const [isLoading, setIsLoading] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [plateNo, setPlateNo] = useState('');
+  const [driverName, setDriverName] = useState('');
 
   const confirmApprove = async () => {
     try {
-      const normalized = plateNo.trim().toUpperCase();
-      // Validate cơ bản: 5-20 ký tự, chữ/số/gạch/space/dấu chấm
-      const valid = /^[A-Z0-9\-\s\.]{5,20}$/.test(normalized);
-      if (!valid) {
+      const normalizedPlate = plateNo.trim().toUpperCase();
+      const normalizedDriver = driverName.trim();
+      
+      // Validate biển số xe: 5-20 ký tự, chữ/số/gạch/space/dấu chấm
+      const validPlate = /^[A-Z0-9\-\s\.]{5,20}$/.test(normalizedPlate);
+      if (!validPlate) {
         alert('Vui lòng nhập biển số xe hợp lệ (tối thiểu 5 ký tự).');
         return;
       }
+      
+      // Validate tên tài xế: 2-100 ký tự
+      if (normalizedDriver.length < 2) {
+        alert('Vui lòng nhập tên tài xế (tối thiểu 2 ký tự).');
+        return;
+      }
+      
       setIsLoading(true);
-      await api.patch(`/gate/requests/${requestId}/approve`, { license_plate: normalized });
+      await api.patch(`/gate/requests/${requestId}/approve`, { 
+        license_plate: normalizedPlate,
+        driver_name: normalizedDriver
+      });
       
       // Hiển thị thông báo thành công
       const newStatus = requestType === 'EXPORT' ? 'GATE_OUT' : 'GATE_IN';
-      alert(`Đã chuyển trạng thái: ${newStatus}. Biển số: ${normalized}`);
+      alert(`Đã chuyển trạng thái: ${newStatus}.\nTài xế: ${normalizedDriver}\nBiển số: ${normalizedPlate}`);
       
       setIsApproveModalOpen(false);
       setPlateNo('');
+      setDriverName('');
       onActionSuccess();
     } catch (error: any) {
       alert(`Lỗi khi approve: ${error.response?.data?.message || error.message}`);
@@ -138,28 +152,63 @@ export default function GateActionButtons({
               marginBottom: 'var(--space-4)',
               color: 'var(--color-gray-900)'
             }}>
-              Nhập biển số xe để cho phép
+              Nhập thông tin tài xế và biển số xe
             </h3>
 
-            <input
-              type="text"
-              value={plateNo}
-              onChange={(e) => setPlateNo(e.target.value.toUpperCase())}
-              placeholder="VD: 51C-123.45"
-              style={{
-                width: '100%',
-                padding: 'var(--space-3)',
-                border: '2px solid var(--color-gray-200)',
-                borderRadius: 'var(--radius-lg)',
-                marginBottom: 'var(--space-4)'
-              }}
-              disabled={isLoading}
-              autoFocus
-            />
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <label style={{
+                display: 'block',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-medium)',
+                color: 'var(--color-gray-700)',
+                marginBottom: 'var(--space-2)'
+              }}>
+                Tên tài xế *
+              </label>
+              <input
+                type="text"
+                value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+                placeholder="VD: Nguyễn Văn A"
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-3)',
+                  border: '2px solid var(--color-gray-200)',
+                  borderRadius: 'var(--radius-lg)'
+                }}
+                disabled={isLoading}
+                autoFocus
+              />
+            </div>
+
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <label style={{
+                display: 'block',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-medium)',
+                color: 'var(--color-gray-700)',
+                marginBottom: 'var(--space-2)'
+              }}>
+                Biển số xe *
+              </label>
+              <input
+                type="text"
+                value={plateNo}
+                onChange={(e) => setPlateNo(e.target.value.toUpperCase())}
+                placeholder="VD: 51C-123.45"
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-3)',
+                  border: '2px solid var(--color-gray-200)',
+                  borderRadius: 'var(--radius-lg)'
+                }}
+                disabled={isLoading}
+              />
+            </div>
 
             <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
               <button
-                onClick={() => { setIsApproveModalOpen(false); setPlateNo(''); }}
+                onClick={() => { setIsApproveModalOpen(false); setPlateNo(''); setDriverName(''); }}
                 disabled={isLoading}
                 className="action-btn action-btn-secondary"
               >

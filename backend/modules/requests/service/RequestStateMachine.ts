@@ -43,8 +43,8 @@ export class RequestStateMachine {
     {
       from: 'SCHEDULED',
       to: 'FORWARDED',
-      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
-      description: 'Depot chuyển tiếp sau khi nhận thông tin bổ sung'
+      allowedRoles: ['SaleAdmin', 'SystemAdmin', 'CustomerAdmin', 'CustomerUser'],
+      description: 'Depot chuyển tiếp hoặc Customer tự động chuyển tiếp sau khi bổ sung tài liệu'
     },
     {
       from: 'SCHEDULED',
@@ -62,8 +62,8 @@ export class RequestStateMachine {
     {
       from: 'SCHEDULED_INFO_ADDED',
       to: 'FORWARDED',
-      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
-      description: 'Depot chuyển tiếp sau khi nhận thông tin bổ sung'
+      allowedRoles: ['SaleAdmin', 'SystemAdmin', 'CustomerAdmin', 'CustomerUser'],
+      description: 'Depot chuyển tiếp hoặc Customer tự động chuyển tiếp sau khi bổ sung tài liệu'
     },
     {
       from: 'SCHEDULED_INFO_ADDED',

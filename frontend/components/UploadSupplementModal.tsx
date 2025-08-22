@@ -56,7 +56,7 @@ export default function UploadSupplementModal({
       formData.append('file', file);
       formData.append('type', 'SUPPLEMENT');
 
-      await api.post(`/requests/${requestId}/docs`, formData, {
+      const response = await api.post(`/requests/${requestId}/docs`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -66,7 +66,15 @@ export default function UploadSupplementModal({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      onSuccess();
+      
+      // Hiển thị thông báo thành công với thông tin về việc tự động chuyển tiếp
+      alert('✅ Upload tài liệu bổ sung thành công!\n\n📤 Yêu cầu đã được tự động chuyển tiếp sang trạng thái FORWARDED.\n\n🔄 Hệ thống sẽ xử lý yêu cầu của bạn tiếp theo.\n\n💡 Lưu ý: Trạng thái sẽ được cập nhật sau khi refresh trang.');
+      
+      // Gọi callback onSuccess trước khi đóng modal
+      if (onSuccess) {
+        onSuccess();
+      }
+      
       onClose();
     } catch (error: any) {
       console.error('Error uploading file:', error);

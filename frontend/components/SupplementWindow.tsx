@@ -7,13 +7,15 @@ interface SupplementWindowProps {
   isMinimized: boolean;
   onMinimize: () => void;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export default function SupplementWindow({ 
   requestId, 
   isMinimized, 
   onMinimize, 
-  onClose 
+  onClose,
+  onSuccess
 }: SupplementWindowProps) {
   return (
     <div className="supplement-window">
@@ -23,7 +25,7 @@ export default function SupplementWindow({
         onClose={onClose}
       />
       {!isMinimized && (
-        <SupplementForm requestId={requestId} />
+        <SupplementForm requestId={requestId} onSuccess={onSuccess} />
       )}
     </div>
   );

@@ -6,7 +6,7 @@ interface DepotRequestTableProps {
 	loading?: boolean;
 	onDocumentClick?: (doc: any) => void;
 	onToggleSupplement?: (requestId: string) => void;
-	onForward?: (requestId: string) => void;
+	onChangeAppointment?: (requestId: string) => void;
 	onReject?: (requestId: string) => void;
 	onChangeStatus?: (id: string, status: string) => void;
 	onSendPayment?: (id: string) => void;
@@ -19,7 +19,7 @@ export default function DepotRequestTable({
 	loading, 
 	onDocumentClick,
 	onToggleSupplement,
-	onForward,
+	onChangeAppointment,
 	onReject,
 	onChangeStatus,
 	onSendPayment,
@@ -172,11 +172,10 @@ export default function DepotRequestTable({
 										<>
 											<button
 												className="btn btn-sm btn-success"
-												disabled={loadingId === item.id + 'FORWARDED'}
-												onClick={() => onForward?.(item.id)}
-												title="Chuyển tiếp xử lý"
+												onClick={() => onChangeAppointment?.(item.id)}
+												title="Thay đổi lịch hẹn với khách hàng"
 											>
-												{loadingId === item.id + 'FORWARDED' ? '⏳' : '➡️'} Chuyển tiếp
+												📅 Thay đổi lịch hẹn
 											</button>
 											<button
 												className="btn btn-sm btn-danger"

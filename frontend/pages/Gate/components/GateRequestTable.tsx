@@ -9,7 +9,8 @@ interface GateRequest {
   status: string;
   eta?: string;
   forwarded_at?: string;
-  license_plate?: string; // Thêm trường biển số xe
+  license_plate?: string; // Biển số xe
+  driver_name?: string;   // Tên tài xế
   docs: any[];
   attachments: any[];
 }
@@ -70,6 +71,7 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
               <th>Loại</th>
               <th>Trạng thái</th>
               <th>ETA</th>
+              <th>Tên tài xế</th>
               <th>Biển số xe</th>
               <th>Chứng từ</th>
               <th>Hành động</th>
@@ -92,6 +94,11 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
                   </span>
                 </td>
                 <td>{request.eta ? new Date(request.eta).toLocaleString('vi-VN') : 'N/A'}</td>
+                <td>
+                  <span className="driver-name">
+                    {request.driver_name || 'N/A'}
+                  </span>
+                </td>
                 <td>
                   <span className="license-plate">
                     {request.license_plate || 'N/A'}

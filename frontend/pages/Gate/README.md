@@ -19,10 +19,13 @@ Module Gate được cập nhật với 2 nhóm tính năng:
 
 ```http
 PATCH /gate/requests/:id/approve
-Body: { "license_plate": "51C-123.45" }
+Body: { 
+  "driver_name": "Nguyễn Văn A",
+  "license_plate": "51C-123.45" 
+}
 ```
 
-- BE lưu biển số trong trường `history.gate_approve.license_plate` của `ServiceRequest` và phản hồi ở API search/details dưới dạng trường `license_plate` để hiển thị tại cột "Biển số xe".
+- BE lưu thông tin trong trường `driver_name` và `license_plate` của `ServiceRequest` và phản hồi ở API search/details để hiển thị tại cột "Tên tài xế" và "Biển số xe".
 
 ## Các Component giao diện
 
@@ -39,10 +42,10 @@ Body: { "license_plate": "51C-123.45" }
 
 ## Cách Sử Dụng
 
-### Cho phép (Approve) với biển số
+### Cho phép (Approve) với thông tin tài xế và biển số
 1. Trên Gate Dashboard, với request trạng thái `FORWARDED`, bấm nút "Cho phép".
-2. Nhập biển số trong modal và xác nhận.
-3. Trạng thái chuyển thành `GATE_IN` (IMPORT) hoặc `GATE_OUT` (EXPORT). Cột "Biển số xe" hiển thị giá trị vừa nhập.
+2. Nhập **tên tài xế** và **biển số xe** trong modal và xác nhận.
+3. Trạng thái chuyển thành `GATE_IN` (IMPORT) hoặc `GATE_OUT` (EXPORT). Cột "Tên tài xế" và "Biển số xe" hiển thị giá trị vừa nhập.
 
 ### Xem Danh Sách Chứng Từ
 1. Trong Gate Dashboard, tìm request cần xem chứng từ
@@ -62,9 +65,9 @@ Body: { "license_plate": "51C-123.45" }
 ## API Endpoints
 
 ### Backend (Gate Service)
-- `PATCH /gate/requests/:id/approve` body `{ license_plate }` - Cho phép vào/ra, lưu biển số
-- `GET /gate/requests/search` - Trả về danh sách request kèm `license_plate` (nếu có)
-- `GET /gate/requests/:id` - Chi tiết request kèm `license_plate` (nếu có)
+- `PATCH /gate/requests/:id/approve` body `{ driver_name, license_plate }` - Cho phép vào/ra, lưu thông tin tài xế và biển số
+- `GET /gate/requests/search` - Trả về danh sách request kèm `driver_name` và `license_plate` (nếu có)
+- `GET /gate/requests/:id` - Chi tiết request kèm `driver_name` và `license_plate` (nếu có)
 - `GET /gate/requests/:id/documents` - Lấy danh sách chứng từ
 - `GET /gate/requests/:requestId/documents/:documentId/view` - Xem file
 

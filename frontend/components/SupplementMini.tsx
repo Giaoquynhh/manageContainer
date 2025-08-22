@@ -5,9 +5,10 @@ interface SupplementMiniProps {
   requestId: string;
   visible: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function SupplementMini({ requestId, visible, onClose }: SupplementMiniProps) {
+export default function SupplementMini({ requestId, visible, onClose, onSuccess }: SupplementMiniProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -99,6 +100,7 @@ export default function SupplementMini({ requestId, visible, onClose }: Suppleme
           isMinimized={isMinimized}
           onMinimize={() => setIsMinimized(!isMinimized)}
           onClose={onClose}
+          onSuccess={onSuccess}
         />
       </div>
     </>

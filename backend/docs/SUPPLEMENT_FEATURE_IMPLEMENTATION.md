@@ -17,10 +17,11 @@
 **File:** `manageContainer/backend/modules/requests/service/RequestStateMachine.ts`
 - Thêm trạng thái `FORWARDED` vào `VALID_STATES`
 - Thêm transitions mới:
-  - `SCHEDULED → FORWARDED` (Depot chuyển tiếp)
-  - `SCHEDULED_INFO_ADDED → FORWARDED` (Depot chuyển tiếp)
+  - `SCHEDULED → FORWARDED` (**Depot chuyển tiếp HOẶC Customer tự động chuyển tiếp sau khi upload SUPPLEMENT**)
+  - `SCHEDULED_INFO_ADDED → FORWARDED` (**Depot chuyển tiếp HOẶC Customer tự động chuyển tiếp sau khi upload SUPPLEMENT**)
   - `FORWARDED → COMPLETED` (Hoàn tất)
   - `FORWARDED → SENT_TO_GATE` (Chuyển sang Gate)
+- **Cập nhật role permissions:** CustomerAdmin/CustomerUser có thể thực hiện transitions `SCHEDULED → FORWARDED`
 
 #### 1.3. DTOs
 **File:** `manageContainer/backend/modules/requests/dto/RequestDtos.ts`
@@ -34,6 +35,9 @@
   - Chỉ cho phép Customer upload khi status `SCHEDULED`
   - Thêm scope check cho tenant
   - Xử lý file upload với tên unique
+  - **Tự động chuyển trạng thái sang `FORWARDED` sau khi upload SUPPLEMENT**
+  - **Sử dụng State Machine để validate và execute transitions**
+  - **Enhanced logging và error handling**
   - Audit log với action `DOC.UPLOADED_SUPPLEMENT`
 - Cập nhật `listDocuments` để hỗ trợ filter theo type
 - Thêm `getAppointmentInfo` method
@@ -147,6 +151,43 @@ SCHEDULED → REJECTED
 FORWARDED → COMPLETED | SENT_TO_GATE
 ```
 
+### **Auto-Forward Logic**
+
+Khi Customer upload SUPPLEMENT document:
+1. **Validation:** Kiểm tra status = `SCHEDULED`, role = Customer, tenant scope
+2. **Pre-check:** `RequestStateMachine.canTransition(SCHEDULED → FORWARDED, CustomerRole)`
+3. **State Machine:** `RequestStateMachine.executeTransition()` với reason "Tự động chuyển tiếp sau khi khách hàng bổ sung tài liệu"
+4. **Database Update:** Cập nhật status = `FORWARDED`, `forwarded_at`, `forwarded_by`, `history`
+5. **Audit Log:** Ghi log transition và document upload
+6. **Error Handling:** Nếu transition thất bại, upload vẫn thành công (graceful degradation)
+
+### **Enhanced Logging**
+
+```typescript
+// Pre-transition logging
+console.log(`Attempting to auto-forward request ${request_id} from ${req.status} to FORWARDED`);
+console.log(`Actor role: ${actor.role}, Actor ID: ${actor._id}`);
+console.log(`Can transition from ${req.status} to FORWARDED: ${canTransition}`);
+
+// Success logging
+console.log(`State machine transition successful, updating database...`);
+console.log(`Request ${request_id} successfully updated to FORWARDED:`, {
+  newStatus: updatedRequest.status,
+  forwardedAt: updatedRequest.forwarded_at,
+  forwardedBy: updatedRequest.forwarded_by
+});
+
+// Error logging
+console.error('Error auto-forwarding request after SUPPLEMENT upload:', error);
+console.error('Error details:', {
+  message: error instanceof Error ? error.message : String(error),
+  stack: error instanceof Error ? error.stack : 'No stack trace',
+  actorRole: actor.role,
+  requestId: request_id,
+  currentStatus: req.status
+});
+```
+
 ## Audit Log Actions
 
 - `DOC.UPLOADED_SUPPLEMENT` - Customer upload tài liệu bổ sung
@@ -179,6 +220,10 @@ FORWARDED → COMPLETED | SENT_TO_GATE
 - [x] Tenant scope validation
 - [x] Audit logging
 - [x] UI responsiveness
+- [x] **Auto-forward logic sau khi upload SUPPLEMENT**
+- [x] **State Machine integration cho Customer roles**
+- [x] **Enhanced logging và error handling**
+- [x] **Graceful degradation khi transition thất bại**
 
 ## Files Modified
 

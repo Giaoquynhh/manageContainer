@@ -132,6 +132,17 @@ await api.post(`/requests/${requestId}/docs`, formData, {
 });
 ```
 
+**Auto-Forward Behavior:**
+- **Backend tự động chuyển trạng thái:** `SCHEDULED → FORWARDED` sau khi upload thành công
+- **Frontend hiển thị thông báo:** "Yêu cầu đã được tự động chuyển tiếp sang trạng thái FORWARDED"
+- **Data refresh:** Gọi `onSuccess` callback để refresh request list
+- **User guidance:** Hướng dẫn refresh trang để thấy thay đổi trạng thái
+
+**Success Message:**
+```typescript
+alert('✅ Upload tài liệu bổ sung thành công!\n\n📤 Yêu cầu đã được tự động chuyển tiếp sang trạng thái FORWARDED.\n\n🔄 Hệ thống sẽ xử lý yêu cầu của bạn tiếp theo.\n\n💡 Lưu ý: Trạng thái sẽ được cập nhật sau khi refresh trang.');
+```
+
 ### 2. List Supplement Documents
 ```typescript
 const response = await api.get(`/requests/${requestId}/docs?type=SUPPLEMENT`);

@@ -45,8 +45,11 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
         try {
             // Demo data - trong thực tế sẽ gọi API
             const demoLocations: Location[] = [
-                { id: 'gate-1', name: 'Cổng chính', type: 'gate' },
-                { id: 'gate-2', name: 'Cổng phụ', type: 'gate' },
+                { id: 'gate-1', name: 'Cổng 1', type: 'gate' },
+                { id: 'gate-2', name: 'Cổng 2', type: 'gate' },
+                { id: 'gate-3', name: 'Cổng 3', type: 'gate' },
+                { id: 'gate-4', name: 'Cổng 4', type: 'gate' },
+                { id: 'gate-5', name: 'Cổng 5', type: 'gate' },
                 { id: 'yard-a', name: 'Bãi A', type: 'yard' },
                 { id: 'yard-b', name: 'Bãi B', type: 'yard' }
             ];
@@ -94,13 +97,17 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
 
         setLoading(true);
         try {
-            // Convert datetime-local to ISO8601 format
-            const appointmentData = {
-                ...formData,
-                appointment_time: new Date(formData.appointment_time).toISOString()
-            };
-            console.log('Sending appointment data:', appointmentData);
-            await api.patch(`/requests/${requestId}/schedule`, appointmentData);
+                         // Convert datetime-local to ISO8601 format and map fields to match backend DTO
+             const appointmentData = {
+                 appointment_time: new Date(formData.appointment_time), // Backend expects Date object, not string
+                 appointment_location_type: formData.location_type,
+                 appointment_location_id: formData.location_id,
+                 gate_ref: formData.gate_ref || undefined,
+                 appointment_note: formData.note || undefined
+             };
+                         console.log('Sending appointment data:', appointmentData);
+             // AppointmentModal luôn ở mode 'create' nên gọi schedule endpoint
+             await api.patch(`/requests/${requestId}/schedule`, appointmentData);
             
             // Reset form
             setFormData({
@@ -240,7 +247,7 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                     {/* GATE REF */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            GATE REF (tùy chọn)
+                            GATE REF <span className="text-gray-500 text-sm">(tùy chọn)</span>
                         </label>
                         <input
                             type="text"
@@ -255,7 +262,7 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                     {/* Ghi chú */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Ghi chú (tùy chọn)
+                            Ghi chú <span className="text-gray-500 text-sm">(tùy chọn)</span>
                         </label>
                         <textarea
                             value={formData.note}

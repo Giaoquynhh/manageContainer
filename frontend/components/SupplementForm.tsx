@@ -3,9 +3,10 @@ import { api } from '@services/api';
 
 interface SupplementFormProps {
   requestId: string;
+  onSuccess?: () => void;
 }
 
-export default function SupplementForm({ requestId }: SupplementFormProps) {
+export default function SupplementForm({ requestId, onSuccess }: SupplementFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -79,16 +80,23 @@ export default function SupplementForm({ requestId }: SupplementFormProps) {
       formData.append('file', file);
       formData.append('type', 'SUPPLEMENT');
 
-      await api.post(`/requests/${requestId}/docs`, formData, {
+      const response = await api.post(`/requests/${requestId}/docs`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      alert('Upload tài liệu bổ sung thành công!');
+      // Hiển thị thông báo thành công với thông tin về việc tự động chuyển tiếp
+      alert('✅ Upload tài liệu bổ sung thành công!\n\n📤 Yêu cầu đã được tự động chuyển tiếp sang trạng thái FORWARDED.\n\n🔄 Hệ thống sẽ xử lý yêu cầu của bạn tiếp theo.\n\n💡 Lưu ý: Trạng thái sẽ được cập nhật sau khi refresh trang.');
+      
       setFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      
+      // Gọi callback onSuccess nếu có
+      if (onSuccess) {
+        onSuccess();
       }
          } catch (error: any) {
        console.error('Upload error:', error);

@@ -101,6 +101,12 @@ export class RequestController {
 		try { return res.json(await service.scheduleRequest(req.user!, req.params.id, value)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
 	}
 
+	async updateAppointment(req: AuthRequest, res: Response) {
+		const { error, value } = scheduleRequestSchema.validate(req.body);
+		if (error) return res.status(400).json({ message: error.message });
+		try { return res.json(await service.updateAppointment(req.user!, req.params.id, value)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
 	async addInfoToRequest(req: AuthRequest, res: Response) {
 		const { error, value } = addInfoSchema.validate(req.body);
 		if (error) return res.status(400).json({ message: error.message });

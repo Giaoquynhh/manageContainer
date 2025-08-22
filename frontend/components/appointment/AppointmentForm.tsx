@@ -27,6 +27,7 @@ interface AppointmentFormProps {
   onSubmit: (data: AppointmentFormData) => void;
   onError: (error: string) => void;
   onSuccess: () => void;
+  mode?: 'create' | 'change';
 }
 
 export default function AppointmentForm({
@@ -34,7 +35,8 @@ export default function AppointmentForm({
   requestData,
   onSubmit,
   onError,
-  onSuccess
+  onSuccess,
+  mode = 'create'
 }: AppointmentFormProps) {
   const [formData, setFormData] = useState<AppointmentFormData>({
     appointment_time: '',
@@ -56,8 +58,11 @@ export default function AppointmentForm({
     try {
       // Demo data - trong thực tế sẽ gọi API
       const demoLocations: Location[] = [
-        { id: 'gate-1', name: 'Cổng chính', type: 'gate' },
-        { id: 'gate-2', name: 'Cổng phụ', type: 'gate' },
+        { id: 'gate-1', name: 'Cổng 1', type: 'gate' },
+        { id: 'gate-2', name: 'Cổng 2', type: 'gate' },
+        { id: 'gate-3', name: 'Cổng 3', type: 'gate' },
+        { id: 'gate-4', name: 'Cổng 4', type: 'gate' },
+        { id: 'gate-5', name: 'Cổng 5', type: 'gate' },
         { id: 'yard-a', name: 'Bãi A', type: 'yard' },
         { id: 'yard-b', name: 'Bãi B', type: 'yard' }
       ];
@@ -75,20 +80,38 @@ export default function AppointmentForm({
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+                    const validateForm = (): boolean => {
+       const newErrors: Record<string, string> = {};
 
-    if (!formData.appointment_time) {
-      newErrors.appointment_time = 'Thời gian lịch hẹn là bắt buộc';
-    }
+       if (!formData.appointment_time) {
+         newErrors.appointment_time = 'Thời gian lịch hẹn là bắt buộc';
+       }
 
-    if (!formData.location_id) {
-      newErrors.location_id = 'Vui lòng chọn địa điểm';
-    }
+       if (!formData.location_type) {
+         newErrors.location_type = 'Vui lòng chọn loại địa điểm';
+       }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+       if (!formData.location_id) {
+         newErrors.location_id = 'Vui lòng chọn địa điểm';
+       }
+
+       // Validate appointment_time is in the future
+       if (formData.appointment_time) {
+         const selectedTime = new Date(formData.appointment_time);
+         const now = new Date();
+         if (selectedTime <= now) {
+           newErrors.appointment_time = 'Thời gian lịch hẹn phải trong tương lai';
+         }
+         
+         // Validate appointment_time is valid date
+         if (isNaN(selectedTime.getTime())) {
+           newErrors.appointment_time = 'Thời gian lịch hẹn không hợp lệ';
+         }
+       }
+
+       setErrors(newErrors);
+       return Object.keys(newErrors).length === 0;
+     };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,33 +120,76 @@ export default function AppointmentForm({
       return;
     }
 
-    setLoading(true);
-    try {
-      // Convert datetime-local to ISO8601 format and map fields to match backend DTO
-      const appointmentData = {
-        appointment_time: new Date(formData.appointment_time).toISOString(),
-        appointment_location_type: formData.location_type,
-        appointment_location_id: formData.location_id,
-        gate_ref: formData.gate_ref,
-        appointment_note: formData.note
-      };
-      
-      console.log('Submitting appointment data:', appointmentData);
-      await api.patch(`/requests/${requestId}/schedule`, appointmentData);
-      
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error creating appointment:', error);
-      
-      // Handle specific errors
-      if (error.response?.status === 422) {
-        onError('Khung giờ này không khả dụng, vui lòng chọn thời gian khác');
-      } else if (error.response?.data?.message) {
-        onError(error.response.data.message);
-      } else {
-        onError('Có lỗi xảy ra, vui lòng thử lại');
-      }
-    } finally {
+              setLoading(true);
+     try {
+       // Convert datetime-local to Date object and map fields to match backend DTO
+       const appointmentData = {
+         appointment_time: new Date(formData.appointment_time), // Backend expects Date object, not string
+         appointment_location_type: formData.location_type,
+         appointment_location_id: formData.location_id,
+         gate_ref: formData.gate_ref?.trim() || undefined,
+         appointment_note: formData.note?.trim() || undefined
+       };
+       
+       // Validate that appointment_time is a valid date
+       if (isNaN(appointmentData.appointment_time.getTime())) {
+         onError('Thời gian lịch hẹn không hợp lệ');
+         return;
+       }
+       
+       // Additional validation
+       if (!appointmentData.appointment_location_type) {
+         onError('Loại địa điểm là bắt buộc');
+         return;
+       }
+       
+       if (!appointmentData.appointment_location_id) {
+         onError('Địa điểm là bắt buộc');
+         return;
+       }
+       
+       // Debug logging
+       console.log('=== DEBUG APPOINTMENT SUBMISSION ===');
+       console.log('Mode:', mode);
+       console.log('Form data:', formData);
+       console.log('Request ID:', requestId);
+       console.log('Appointment data to send:', appointmentData);
+       console.log('Appointment time type:', typeof appointmentData.appointment_time);
+       console.log('Appointment time value:', appointmentData.appointment_time);
+       console.log('Appointment time instanceof Date:', appointmentData.appointment_time instanceof Date);
+       console.log('Appointment time toISOString:', appointmentData.appointment_time.toISOString());
+       console.log('Appointment time getTime:', appointmentData.appointment_time.getTime());
+       console.log('=====================================');
+       
+       // Chọn API endpoint dựa trên mode
+       const endpoint = mode === 'change' ? 'update-appointment' : 'schedule';
+       console.log('Calling API endpoint:', `/requests/${requestId}/${endpoint}`);
+       
+       const response = await api.patch(`/requests/${requestId}/${endpoint}`, appointmentData);
+       console.log('API response:', response);
+       
+       onSuccess();
+         } catch (error: any) {
+       console.error('Error creating appointment:', error);
+       console.error('Error response:', error.response);
+       
+       // Handle specific errors
+       if (error.response?.status === 400) {
+         const errorMessage = error.response.data?.message || 'Dữ liệu không hợp lệ';
+         console.error('=== BACKEND VALIDATION ERROR ===');
+         console.error('Status:', error.response.status);
+         console.error('Data:', error.response.data);
+         console.error('Headers:', error.response.headers);
+         console.error('===============================');
+         onError(`Lỗi validation: ${errorMessage}`);
+       } else if (error.response?.status === 422) {
+         onError('Khung giờ này không khả dụng, vui lòng chọn thời gian khác');
+       } else if (error.response?.data?.message) {
+         onError(error.response.data.message);
+       } else {
+         onError('Có lỗi xảy ra, vui lòng thử lại');
+       }
+     } finally {
       setLoading(false);
     }
   };
@@ -250,7 +316,7 @@ export default function AppointmentForm({
         {/* Gate Ref */}
         <div className="appointment-form-group">
           <label className="appointment-form-label" htmlFor="gate_ref">
-            GATE REF (tùy chọn)
+            GATE REF <span className="text-gray-500 text-sm">(tùy chọn)</span>
           </label>
           <input
             type="text"
@@ -269,7 +335,7 @@ export default function AppointmentForm({
         {/* Note */}
         <div className="appointment-form-group">
           <label className="appointment-form-label" htmlFor="note">
-            Ghi chú (tùy chọn)
+            Ghi chú <span className="text-gray-500 text-sm">(tùy chọn)</span>
           </label>
           <textarea
             id="note"
@@ -305,7 +371,7 @@ export default function AppointmentForm({
                 <path d="M9 11l3 3L22 4"></path>
                 <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
               </svg>
-              <span>Tạo lịch hẹn</span>
+              <span>{mode === 'change' ? 'Cập nhật lịch hẹn' : 'Tạo lịch hẹn'}</span>
             </>
           )}
         </button>

@@ -99,8 +99,20 @@ export default function CustomerRequests() {
 	};
 
 	const handleSupplementSuccess = () => {
+		// Refresh danh sách request để cập nhật trạng thái
+		// Vì request đã chuyển sang FORWARDED, cần refresh để hiển thị đúng
 		mutate('/requests?page=1&limit=20');
-		setMsg({ text: 'Đã upload tài liệu bổ sung thành công!', ok: true });
+		
+		// Hiển thị thông báo thành công với thông tin về việc tự động chuyển tiếp
+		setMsg({ 
+			text: '✅ Upload tài liệu bổ sung thành công! 📤 Yêu cầu đã được tự động chuyển tiếp sang FORWARDED.', 
+			ok: true 
+		});
+		
+		// Tự động ẩn thông báo sau 5 giây
+		setTimeout(() => {
+			setMsg(null);
+		}, 5000);
 	};
 
 	const handleUploadSuccess = () => {
@@ -183,6 +195,7 @@ export default function CustomerRequests() {
 					requestId={selectedRequestId}
 					visible={showSupplementPopup}
 					onClose={() => setShowSupplementPopup(false)}
+					onSuccess={handleSupplementSuccess}
 				/>
 			</main>
 		</>

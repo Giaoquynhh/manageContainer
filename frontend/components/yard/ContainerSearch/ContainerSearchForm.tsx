@@ -27,10 +27,7 @@ export const ContainerSearchForm: React.FC<ContainerSearchFormProps> = ({
     { value: 'Gate 2', label: 'Gate 2' },
     { value: 'Gate 3', label: 'Gate 3' },
     { value: 'Gate 4', label: 'Gate 4' },
-    { value: 'Gate 5', label: 'Gate 5' },
-    { value: 'Gate 6', label: 'Gate 6' },
-    { value: 'Gate 7', label: 'Gate 7' },
-    { value: 'Gate 8', label: 'Gate 8' }
+    { value: 'Gate 5', label: 'Gate 5' }
   ];
 
   return (

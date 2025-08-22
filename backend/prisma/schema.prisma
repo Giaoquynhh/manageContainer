@@ -111,6 +111,10 @@ model ServiceRequest {
     attachments_count        Int      @default(0)
     locked_attachments      Boolean  @default(false)
     
+    // Gate fields
+    driver_name              String?  // Tên tài xế
+    license_plate            String?  // Biển số xe
+    
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt
 

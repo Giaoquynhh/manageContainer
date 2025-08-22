@@ -70,6 +70,10 @@ Base: `/requests` (JWT)
   - `POST /requests/:id/docs` (multipart: `file`, body: `{ type: 'EIR'|'LOLO'|'INVOICE'|'SUPPLEMENT' }`)
   - EIR/LOLO/INVOICE: chỉ khi status ∈ { COMPLETED, EXPORTED }
   - SUPPLEMENT: chỉ khi status = SCHEDULED (Customer only)
+  - **Tự động chuyển trạng thái:** `SCHEDULED → FORWARDED` sau khi upload thành công
+  - **State Machine validation:** Sử dụng `RequestStateMachine` để validate và execute transitions
+  - **Enhanced logging:** Detailed logs cho debugging và monitoring
+  - **Graceful degradation:** Nếu transition thất bại, upload vẫn thành công
   - Mimetype: pdf/jpeg/png, size ≤ 10MB → version tăng tự động (v1, v2, ...)
   - RBAC: EIR/LOLO (SaleAdmin), INVOICE (Accountant), SUPPLEMENT (CustomerAdmin/CustomerUser)
 - Upload khi tạo request (Customer):

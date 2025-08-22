@@ -36,7 +36,7 @@ export interface DepotActions {
 	handleAppointmentClose: (requestId: string) => void;
 	handleAppointmentMiniSuccess: (requestId: string) => void;
 	toggleSupplement: (requestId: string) => void;
-	handleForward: (requestId: string) => Promise<void>;
+	handleChangeAppointment: (requestId: string) => void;
 	handleReject: (requestId: string) => Promise<void>;
 	sendPayment: (id: string) => Promise<void>;
 	softDeleteRequest: (id: string, scope: 'depot' | 'customer') => Promise<void>;
@@ -147,18 +147,13 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		});
 	};
 
-	const handleForward = async (requestId: string) => {
-		setMsg(null);
-		setLoadingId(requestId + 'FORWARDED');
-		try {
-			await api.patch(`/requests/${requestId}/status`, { status: 'FORWARDED' });
-			mutate('/requests?page=1&limit=20');
-			setMsg({ text: 'Đã chuyển tiếp yêu cầu thành công!', ok: true });
-		} catch (e: any) {
-			setMsg({ text: `Không thể chuyển tiếp: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
-		} finally {
-			setLoadingId('');
-		}
+	const handleChangeAppointment = async (requestId: string) => {
+		// Mở modal tạo lịch hẹn mới thay vì chuyển trạng thái
+		setActiveAppointmentRequests(prev => {
+			const newSet = new Set(prev).add(requestId);
+			console.log('Opening AppointmentMini for appointment change:', requestId, 'Active requests:', Array.from(newSet));
+			return newSet;
+		});
 	};
 
 	const handleReject = async (requestId: string) => {
@@ -260,7 +255,7 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		handleAppointmentClose,
 		handleAppointmentMiniSuccess,
 		toggleSupplement,
-		handleForward,
+		handleChangeAppointment,
 		handleReject,
 		sendPayment,
 		softDeleteRequest,

@@ -123,7 +123,7 @@ export default function DepotRequests() {
 					userRole={state.me?.role || state.me?.roles?.[0]}
 					onDocumentClick={actions.handleDocumentClick}
 					onToggleSupplement={actions.toggleSupplement}
-					onForward={actions.handleForward}
+					onChangeAppointment={actions.handleChangeAppointment}
 					onReject={actions.handleReject}
 					onChangeStatus={actions.changeStatus}
 					onSendPayment={actions.sendPayment}
@@ -149,6 +149,9 @@ export default function DepotRequests() {
 					const request = data?.data?.find((r: any) => r.id === requestId);
 					if (!request) return null;
 					
+					// Xác định mode dựa trên trạng thái request
+					const isChangeMode = request.status === 'SCHEDULED';
+					
 					return (
 						<AppointmentMini
 							key={requestId}
@@ -162,6 +165,7 @@ export default function DepotRequests() {
 							}}
 							onClose={() => actions.handleAppointmentClose(requestId)}
 							onSuccess={() => actions.handleAppointmentMiniSuccess(requestId)}
+							mode={isChangeMode ? 'change' : 'create'}
 						/>
 					);
 				})}

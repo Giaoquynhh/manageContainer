@@ -16,6 +16,7 @@ interface AppointmentWindowProps {
   onSuccess: () => void;
   onMinimize: () => void;
   onDragStart: (e: React.MouseEvent) => void;
+  mode?: 'create' | 'change';
 }
 
 export default function AppointmentWindow({
@@ -24,7 +25,8 @@ export default function AppointmentWindow({
   onClose,
   onSuccess,
   onMinimize,
-  onDragStart
+  onDragStart,
+  mode = 'create'
 }: AppointmentWindowProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +54,7 @@ export default function AppointmentWindow({
     return (
       <div className="appointment-window-loading">
         <AppointmentHeader
-          title="Tạo lịch hẹn"
+          title={mode === 'change' ? 'Thay đổi lịch hẹn' : 'Tạo lịch hẹn'}
           subtitle={`Container: ${requestData?.container_no || requestId}`}
           onClose={onClose}
           onMinimize={onMinimize}
@@ -71,7 +73,7 @@ export default function AppointmentWindow({
   return (
     <div className="appointment-window">
       <AppointmentHeader
-        title="Tạo lịch hẹn"
+        title={mode === 'change' ? 'Thay đổi lịch hẹn' : 'Tạo lịch hẹn'}
         subtitle={`Container: ${requestData?.container_no || requestId}`}
         onClose={onClose}
         onMinimize={onMinimize}
@@ -108,6 +110,7 @@ export default function AppointmentWindow({
           onSubmit={handleFormSubmit}
           onError={handleFormError}
           onSuccess={onSuccess}
+          mode={mode}
         />
       </div>
     </div>

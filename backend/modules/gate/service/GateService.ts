@@ -116,11 +116,14 @@ export class GateService {
         status: newStatus,
         gate_checked_at: new Date(),
         gate_checked_by: actorId,
-        // Lưu biển số vào history meta (vì schema chưa có cột). Nếu có cột, cập nhật thêm.
+        // Lưu thông tin tài xế và biển số xe
+        driver_name: data?.driver_name || null,
+        license_plate: data?.license_plate || null,
         history: {
           ...(request.history as any || {}),
           gate_approve: {
             ...(request as any).history?.gate_approve,
+            driver_name: data?.driver_name || null,
             license_plate: data?.license_plate || null,
             approved_at: new Date().toISOString()
           }
@@ -215,10 +218,12 @@ export class GateService {
       prisma.serviceRequest.count({ where })
     ]);
 
-    // Bổ sung license_plate từ history.gate_approve
+    // Bổ sung thông tin tài xế và biển số xe
     const mapped = requests.map((r: any) => {
-      const licensePlate = (r.history as any)?.gate_approve?.license_plate || null;
-      return { ...r, license_plate: licensePlate };
+      // Ưu tiên sử dụng trường từ database, fallback về history nếu cần
+      const licensePlate = r.license_plate || (r.history as any)?.gate_approve?.license_plate || null;
+      const driverName = r.driver_name || (r.history as any)?.gate_approve?.driver_name || null;
+      return { ...r, license_plate: licensePlate, driver_name: driverName };
     });
 
     return {
@@ -248,8 +253,10 @@ export class GateService {
       throw new Error('Request không tồn tại');
     }
 
-    const licensePlate = (request.history as any)?.gate_approve?.license_plate || null;
-    return { ...request, license_plate: licensePlate };
+    // Ưu tiên sử dụng trường từ database, fallback về history nếu cần
+    const licensePlate = request.license_plate || (request.history as any)?.gate_approve?.license_plate || null;
+    const driverName = request.driver_name || (request.history as any)?.gate_approve?.driver_name || null;
+    return { ...request, license_plate: licensePlate, driver_name: driverName };
   }
 
   /**
