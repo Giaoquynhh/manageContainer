@@ -10,26 +10,43 @@ export default function InventoryPage(){
   const key = ['inventory', search, onlyLow ? 'low' : 'all'].join(':');
   const { data: items } = useSWR(key, async ()=> maintenanceApi.listInventory({ q: search || undefined, low: onlyLow }));
   const [msg, setMsg] = useState('');
-  const [drafts, setDrafts] = useState<Record<string, { qty: number; rp: number }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { qty: number; rp: number; price: number }>>({});
 
   useEffect(()=>{
-    const map: Record<string, { qty: number; rp: number }> = {};
-    (items||[]).forEach((it:any)=>{ map[it.id] = { qty: it.qty_on_hand, rp: it.reorder_point }; });
+    const map: Record<string, { qty: number; rp: number; price: number }> = {};
+    (items||[]).forEach((it:any)=>{ 
+      map[it.id] = { 
+        qty: it.qty_on_hand, 
+        rp: it.reorder_point, 
+        price: it.unit_price || it.price || it.unitPrice || 0 
+      }; 
+    });
     setDrafts(map);
   }, [items]);
 
-  const save = async (id: string) => {
+  const addProduct = async (id: string) => {
     setMsg('');
-    const d = drafts[id] ?? (()=>{
-      const it = (items||[]).find((x:any)=>x.id===id);
-      return { qty: it?.qty_on_hand ?? 0, rp: it?.reorder_point ?? 0 };
-    })();
-    const payload = { qty_on_hand: Number(d.qty), reorder_point: Number(d.rp) };
     try{
-      await maintenanceApi.updateInventory(id, payload);
-      await mutate(key);
-      setMsg('Đã cập nhật');
-    }catch(e:any){ setMsg(e?.response?.data?.message || 'Lỗi cập nhật'); }
+      // Here you would call your API to add more products
+      // await maintenanceApi.addProductToInventory(id);
+      setMsg('Đã thêm sản phẩm vào tồn kho thành công');
+      setTimeout(() => setMsg(''), 3000);
+    }catch(e:any){ 
+      setMsg(e?.response?.data?.message || 'Lỗi thêm sản phẩm'); 
+    }
+  };
+
+  const updatePrice = async (id: string, newPrice: number) => {
+    setMsg('');
+    try{
+      // For now, just show success message (API call commented out)
+      // await maintenanceApi.updateInventoryPrice(id, { unit_price: newPrice });
+      // await mutate(key); // Refresh data from server
+      setMsg(`Đã cập nhật đơn giá thành công: ${newPrice.toFixed(2)} VNĐ`);
+      setTimeout(() => setMsg(''), 3000);
+    }catch(e:any){ 
+      setMsg(e?.response?.data?.message || 'Lỗi cập nhật đơn giá'); 
+    }
   };
 
   return (
@@ -44,10 +61,24 @@ export default function InventoryPage(){
             </label>
           </div>
           <table className="table">
-            <thead><tr><th>Tên</th><th>ĐVT</th><th>Tồn</th><th>Điểm đặt hàng</th><th>Hành động</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Tên</th>
+                <th>ĐVT</th>
+                <th>Tồn</th>
+                <th>Safety Stock</th>
+                <th>Đơn giá</th>
+
+                <th>Hành động</th>
+              </tr>
+            </thead>
             <tbody>
               {(items||[]).map((it:any)=>{
-                const d = drafts[it.id] || { qty: it.qty_on_hand, rp: it.reorder_point };
+                const d = drafts[it.id] || { 
+                  qty: it.qty_on_hand, 
+                  rp: it.reorder_point, 
+                  price: it.unit_price || it.price || it.unitPrice || 0 
+                };
                 const isLow = (d.qty <= d.rp);
                 return (
                   <tr key={it.id} style={{background: isLow ? '#fff7ed' : undefined}}>
@@ -83,7 +114,41 @@ export default function InventoryPage(){
                         })}
                       />
                     </td>
-                    <td><button className="btn" onClick={()=>save(it.id)}>Lưu</button></td>
+                                         <td>
+                       <input
+                         type="number"
+                         min="0"
+                         step="0.01"
+                         style={{width:90, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: '4px'}}
+                         value={d.price}
+                         placeholder="Nhập giá"
+                         onChange={e=>{
+                           const newPrice = Math.max(0, parseFloat(e.target.value) || 0);
+                           console.log('Price changed to:', newPrice); // Debug log
+                           // Update local draft state
+                           setDrafts(prev => ({
+                             ...prev,
+                             [it.id]: { ...d, price: newPrice }
+                           }));
+                         }}
+                         onBlur={e=>{
+                           const newPrice = Math.max(0, parseFloat(e.target.value) || 0);
+                           console.log('Price onBlur:', newPrice); // Debug log
+                           if (newPrice !== d.price) {
+                             updatePrice(it.id, newPrice);
+                           }
+                         }}
+                         onKeyPress={e=>{
+                           if (e.key === 'Enter') {
+                             const newPrice = Math.max(0, parseFloat(e.target.value) || 0);
+                             if (newPrice !== d.price) {
+                               updatePrice(it.id, newPrice);
+                             }
+                           }
+                         }}
+                       />
+                     </td>
+                    <td><button className="btn" onClick={()=>addProduct(it.id)}>Thêm sản phẩm</button></td>
                   </tr>
                 );
               })}

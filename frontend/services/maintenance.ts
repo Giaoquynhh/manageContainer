@@ -17,8 +17,11 @@ export const maintenanceApi = {
     const { data } = await api.post(`/maintenance/repairs/${id}/approve`, {});
     return data;
   },
-  async rejectRepair(id: string, reason?: string){
-    const { data } = await api.post(`/maintenance/repairs/${id}/reject`, { reason });
+  async rejectRepair(id: string, reason?: string, action?: string){
+    const { data } = await api.post(`/maintenance/repairs/${id}/reject`, { 
+      manager_comment: reason, 
+      action 
+    });
     return data;
   },
   async listInventory(params?: { q?: string; low?: boolean }){

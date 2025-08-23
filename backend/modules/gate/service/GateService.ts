@@ -73,6 +73,16 @@ export class GateService {
       }
     });
 
+    // Tự động tạo phiếu sửa chữa cho container IMPORT khi vào cổng
+    if (request.type === 'IMPORT') {
+      try {
+        await this.createAutoRepairTicket(request, actorId);
+      } catch (error) {
+        console.error('Lỗi tạo phiếu sửa chữa tự động:', error);
+        // Không throw error để không ảnh hưởng đến quá trình accept gate
+      }
+    }
+
     // Audit log
     await audit(actorId, 'REQUEST.GATE_IN', 'ServiceRequest', requestId, {
       previous_status: request.status,
@@ -131,6 +141,16 @@ export class GateService {
       }
     });
 
+    // Tự động tạo phiếu sửa chữa cho container IMPORT khi vào cổng
+    if (request.type === 'IMPORT' && newStatus === 'GATE_IN') {
+      try {
+        await this.createAutoRepairTicket(request, actorId);
+      } catch (error) {
+        console.error('Lỗi tạo phiếu sửa chữa tự động:', error);
+        // Không throw error để không ảnh hưởng đến quá trình approve gate
+      }
+    }
+
     // Audit log
     await audit(actorId, 'REQUEST.GATE_APPROVED', 'ServiceRequest', requestId, {
       previous_status: request.status,
@@ -179,6 +199,34 @@ export class GateService {
     });
 
     return updatedRequest;
+  }
+
+  /**
+   * Tự động tạo phiếu sửa chữa cho container khi vào cổng
+   */
+  private async createAutoRepairTicket(request: any, actorId: string): Promise<void> {
+    // Tạo mã phiếu tự động
+    const ticketCode = `AUTO-${request.container_no}-${Date.now()}`;
+    
+    // Tạo phiếu sửa chữa với trạng thái "Chờ kiểm tra"
+    await prisma.repairTicket.create({
+      data: {
+        code: ticketCode,
+        container_no: request.container_no,
+        created_by: actorId,
+        status: 'PENDING_APPROVAL',
+        problem_description: `Container ${request.container_no} đã vào cổng - cần kiểm tra và đánh giá tình trạng`,
+        estimated_cost: 0,
+        manager_comment: 'Tự động tạo khi container vào cổng'
+      }
+    });
+
+    // Audit log
+    await audit(actorId, 'REPAIR.AUTO_CREATED', 'RepairTicket', ticketCode, {
+      container_no: request.container_no,
+      request_id: request.id,
+      auto_generated: true
+    });
   }
 
   /**

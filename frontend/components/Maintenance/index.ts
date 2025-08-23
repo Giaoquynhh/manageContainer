@@ -10,4 +10,6 @@ export { default as ErrorDisplay } from './ErrorDisplay';
 export { default as LoadingDisplay } from './LoadingDisplay';
 export { default as RepairTable } from './RepairTable';
 export { default as RepairPageHeader } from './RepairPageHeader';
+export { default as RepairTicketModal } from './RepairTicketModal';
+export { default as InventoryTable } from './InventoryTable';
 export { default as MessageDisplay } from './MessageDisplay';

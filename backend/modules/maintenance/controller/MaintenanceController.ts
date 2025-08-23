@@ -20,9 +20,25 @@ export class MaintenanceController {
     try { return res.json(await service.approveRepair(req.user!, req.params.id, value.manager_comment)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
   }
   async reject(req: AuthRequest, res: Response) {
+    console.log('Reject request body:', req.body); // Debug log
+    console.log('Reject request params:', req.params); // Debug log
+    
     const { error, value } = rejectSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.message });
-    try { return res.json(await service.rejectRepair(req.user!, req.params.id, value.manager_comment)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
+    if (error) {
+      console.log('Validation error:', error.message); // Debug log
+      return res.status(400).json({ message: error.message });
+    }
+    
+    console.log('Validated value:', value); // Debug log
+    
+    try { 
+      // Xử lý cả reason và manager_comment
+      const comment = value.manager_comment || value.reason;
+      return res.json(await service.rejectRepair(req.user!, req.params.id, comment, value.action)); 
+    } catch (e:any){ 
+      console.log('Service error:', e.message); // Debug log
+      return res.status(400).json({ message: e.message }); 
+    }
   }
 
   async listInventory(req: AuthRequest, res: Response) {

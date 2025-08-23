@@ -275,11 +275,7 @@ enum InventoryMoveType {
   OUT
 }
 
-enum RepairStatus {
-  PENDING_APPROVAL
-  APPROVED
-  REJECTED
-}
+// Sử dụng String thay vì enum để tương thích với ServiceRequest
 
 model Equipment {
   id        String        @id @default(cuid())
@@ -323,7 +319,7 @@ model RepairTicket {
   container_no        String?            // Container number (optional)
   equipment_id        String?            // Làm cho equipment_id optional
   created_by          String
-  status              RepairStatus       @default(PENDING_APPROVAL)
+  status              String             @default("GATE_IN") // Sử dụng trạng thái của ServiceRequest
   problem_description String
   estimated_cost      Float?             @default(0)
   manager_comment     String?

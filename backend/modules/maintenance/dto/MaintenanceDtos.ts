@@ -13,7 +13,7 @@ export const createRepairSchema = Joi.object({
 });
 
 export const listRepairsSchema = Joi.object({
-  status: Joi.string().valid('PENDING_APPROVAL','APPROVED','REJECTED').optional()
+  status: Joi.string().valid('GATE_IN','CHECKING','CHECKED','CHECKING_CONFIRM','REPAIRING','APPROVED','REJECTED').optional()
 });
 
 export const approveSchema = Joi.object({
@@ -21,8 +21,10 @@ export const approveSchema = Joi.object({
 });
 
 export const rejectSchema = Joi.object({
-  manager_comment: Joi.string().allow('').optional()
-});
+  manager_comment: Joi.string().allow('', null).optional(),
+  reason: Joi.string().allow('', null).optional(), // Accept cả reason và manager_comment
+  action: Joi.string().valid('can_repair', 'cannot_repair').optional()
+}).unknown(true); // Cho phép các field khác
 
 export const updateInventorySchema = Joi.object({
   qty_on_hand: Joi.number().integer().required(),
