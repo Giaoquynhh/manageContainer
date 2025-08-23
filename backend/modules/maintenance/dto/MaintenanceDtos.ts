@@ -28,7 +28,8 @@ export const rejectSchema = Joi.object({
 
 export const updateInventorySchema = Joi.object({
   qty_on_hand: Joi.number().integer().required(),
-  reorder_point: Joi.number().integer().min(0).required()
+  reorder_point: Joi.number().integer().min(0).required(),
+  unit_price: Joi.number().min(0).optional()  // Thêm trường unit_price
 });
 
 

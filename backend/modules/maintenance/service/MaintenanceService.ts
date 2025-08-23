@@ -457,9 +457,16 @@ export class MaintenanceService {
     return prisma.inventoryItem.findMany({ where, orderBy: { name: 'asc' } });
   }
 
-  async updateInventory(actor: any, id: string, payload: { qty_on_hand: number; reorder_point: number }) {
+  async updateInventory(actor: any, id: string, payload: { qty_on_hand: number; reorder_point: number; unit_price?: number }) {
     if (payload.qty_on_hand < 0) throw new Error('Số lượng âm không hợp lệ');
-    const updated = await prisma.inventoryItem.update({ where: { id }, data: { qty_on_hand: payload.qty_on_hand, reorder_point: payload.reorder_point } });
+    const updateData: any = { 
+      qty_on_hand: payload.qty_on_hand, 
+      reorder_point: payload.reorder_point 
+    };
+    if (payload.unit_price !== undefined) {
+      updateData.unit_price = payload.unit_price;
+    }
+    const updated = await prisma.inventoryItem.update({ where: { id }, data: updateData });
     await audit(actor._id, 'INVENTORY.UPDATED', 'INVENTORY', id, payload);
     return updated;
   }

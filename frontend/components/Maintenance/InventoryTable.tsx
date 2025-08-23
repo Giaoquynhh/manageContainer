@@ -70,19 +70,36 @@ export default function InventoryTable({ isOpen, onClose, inventoryItems, onAddI
           <h3 style={{ margin: 0, color: '#1f2937', fontSize: '18px', fontWeight: '600' }}>
             Chọn Vật Tư Từ Kho
           </h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '4px'
-            }}
-          >
-            ×
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                background: 'white',
+                color: '#374151',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+              title="Refresh dữ liệu từ server"
+            >
+              🔄 Refresh
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#6b7280',
+                padding: '4px'
+              }}
+            >
+              ×
+            </button>
+          </div>
         </div>
         
         <div style={{ marginBottom: '16px' }}>

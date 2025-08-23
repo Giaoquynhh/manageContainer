@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import InventoryTable from './InventoryTable';
-import { inventoryApi } from '@services/inventory';
+import { maintenanceApi } from '@services/maintenance';
 
 interface RepairTicketModalProps {
   isOpen: boolean;
@@ -40,52 +40,70 @@ export default function RepairTicketModal({ isOpen, onClose, repairTicket, conta
 
   // Lấy dữ liệu thật từ inventory API
   useEffect(() => {
-    const fetchInventory = async () => {
-      setInventoryLoading(true);
-      setInventoryError(null);
-      
-      try {
-        // Gọi API để lấy inventory thật
-        const response = await inventoryApi.getInventory();
-        console.log('Inventory API response:', response);
-        
-        // Chuyển đổi dữ liệu từ backend format sang frontend format
-        const formattedItems = response.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          unit_price: item.unit_price || 0,
-          stock: item.stock || 0,
-          unit: item.unit || 'pcs'
-        }));
-        
-        setInventoryItems(formattedItems);
-        
-        // Lưu vào localStorage để cache
-        localStorage.setItem('inventory_items', JSON.stringify(formattedItems));
-        
-      } catch (error) {
-        console.error('Error fetching inventory:', error);
-        setInventoryError('Không thể tải dữ liệu inventory');
-        
-        // Fallback: sử dụng dữ liệu từ localStorage nếu có
-        const savedInventory = localStorage.getItem('inventory_items');
-        if (savedInventory) {
-          setInventoryItems(JSON.parse(savedInventory));
-        } else {
-          // Fallback cuối cùng: dữ liệu mẫu dựa trên inventory thực tế
-          setInventoryItems([
-            { id: 1, name: 'Đinh tán', unit_price: 0, stock: 1000, unit: 'pcs' },
-            { id: 2, name: 'Ron cao su', unit_price: 0, stock: 500, unit: 'pcs' },
-            { id: 3, name: 'Sơn chống rỉ', unit_price: 0, stock: 50, unit: 'lit' }
-          ]);
-        }
-      } finally {
-        setInventoryLoading(false);
-      }
-    };
-    
     fetchInventory();
   }, []);
+
+  // Không cần auto-refresh mỗi 5 giây vì có thể gây conflict
+  // Chỉ refresh khi cần thiết
+
+  // Function để fetch inventory - có thể gọi lại khi cần refresh
+  const fetchInventory = async () => {
+    setInventoryLoading(true);
+    setInventoryError(null);
+    
+    try {
+      // Gọi API để lấy inventory thật - sử dụng cùng API với trang Inventory
+      const response = await maintenanceApi.listInventory();
+      console.log('Inventory API response:', response);
+      
+      // Chuyển đổi dữ liệu từ backend format sang frontend format
+      const formattedItems = response.map((item: any) => {
+        // Debug từng item để xem field nào có giá trị
+        console.log('Processing item:', item.name, {
+          unit_price: item.unit_price,
+          price: item.price,
+          unitPrice: item.unitPrice,
+          qty_on_hand: item.qty_on_hand,
+          stock: item.stock,
+          uom: item.uom,
+          unit: item.unit
+        });
+        
+        return {
+          id: item.id,
+          name: item.name,
+          unit_price: Number(item.unit_price || 0), // Sử dụng unit_price từ database
+          stock: Number(item.qty_on_hand || item.stock || 0),
+          unit: item.uom || item.unit || 'pcs'
+        };
+      });
+      
+      console.log('Formatted inventory items:', formattedItems);
+      setInventoryItems(formattedItems);
+      
+      // Lưu vào localStorage để cache
+      localStorage.setItem('inventory_items', JSON.stringify(formattedItems));
+      
+    } catch (error) {
+      console.error('Error fetching inventory:', error);
+      setInventoryError('Không thể tải dữ liệu inventory');
+      
+      // Fallback: sử dụng dữ liệu từ localStorage nếu có
+      const savedInventory = localStorage.getItem('inventory_items');
+      if (savedInventory) {
+        setInventoryItems(JSON.parse(savedInventory));
+      } else {
+        // Fallback cuối cùng: dữ liệu mẫu dựa trên inventory thực tế
+        setInventoryItems([
+          { id: 1, name: 'Đinh tán', unit_price: 0, stock: 1000, unit: 'pcs' },
+          { id: 2, name: 'Ron cao su', unit_price: 0, stock: 500, unit: 'pcs' },
+          { id: 3, name: 'Sơn chống rỉ', unit_price: 0, stock: 50, unit: 'lit' }
+        ]);
+      }
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
 
   // Thêm vật tư vào danh sách
   const addInventoryItem = (item: any, quantity: number) => {
@@ -126,6 +144,15 @@ export default function RepairTicketModal({ isOpen, onClose, repairTicket, conta
 
   // Tính tổng chi phí
   const totalCost = selectedItems.reduce((sum, item) => sum + item.total_price, 0);
+
+  // Debug function để kiểm tra dữ liệu
+  const debugInventoryData = () => {
+    console.log('=== DEBUG INVENTORY DATA ===');
+    console.log('Current inventoryItems:', inventoryItems);
+    console.log('LocalStorage data:', localStorage.getItem('inventory_items'));
+    console.log('Selected items:', selectedItems);
+    console.log('=======================');
+  };
 
   const handleSaveDescription = async () => {
     try {
@@ -390,22 +417,63 @@ export default function RepairTicketModal({ isOpen, onClose, repairTicket, conta
                  Danh Sách Vật Tư Cần Dùng
                </h3>
                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                 <button
-                   onClick={() => setShowInventoryTable(true)}
-                   disabled={inventoryLoading}
-                   style={{
-                     padding: '6px 12px',
-                     border: '1px solid #f59e0b',
-                     borderRadius: '4px',
-                     background: inventoryLoading ? '#f3f4f6' : '#fef3c7',
-                     color: inventoryLoading ? '#9ca3af' : '#92400e',
-                     cursor: inventoryLoading ? 'not-allowed' : 'pointer',
-                     fontSize: '12px',
-                     fontWeight: '500'
-                   }}
-                 >
-                   {inventoryLoading ? '⏳ Đang tải...' : '➕ Thêm Vật Tư'}
-                 </button>
+                                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      onClick={() => {
+                        fetchInventory(); // Refresh dữ liệu trước khi mở modal
+                        setShowInventoryTable(true);
+                      }}
+                      disabled={inventoryLoading}
+                      style={{
+                        padding: '6px 12px',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '4px',
+                        background: inventoryLoading ? '#f3f4f6' : '#fef3c7',
+                        color: inventoryLoading ? '#9ca3af' : '#92400e',
+                        cursor: inventoryLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '500'
+                      }}
+                    >
+                      {inventoryLoading ? '⏳ Đang tải...' : '➕ Thêm Vật Tư'}
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        console.log('Force refreshing inventory data...');
+                        fetchInventory();
+                      }}
+                      disabled={inventoryLoading}
+                      style={{
+                        padding: '4px 8px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '4px',
+                        background: 'white',
+                        color: '#374151',
+                        cursor: inventoryLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '10px'
+                      }}
+                      title="Cập nhật dữ liệu từ trang Inventory"
+                    >
+                      🔄 Sync
+                    </button>
+                    
+                    <button
+                      onClick={debugInventoryData}
+                      style={{
+                        padding: '4px 8px',
+                        border: '1px solid #dc2626',
+                        borderRadius: '4px',
+                        background: 'white',
+                        color: '#dc2626',
+                        cursor: 'pointer',
+                        fontSize: '10px'
+                      }}
+                      title="Debug dữ liệu inventory"
+                    >
+                      🐛 Debug
+                    </button>
+                  </div>
                  
                  {inventoryError && (
                    <span style={{
