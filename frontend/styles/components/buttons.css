@@ -1,0 +1,139 @@
+/* Button System - Theo guidelines */
+.btn {
+  background: var(--color-navy-primary);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  transition: var(--transition-default);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  font-family: var(--font-family-primary);
+  line-height: 1;
+}
+
+.btn:hover {
+  background: var(--color-navy-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button Variants - Theo guidelines color palette */
+.btn-primary {
+  background: var(--color-navy-primary) !important;
+  color: var(--color-text-inverse) !important;
+}
+.btn-primary:hover {
+  background: var(--color-navy-dark) !important;
+}
+
+.btn-secondary {
+  background: var(--color-primary) !important;
+  color: var(--color-text-inverse) !important;
+}
+.btn-secondary:hover {
+  background: #0056b3 !important;
+}
+
+.btn-outline {
+  background: transparent !important;
+  color: var(--color-navy-primary) !important;
+  border: 2px solid var(--color-navy-primary) !important;
+}
+.btn-outline:hover {
+  background: var(--color-navy-primary) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+/* Ensure header buttons are visible on navy background (override btn-outline) */
+.header .header-account-btn,
+.header .header-login-btn,
+.header .header-logout-btn {
+  color: var(--color-text-inverse) !important;
+  border-color: var(--color-text-inverse) !important;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-navy-primary);
+}
+.btn-ghost:hover {
+  background: rgba(0, 31, 63, 0.1);
+}
+
+/* Semantic Button Variants - Theo guidelines */
+.btn-success {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+  border: 2px solid var(--color-success);
+}
+.btn-success:hover {
+  background: #1e7e34;
+  border-color: #1e7e34;
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+  border: 2px solid var(--color-danger);
+}
+.btn-danger:hover {
+  background: #c82333;
+  border-color: #c82333;
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-warning);
+}
+.btn-warning:hover {
+  background: #e0a800;
+  border-color: #e0a800;
+}
+
+.btn-info {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: 2px solid var(--color-primary);
+}
+.btn-info:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+/* Button Sizes - Responsive sizing */
+.btn-sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  gap: var(--space-1);
+}
+
+.btn-md {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+}
+
+.btn-lg {
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--font-size-base);
+  gap: var(--space-2);
+}
+
+.btn-icon{display:inline-flex;align-items:center}

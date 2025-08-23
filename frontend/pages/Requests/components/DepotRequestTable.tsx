@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DepotChatMini from './DepotChatMini';
 
 interface DepotRequestTableProps {
@@ -6,7 +6,7 @@ interface DepotRequestTableProps {
 	loading?: boolean;
 	onDocumentClick?: (doc: any) => void;
 	onToggleSupplement?: (requestId: string) => void;
-	onChangeAppointment?: (requestId: string) => void;
+	onForward?: (requestId: string) => void;
 	onReject?: (requestId: string) => void;
 	onChangeStatus?: (id: string, status: string) => void;
 	onSendPayment?: (id: string) => void;
@@ -19,13 +19,18 @@ export default function DepotRequestTable({
 	loading, 
 	onDocumentClick,
 	onToggleSupplement,
-	onChangeAppointment,
+	onForward,
 	onReject,
 	onChangeStatus,
 	onSendPayment,
 	onSoftDelete,
 	loadingId 
 }: DepotRequestTableProps) {
+	const headerCellStyle: React.CSSProperties = { position: 'sticky', top: 0, background: '#fff', zIndex: 2 };
+	const firstHeaderCellStyle: React.CSSProperties = { ...headerCellStyle, left: 0, zIndex: 3, boxShadow: '2px 0 0 rgba(0,0,0,0.05)' };
+	const firstColCellStyle: React.CSSProperties = { position: 'sticky', left: 0, background: '#fff', zIndex: 1, boxShadow: '2px 0 0 rgba(0,0,0,0.03)' };
+	const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+	const [openDocsId, setOpenDocsId] = useState<string | null>(null);
 	const getStatusBadge = (status: string) => {
 		const statusConfig: Record<string, { label: string; className: string }> = {
 			PENDING: { label: 'Chờ xử lý', className: 'status-pending' },
@@ -74,15 +79,15 @@ export default function DepotRequestTable({
 	}
 
 	return (
-		<div className="table-container">
-			<table className="table table-modern">
+		<div className="table-container" style={{ overflow: 'auto', maxHeight: 'calc(100vh - 300px)', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+			<table className="table table-modern" style={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
 				<thead>
 					<tr>
-						<th>ETA</th>
-						<th>Trạng thái</th>
-						<th>Chứng từ</th>
-						<th>Chat</th>
-						<th>Hành động</th>
+						<th style={firstHeaderCellStyle}>ETA</th>
+						<th style={headerCellStyle}>Trạng thái</th>
+						<th style={headerCellStyle} title="Chứng từ">📎</th>
+						<th style={headerCellStyle} title="Chat">💬</th>
+						<th style={headerCellStyle}>Hành động</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -96,7 +101,7 @@ export default function DepotRequestTable({
 						
 						return (
 						<tr key={item.id} className="table-row">
-							<td>
+							<td style={firstColCellStyle}>
 								<div className="eta-container-info">
 									<div className="container-id">
 										{item.container_no}
@@ -114,22 +119,38 @@ export default function DepotRequestTable({
 								{getStatusBadge(item.status)}
 							</td>
 							<td>
-								{item.documents && item.documents.length > 0 ? (
-									<div className="document-badges">
-										{item.documents.map((doc: any) => (
-											<button
-												key={doc.id}
-												className="document-badge clickable"
-												onClick={() => onDocumentClick?.(doc)}
-												title={`Xem ${doc.name}`}
-											>
-												📎 {doc.name}
-											</button>
-										))}
-									</div>
-								) : (
-									<span className="no-document">-</span>
-								)}
+								<div style={{ position: 'relative', display: 'inline-block' }}>
+									{item.documents && item.documents.length > 0 ? (
+										<button
+											type="button"
+											className="btn btn-icon"
+											onClick={() => setOpenDocsId(openDocsId === item.id ? null : item.id)}
+											title={`Xem ${item.documents.length} chứng từ`}
+											aria-haspopup="menu"
+											aria-expanded={openDocsId === item.id}
+										>
+											📎{item.documents.length > 1 ? ` ${item.documents.length}` : ''}
+										</button>
+									) : (
+										<span className="no-document" title="Không có chứng từ">—</span>
+									)}
+									{openDocsId === item.id && item.documents && item.documents.length > 0 && (
+										<div role="menu" style={{ position: 'absolute', right: 0, marginTop: 6, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', minWidth: 200, zIndex: 5 }}>
+											{item.documents.map((doc: any) => (
+												<button
+													key={doc.id}
+													role="menuitem"
+													className="menu-item"
+													style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }}
+													onClick={() => { setOpenDocsId(null); onDocumentClick?.(doc); }}
+													title={`Xem ${doc.name}`}
+												>
+													📄 {doc.name}
+												</button>
+											))}
+										</div>
+									)}
+								</div>
 							</td>
 
 							<td>
@@ -141,6 +162,7 @@ export default function DepotRequestTable({
 										requestStatus={demoItem.status}
 										hasSupplementDocuments={demoItem.has_supplement_documents}
 										lastSupplementUpdate={demoItem.last_supplement_update}
+										iconOnly
 									/>
 									{/* Indicator cho supplement documents */}
 									{demoItem.has_supplement_documents && (
@@ -158,100 +180,78 @@ export default function DepotRequestTable({
 								</div>
 							</td>
 							<td>
-								<div className="action-buttons">
-									{item.status === 'PENDING' && (
-										<button
-											className="btn btn-sm btn-primary"
-											disabled={loadingId === item.id + 'RECEIVED'}
-											onClick={() => onChangeStatus?.(item.id, 'RECEIVED')}
-										>
-											{loadingId === item.id + 'RECEIVED' ? '⏳' : '✅'} Tiếp nhận
-										</button>
+								<div style={{ position: 'relative', display: 'inline-block' }}>
+									<button
+										type="button"
+										className="btn btn-icon"
+										onClick={() => setOpenMenuId(openMenuId === item.id ? null : item.id)}
+										title="Hành động"
+										aria-haspopup="menu"
+										aria-expanded={openMenuId === item.id}
+									>
+										⋮
+									</button>
+									{openMenuId === item.id && (
+										<div role="menu" style={{ position: 'absolute', right: 0, marginTop: 6, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', minWidth: 220, zIndex: 5 }}>
+											{/* PENDING */}
+											{item.status === 'PENDING' && (
+												<>
+													<button role="menuitem" className="menu-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'RECEIVED'} onClick={() => { setOpenMenuId(null); onChangeStatus?.(item.id, 'RECEIVED'); }}>
+														{loadingId === item.id + 'RECEIVED' ? '⏳' : '✅'} Tiếp nhận
+													</button>
+													<button role="menuitem" className="menu-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'REJECTED'} onClick={() => { setOpenMenuId(null); onChangeStatus?.(item.id, 'REJECTED'); }}>
+														{loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
+													</button>
+												</>
+											)}
+
+											{/* SCHEDULED */}
+											{item.status === 'SCHEDULED' && (
+												<>
+													<button role="menuitem" className="menu-item" title="Chuyển tiếp xử lý" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'FORWARDED'} onClick={() => { setOpenMenuId(null); onForward?.(item.id); }}>
+														{loadingId === item.id + 'FORWARDED' ? '⏳' : '➡️'} Chuyển tiếp
+													</button>
+													<button role="menuitem" className="menu-item" title="Từ chối yêu cầu" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'REJECTED'} onClick={() => { setOpenMenuId(null); onReject?.(item.id); }}>
+														{loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
+													</button>
+												</>
+											)}
+
+											{/* RECEIVED */}
+											{item.status === 'RECEIVED' && (
+												<>
+													<button role="menuitem" className="menu-item" title="Tiếp nhận và hoàn tất" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'COMPLETED'} onClick={() => { setOpenMenuId(null); onChangeStatus?.(item.id, 'COMPLETED'); }}>
+														{loadingId === item.id + 'COMPLETED' ? '⏳' : '✅'} Tiếp nhận
+													</button>
+													<button role="menuitem" className="menu-item" title="Từ chối yêu cầu" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'REJECTED'} onClick={() => { setOpenMenuId(null); onChangeStatus?.(item.id, 'REJECTED'); }}>
+														{loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
+													</button>
+												</>
+											)}
+
+											{/* COMPLETED */}
+											{item.status === 'COMPLETED' && (
+												<>
+													<button role="menuitem" className="menu-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'EXPORTED'} onClick={() => { setOpenMenuId(null); onChangeStatus?.(item.id, 'EXPORTED'); }}>
+														{loadingId === item.id + 'EXPORTED' ? '⏳' : '📦'} Xuất kho
+													</button>
+													<button role="menuitem" className="menu-item" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px' }} disabled={loadingId === item.id + 'PAY'} onClick={() => { setOpenMenuId(null); onSendPayment?.(item.id); }}>
+														{loadingId === item.id + 'PAY' ? '⏳' : '💰'} Thanh toán
+													</button>
+												</>
+											)}
+
+											{/* DELETE for terminal statuses */}
+											{['REJECTED', 'COMPLETED', 'EXPORTED'].includes(item.status) && (
+												<button role="menuitem" className="menu-item" title="Xóa khỏi danh sách Kho" style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', color: '#b91c1c' }} disabled={loadingId === item.id + 'DELETE'} onClick={() => { if (window.confirm('Xóa khỏi danh sách Kho?\nRequest vẫn hiển thị trạng thái Từ chối bên Khách hàng.')) { setOpenMenuId(null); onSoftDelete?.(item.id, 'depot'); } }}>
+													{loadingId === item.id + 'DELETE' ? '⏳' : '🗑️'} Xóa
+												</button>
+											)}
+										</div>
 									)}
-									{item.status === 'SCHEDULED' && (
-										<>
-											<button
-												className="btn btn-sm btn-success"
-												onClick={() => onChangeAppointment?.(item.id)}
-												title="Thay đổi lịch hẹn với khách hàng"
-											>
-												📅 Thay đổi lịch hẹn
-											</button>
-											<button
-												className="btn btn-sm btn-danger"
-												disabled={loadingId === item.id + 'REJECTED'}
-												onClick={() => onReject?.(item.id)}
-												title="Từ chối yêu cầu"
-											>
-												{loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
-											</button>
-										</>
-									)}
-									{(item.status === 'PENDING' || item.status === 'RECEIVED') && (
-										<button
-											className="btn btn-sm btn-danger"
-											disabled={loadingId === item.id + 'REJECTED'}
-											onClick={() => onChangeStatus?.(item.id, 'REJECTED')}
-										>
-											{loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
-										</button>
-									)}
-									{item.status === 'RECEIVED' && (
-										<>
-											<button
-												className="btn btn-sm btn-success"
-												disabled={loadingId === item.id + 'COMPLETED'}
-												onClick={() => onChangeStatus?.(item.id, 'COMPLETED')}
-												title="Tiếp nhận và hoàn tất"
-											>
-												{loadingId === item.id + 'COMPLETED' ? '⏳' : '✅'} Tiếp nhận
-											</button>
-											<button
-												className="btn btn-sm btn-danger"
-												disabled={loadingId === item.id + 'REJECTED'}
-												onClick={() => onChangeStatus?.(item.id, 'REJECTED')}
-												title="Từ chối yêu cầu"
-											>
-												{loadingId === item.id + 'REJECTED' ? '⏳' : '❌'} Từ chối
-											</button>
-										</>
-									)}
-									{item.status === 'COMPLETED' && (
-										<button
-											className="btn btn-sm btn-warning"
-											disabled={loadingId === item.id + 'EXPORTED'}
-											onClick={() => onChangeStatus?.(item.id, 'EXPORTED')}
-										>
-											{loadingId === item.id + 'EXPORTED' ? '⏳' : '📦'} Xuất kho
-										</button>
-									)}
-									{item.status === 'COMPLETED' && (
-										<button
-											className="btn btn-sm btn-info"
-											disabled={loadingId === item.id + 'PAY'}
-											onClick={() => onSendPayment?.(item.id)}
-										>
-											{loadingId === item.id + 'PAY' ? '⏳' : '💰'} Thanh toán
-										</button>
-									)}
-									{/* Soft delete buttons */}
-									{['REJECTED', 'COMPLETED', 'EXPORTED'].includes(item.status) && (
-										<button
-											className="btn btn-sm btn-outline"
-											disabled={loadingId === item.id + 'DELETE'}
-											onClick={() => {
-												if (window.confirm('Xóa khỏi danh sách Kho?\nRequest vẫn hiển thị trạng thái Từ chối bên Khách hàng.')) {
-													onSoftDelete?.(item.id, 'depot');
-												}
-											}}
-											title="Xóa khỏi danh sách Kho"
-										>
-											{loadingId === item.id + 'DELETE' ? '⏳' : '🗑️'} Xóa
-										</button>
-									)}
-															</div>
-						</td>
-					</tr>
+								</div>
+							</td>
+						</tr>
 						);
 					})}
 				</tbody>

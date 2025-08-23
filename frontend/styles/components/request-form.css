@@ -1,0 +1,50 @@
+/* Request Form styles */
+.request-form{
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form-group{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label{
+  font-weight: 600;
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.form-group label .required {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+  margin-left: var(--space-1);
+}
+
+.form-message{
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-message.success{
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.form-message.error{
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.form-actions{
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}

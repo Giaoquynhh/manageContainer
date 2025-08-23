@@ -1,0 +1,40 @@
+/* Document viewer styles - extracted from globals.css */
+.document-image {
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.document-preview {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.document-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.document-preview p {
+  margin: 8px 0;
+  color: #374151;
+}
+
+.download-link {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: var(--navy);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.download-link:hover {
+  background: #1e3a8a;
+  transform: translateY(-1px);
+}

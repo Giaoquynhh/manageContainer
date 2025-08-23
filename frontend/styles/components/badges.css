@@ -1,0 +1,57 @@
+/* Badge System - extracted from globals.css */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  transition: var(--transition-default);
+}
+
+.badge-sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.badge-md {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.badge-lg {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-base);
+}
+
+.badge-rounded {
+  border-radius: var(--radius-full);
+}
+
+.badge-primary {
+  background: var(--color-navy-primary);
+  color: var(--color-white);
+}
+
+.badge-secondary {
+  background: var(--color-secondary);
+  color: var(--color-white);
+}
+
+.badge-success {
+  background: var(--color-success);
+  color: var(--color-white);
+}
+
+.badge-warning {
+  background: var(--color-warning);
+  color: var(--color-navy-primary);
+}
+
+.badge-danger {
+  background: var(--color-danger);
+  color: var(--color-white);
+}
+
+.badge-info {
+  background: var(--color-primary);
+  color: var(--color-white);
+}

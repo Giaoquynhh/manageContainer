@@ -1,0 +1,39 @@
+/* Base resets and layout */
+*{box-sizing:border-box}
+html,body,#__next{height:100%}
+
+/* Base Styles - Theo guidelines */
+body {
+  margin: 0;
+  font-family: var(--font-family-primary);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+a, a:visited { 
+  text-decoration: none; 
+  transition: var(--transition-default);
+}
+
+.container {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--space-6);
+}
+
+/* Mobile & Tablet Responsive */
+@media (max-width: 1023px) {
+  .container {
+    padding: var(--space-4);
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 640px) {
+  .container {
+    padding: var(--space-3);
+  }
+}

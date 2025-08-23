@@ -1,0 +1,84 @@
+/* Modern Table styles */
+.table-container{
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(2,6,23,.06);
+}
+
+.table-modern{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-modern th{
+  background: #f8fafc;
+  padding: var(--space-3);
+  font-weight: 600;
+  color: var(--navy);
+  text-align: left;
+  border-bottom: 2px solid #e8eef6;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table-modern td{
+  padding: var(--space-3);
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+/* Base table styles to support legacy usage of className="table" */
+.table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,.table td{
+  padding: 12px;
+  border-bottom: 1px solid #e8eef6;
+  text-align: left;
+}
+
+.table-row{
+  transition: all 0.2s ease;
+}
+
+.table-row:hover{
+  background: #f8fafc;
+}
+
+.type-label{
+  font-weight: 600;
+  color: var(--navy);
+  background: #e0e7ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.container-id{
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.eta-date{
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.eta-empty{
+  color: #d1d5db;
+  font-style: italic;
+}
+
+.payment-badge{
+  background: #fef3c7;
+  color: #92400e;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}

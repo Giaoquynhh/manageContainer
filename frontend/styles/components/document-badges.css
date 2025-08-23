@@ -1,0 +1,40 @@
+/* Document badges - extracted from globals.css */
+.document-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #0ea5e9;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.document-badge.clickable {
+  cursor: pointer;
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
+.document-badge.clickable:hover {
+  background: #bfdbfe;
+  color: #1e3a8a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.document-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.no-document {
+  color: #9ca3af;
+  font-style: italic;
+}

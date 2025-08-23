@@ -9,6 +9,8 @@ interface DepotChatMiniProps {
 	// Thêm props để theo dõi thay đổi thông tin
 	hasSupplementDocuments?: boolean;
 	lastSupplementUpdate?: string;
+	// Hiển thị nút mở chat dạng icon-only (không kèm text) khi ở trạng thái đóng
+	iconOnly?: boolean;
 }
 
 export default function DepotChatMini({
@@ -17,7 +19,8 @@ export default function DepotChatMini({
 	requestType,
 	requestStatus,
 	hasSupplementDocuments = false,
-	lastSupplementUpdate
+	lastSupplementUpdate,
+	iconOnly = false
 }: DepotChatMiniProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isMinimized, setIsMinimized] = useState(false);
@@ -105,12 +108,14 @@ export default function DepotChatMini({
 			>
 				{isChatAllowed ? (
 					<>
-						💬 Chat
-						<span className="chat-status-indicator active"></span>
+						<span aria-hidden>💬</span>
+						{!iconOnly && ' Chat'}
+						<span className={"chat-status-indicator " + (isChatAllowed ? 'active' : 'inactive')}></span>
 					</>
 				) : (
 					<>
-						💬 Chat
+						<span aria-hidden>💬</span>
+						{!iconOnly && ' Chat'}
 						<span className="chat-status-indicator inactive"></span>
 					</>
 				)}

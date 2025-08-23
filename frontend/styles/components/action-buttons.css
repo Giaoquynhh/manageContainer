@@ -1,0 +1,13 @@
+/* Action Buttons - extracted from globals.css */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.action-buttons .btn {
+  font-size: 11px;
+  padding: 4px 8px;
+  min-width: auto;
+  white-space: nowrap;
+}

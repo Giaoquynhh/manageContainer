@@ -3,6 +3,13 @@
 const nextConfig = {
 	reactStrictMode: true,
 	images: { unoptimized: true },
+	redirects: async () => ([
+		{
+			source: '/Dashboard',
+			destination: '/',
+			permanent: false
+		}
+	]),
 	rewrites: async () => ([
 		{
 			source: '/backend/:path*',

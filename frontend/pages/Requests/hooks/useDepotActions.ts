@@ -6,6 +6,8 @@ export interface DepotActionsState {
 	searchQuery: string;
 	filterType: string;
 	filterStatus: string;
+	page: number;
+	limit: number;
 	showAppointmentModal: boolean;
 	selectedRequestId: string;
 	activeAppointmentRequests: Set<string>;
@@ -22,6 +24,9 @@ export interface DepotActions {
 	setSearchQuery: (query: string) => void;
 	setFilterType: (type: string) => void;
 	setFilterStatus: (status: string) => void;
+	setPage: (page: number) => void;
+	setLimit: (limit: number) => void;
+	clearFilters: () => void;
 	setShowAppointmentModal: (show: boolean) => void;
 	setSelectedRequestId: (id: string) => void;
 	setSelectedDocument: (doc: any) => void;
@@ -36,7 +41,7 @@ export interface DepotActions {
 	handleAppointmentClose: (requestId: string) => void;
 	handleAppointmentMiniSuccess: (requestId: string) => void;
 	toggleSupplement: (requestId: string) => void;
-	handleChangeAppointment: (requestId: string) => void;
+	handleForward: (requestId: string) => Promise<void>;
 	handleReject: (requestId: string) => Promise<void>;
 	sendPayment: (id: string) => Promise<void>;
 	softDeleteRequest: (id: string, scope: 'depot' | 'customer') => Promise<void>;
@@ -49,6 +54,8 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [filterType, setFilterType] = useState('all');
 	const [filterStatus, setFilterStatus] = useState('all');
+	const [page, setPage] = useState<number>(1);
+	const [limit, setLimit] = useState<number>(20);
 	const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 	const [selectedRequestId, setSelectedRequestId] = useState<string>('');
 	const [activeAppointmentRequests, setActiveAppointmentRequests] = useState<Set<string>>(new Set());
@@ -70,6 +77,17 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 	useEffect(() => {
 		api.get('/auth/me').then(r => setMe(r.data)).catch(() => {});
 	}, []);
+
+	// Build SWR key based on current filters and pagination
+	const buildSWRKey = () => {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		if (filterType !== 'all') params.set('type', filterType);
+		if (filterStatus !== 'all') params.set('status', filterStatus);
+		params.set('page', String(page));
+		params.set('limit', String(limit));
+		return `/requests?${params.toString()}`;
+	};
 
 	const changeStatus = async (id: string, status: string) => {
 		setMsg(null);
@@ -96,7 +114,7 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 			} else {
 				await api.patch(`/requests/${id}/status`, payload);
 			}
-			mutate('/requests?page=1&limit=20');
+			mutate(buildSWRKey());
 			setMsg({ text: `${actLabel[status] || 'Cập nhật'} yêu cầu thành công`, ok: true });
 		} catch (e: any) {
 			setMsg({ text: `Không thể ${actLabel[status]?.toLowerCase() || 'cập nhật'}: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
@@ -106,7 +124,7 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 	};
 
 	const handleAppointmentSuccess = () => {
-		mutate('/requests?page=1&limit=20');
+		mutate(buildSWRKey());
 		setMsg({ text: 'Đã tiếp nhận yêu cầu và tạo lịch hẹn thành công!', ok: true });
 	};
 
@@ -147,13 +165,18 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		});
 	};
 
-	const handleChangeAppointment = async (requestId: string) => {
-		// Mở modal tạo lịch hẹn mới thay vì chuyển trạng thái
-		setActiveAppointmentRequests(prev => {
-			const newSet = new Set(prev).add(requestId);
-			console.log('Opening AppointmentMini for appointment change:', requestId, 'Active requests:', Array.from(newSet));
-			return newSet;
-		});
+	const handleForward = async (requestId: string) => {
+		setMsg(null);
+		setLoadingId(requestId + 'FORWARDED');
+		try {
+			await api.patch(`/requests/${requestId}/status`, { status: 'FORWARDED' });
+			mutate(buildSWRKey());
+			setMsg({ text: 'Đã chuyển tiếp yêu cầu thành công!', ok: true });
+		} catch (e: any) {
+			setMsg({ text: `Không thể chuyển tiếp: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
+		} finally {
+			setLoadingId('');
+		}
 	};
 
 	const handleReject = async (requestId: string) => {
@@ -164,7 +187,7 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		setLoadingId(requestId + 'REJECTED');
 		try {
 			await api.patch(`/requests/${requestId}/reject`, { reason });
-			mutate('/requests?page=1&limit=20');
+			mutate(buildSWRKey());
 			setMsg({ text: 'Đã từ chối yêu cầu thành công!', ok: true });
 		} catch (e: any) {
 			setMsg({ text: `Không thể từ chối: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
@@ -191,7 +214,7 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		setLoadingId(id + 'DELETE');
 		try {
 			await api.delete(`/requests/${id}?scope=${scope}`);
-			mutate('/requests?page=1&limit=20');
+			mutate(buildSWRKey());
 			setMsg({ text: `Đã xóa khỏi danh sách ${scope === 'depot' ? 'Kho' : 'Khách hàng'}`, ok: true });
 		} catch (e: any) {
 			setMsg({ text: `Xóa thất bại: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
@@ -205,7 +228,7 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		setLoadingId(id + 'RESTORE');
 		try {
 			await api.post(`/requests/${id}/restore?scope=${scope}`);
-			mutate('/requests?page=1&limit=20');
+			mutate(buildSWRKey());
 			setMsg({ text: `Đã khôi phục trong danh sách ${scope === 'depot' ? 'Kho' : 'Khách hàng'}`, ok: true });
 		} catch (e: any) {
 			setMsg({ text: `Khôi phục thất bại: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
@@ -228,6 +251,8 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		searchQuery,
 		filterType,
 		filterStatus,
+		page,
+		limit,
 		showAppointmentModal,
 		selectedRequestId,
 		activeAppointmentRequests,
@@ -240,9 +265,17 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 	};
 
 	const actions: DepotActions = {
-		setSearchQuery,
-		setFilterType,
-		setFilterStatus,
+		setSearchQuery: (q: string) => { setSearchQuery(q); setPage(1); },
+		setFilterType: (t: string) => { setFilterType(t); setPage(1); },
+		setFilterStatus: (s: string) => { setFilterStatus(s); setPage(1); },
+		setPage: (p: number) => setPage(Math.max(1, p)),
+		setLimit: (l: number) => { setLimit(Math.max(1, l)); setPage(1); },
+		clearFilters: () => {
+			setSearchQuery('');
+			setFilterType('all');
+			setFilterStatus('all');
+			setPage(1);
+		},
 		setShowAppointmentModal,
 		setSelectedRequestId,
 		setSelectedDocument,
@@ -255,7 +288,7 @@ export function useDepotActions(): [DepotActionsState, DepotActions] {
 		handleAppointmentClose,
 		handleAppointmentMiniSuccess,
 		toggleSupplement,
-		handleChangeAppointment,
+		handleForward,
 		handleReject,
 		sendPayment,
 		softDeleteRequest,

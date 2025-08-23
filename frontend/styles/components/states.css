@@ -1,0 +1,29 @@
+/* Loading and Empty states */
+.table-loading,
+.table-empty{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  color: #6b7280;
+}
+
+/* spacing for spinner when inside loading container */
+.table-loading .loading-spinner{
+  margin-bottom: var(--space-2);
+}
+
+.empty-icon{
+  font-size: 48px;
+  margin-bottom: var(--space-2);
+}
+
+.table-empty p{
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.table-empty small{
+  color: #9ca3af;
+}

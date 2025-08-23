@@ -1,9 +1,19 @@
 import Header from '@components/Header';
 import Card from '@components/Card';
 import { useEffect, useState } from 'react';
+import type { GetServerSideProps } from 'next';
 import Link from 'next/link';
 import { api } from '@services/api';
 import { canViewUsersPartners, isCustomerRole, isSaleAdmin, isAccountant, canUseGate } from '@utils/rbac';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+    return {
+        redirect: {
+            destination: '/',
+            permanent: false
+        }
+    };
+};
 
 export default function Dashboard(){
 	const [me, setMe] = useState<any>(null);

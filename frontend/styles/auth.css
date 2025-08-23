@@ -1,0 +1,128 @@
+/* Auth pages styles: login/register */
+
+.auth-layout {
+    min-height: 100vh;
+    background: var(--color-gray-50, #f5f7fb);
+  }
+  
+  .auth-navbar {
+    position: sticky;
+    top: 0;
+    background: var(--color-navy-primary, #0b2643);
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 10;
+  }
+  
+  .auth-navbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 80px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .auth-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .auth-brand-name {
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    font-size: var(--font-size-lg, 18px);
+  }
+  
+  .auth-main {
+    display: grid;
+    place-items: center;
+    min-height: calc(100vh - 80px);
+    padding: var(--space-6, 24px);
+  }
+  
+  .auth-card {
+    width: 100%;
+    max-width: 460px;
+    padding: 32px 28px;
+  }
+  
+  .auth-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  
+  .auth-title {
+    margin: 0;
+    font-size: var(--font-size-xl, 20px);
+  }
+  
+  .auth-subtitle {
+    margin: 8px 0 0;
+    color: var(--color-text-muted, #6b7280);
+    font-size: var(--font-size-sm, 14px);
+  }
+  
+  .auth-form {
+    display: grid;
+    gap: 14px;
+  }
+  
+  .auth-form-group label {
+    display: block;
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 6px;
+  }
+  
+  .auth-form-group input[type="text"],
+  .auth-form-group input[type="email"],
+  .auth-form-group input[type="password"] {
+    height: 44px;
+  }
+  
+  .password-input-group {
+    position: relative;
+  }
+  
+  .password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: transparent;
+    border: 0;
+    color: var(--color-text-muted, #6b7280);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  .password-toggle:hover {
+    background: var(--color-gray-100, #e8eef6);
+  }
+  
+  .auth-error {
+    color: #dc2626;
+    font-size: 13px;
+    padding: 8px 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+  }
+  
+  .support-links {
+    font-size: 13px;
+    color: var(--color-text-muted, #6b7280);
+    text-align: center;
+    margin-top: 4px;
+  }
+  
+  .remember-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  

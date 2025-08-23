@@ -25,7 +25,8 @@ export default function Header() {
   // Initialize auth state
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
+      const token = (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('token') : null)
+        || localStorage.getItem('token');
       const hasValidToken = !!token;
       setHasToken(hasValidToken);
 
@@ -39,8 +40,16 @@ export default function Header() {
           })
           .catch(() => {
             // Token might be invalid, clear it
-            localStorage.removeItem('token');
-            localStorage.removeItem('refresh_token');
+            try {
+              localStorage.removeItem('token');
+              localStorage.removeItem('refresh_token');
+              localStorage.removeItem('user_id');
+              if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('refresh_token');
+                sessionStorage.removeItem('user_id');
+              }
+            } catch {}
             setHasToken(false);
           })
           .finally(() => {
@@ -101,6 +110,14 @@ export default function Header() {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_id');
+        try {
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('refresh_token');
+            sessionStorage.removeItem('user_id');
+          }
+        } catch {}
         setHasToken(false);
         setMe(null);
         setAccountDropdownOpen(false);

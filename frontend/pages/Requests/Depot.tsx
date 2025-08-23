@@ -1,34 +1,52 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Header from '@components/Header';
 import useSWR from 'swr';
 import { api } from '@services/api';
-import Modal from '@components/Modal';
 import Button from '@components/Button';
-import SearchBar from '@components/SearchBar';
 import AppointmentModal from '@components/AppointmentModal';
 import AppointmentMini from '@components/appointment/AppointmentMini';
 import SupplementDocuments from '@components/SupplementDocuments';
 import DepotRequestTable from './components/DepotRequestTable';
 import DocumentViewerModal from './components/DocumentViewerModal';
 import { useDepotActions } from './hooks/useDepotActions';
+import RequestsToolbar from './components/RequestsToolbar';
+
+function PageHeader() {
+    return (
+        <div className="page-header">
+            <h1 className="page-title">Quản lý yêu cầu dịch vụ (Depot)</h1>
+            <div className="page-actions">
+                <Button
+                    variant="primary"
+                    icon="📊"
+                    onClick={() => window.print()}
+                >
+                    Xuất báo cáo
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 const fetcher = (url: string) => api.get(url).then(r => r.data);
 
 export default function DepotRequests() {
-	const { data, error, isLoading } = useSWR('/requests?page=1&limit=20', fetcher);
 	const [state, actions] = useDepotActions();
 
-	// Filter data based on search and filter
-	const filteredData = data?.data?.filter((item: any) => {
-		const matchesSearch = state.searchQuery === '' ||
-			item.container_no.toLowerCase().includes(state.searchQuery.toLowerCase());
-		const matchesTypeFilter = state.filterType === 'all' || item.type === state.filterType;
-		const matchesStatusFilter = state.filterStatus === 'all' || item.status === state.filterStatus;
-		return matchesSearch && matchesTypeFilter && matchesStatusFilter;
-	});
+	// Build SWR key from current filters & pagination (server-side filtering)
+	const swrKey = useMemo(() => {
+		const params = new URLSearchParams();
+		if (state.searchQuery) params.set('search', state.searchQuery);
+		if (state.filterType !== 'all') params.set('type', state.filterType);
+		if (state.filterStatus !== 'all') params.set('status', state.filterStatus);
+		params.set('page', String(state.page));
+		params.set('limit', String(state.limit));
+		return `/requests?${params.toString()}`;
+	}, [state.searchQuery, state.filterType, state.filterStatus, state.page, state.limit]);
 
-	// Add action buttons to each request
-	const requestsWithActions = filteredData?.map((item: any) => ({
+	const { data, error, isLoading } = useSWR(swrKey, fetcher);
+
+	const requestsWithActions = data?.data?.map((item: any) => ({
 		...item,
 		actions: {
 			changeStatus: actions.changeStatus,
@@ -45,97 +63,63 @@ export default function DepotRequests() {
 		}
 	}));
 
-	const handleSearch = (query: string) => {
-		actions.setSearchQuery(query);
-	};
-
-	const handleFilterChange = (filter: string) => {
-		actions.setFilterType(filter);
-	};
-
-	const handleStatusFilterChange = (status: string) => {
-		actions.setFilterStatus(status);
-	};
-
 	return (
 		<>
 			<Header />
 			<main className="container">
 				{/* Page Header */}
-				<div className="page-header">
-					<h1 className="page-title">Quản lý yêu cầu dịch vụ (Depot)</h1>
-					<div className="page-actions">
-						<Button
-							variant="primary"
-							icon="📊"
-							onClick={() => window.print()}
-						>
-							Xuất báo cáo
-						</Button>
-					</div>
-				</div>
+				<PageHeader />
 
-				{/* Search and Filter */}
-				<div className="search-bar">
-					<div className="search-input-group">
-						<span className="search-icon">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-								<circle cx="11" cy="11" r="8"></circle>
-								<path d="m21 21-4.35-4.35"></path>
-							</svg>
-						</span>
-						<input
-							type="text"
-							className="search-input"
-							placeholder="Tìm kiếm theo mã container..."
-							value={state.searchQuery}
-							onChange={(e) => handleSearch(e.target.value)}
-						/>
-					</div>
-					<select
-						className="filter-select"
-						value={state.filterType}
-						onChange={(e) => handleFilterChange(e.target.value)}
-					>
-						<option value="all">Tất cả loại</option>
-						<option value="IMPORT">Nhập</option>
-						<option value="EXPORT">Xuất</option>
-						<option value="CONVERT">Chuyển đổi</option>
-					</select>
-					<select
-						className="filter-select"
-						value={state.filterStatus}
-						onChange={(e) => handleStatusFilterChange(e.target.value)}
-					>
-						<option value="all">Tất cả trạng thái</option>
-						<option value="PENDING">Chờ xử lý</option>
-						<option value="RECEIVED">Đã nhận</option>
-						<option value="COMPLETED">Hoàn thành</option>
-						<option value="EXPORTED">Đã xuất</option>
-						<option value="REJECTED">Từ chối</option>
-					</select>
-				</div>
+				{/* Toolbar (sticky) */}
+				<RequestsToolbar
+					searchQuery={state.searchQuery}
+					onSearchDebounced={actions.setSearchQuery}
+					filterType={state.filterType}
+					onChangeType={actions.setFilterType}
+					filterStatus={state.filterStatus}
+					onChangeStatus={actions.setFilterStatus}
+					onClear={actions.clearFilters}
+				/>
 
 				{/* Request Table with Actions */}
 				<DepotRequestTable
 					data={requestsWithActions}
 					loading={isLoading}
-					userRole={state.me?.role || state.me?.roles?.[0]}
 					onDocumentClick={actions.handleDocumentClick}
 					onToggleSupplement={actions.toggleSupplement}
-					onChangeAppointment={actions.handleChangeAppointment}
+					onForward={actions.handleForward}
 					onReject={actions.handleReject}
 					onChangeStatus={actions.changeStatus}
 					onSendPayment={actions.sendPayment}
 					onSoftDelete={(id: string, scope: string) => actions.softDeleteRequest(id, scope as 'depot' | 'customer')}
 					loadingId={state.loadingId}
-					actLabel={{
-						RECEIVED: 'Tiếp nhận',
-						REJECTED: 'Từ chối',
-						COMPLETED: 'Hoàn tất',
-						EXPORTED: 'Đã xuất kho'
-					}}
 				/>
+
+				{/* Pagination */}
+				<div className="pagination-bar" aria-label="Phân trang" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 12 }}>
+					<label htmlFor="pageSize" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+						<span>Kích thước trang</span>
+						<select id="pageSize" value={state.limit} onChange={(e) => actions.setLimit(Number(e.target.value))}>
+							<option value={10}>10</option>
+							<option value={20}>20</option>
+							<option value={50}>50</option>
+							<option value={100}>100</option>
+						</select>
+					</label>
+					<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+						<Button variant="secondary" onClick={() => actions.setPage(state.page - 1)} disabled={state.page <= 1}>
+							← Trước
+						</Button>
+						<span>Trang {state.page}</span>
+						<Button
+							variant="secondary"
+							onClick={() => actions.setPage(state.page + 1)}
+							disabled={Array.isArray(data?.data) ? data.data.length < state.limit : false}
+						>
+							Sau →
+						</Button>
+					</div>
+				</div>
 
 				{/* Status Message */}
 				{state.msg && (
@@ -148,9 +132,6 @@ export default function DepotRequests() {
 				{Array.from(state.activeAppointmentRequests).map((requestId, index) => {
 					const request = data?.data?.find((r: any) => r.id === requestId);
 					if (!request) return null;
-					
-					// Xác định mode dựa trên trạng thái request
-					const isChangeMode = request.status === 'SCHEDULED';
 					
 					return (
 						<AppointmentMini
@@ -165,7 +146,6 @@ export default function DepotRequests() {
 							}}
 							onClose={() => actions.handleAppointmentClose(requestId)}
 							onSuccess={() => actions.handleAppointmentMiniSuccess(requestId)}
-							mode={isChangeMode ? 'change' : 'create'}
 						/>
 					);
 				})}

@@ -1,4 +1,4 @@
-/* Design System Variables - Theo UI Refactor Guidelines */
+/* Design System Variables - split from globals.css */
 :root {
   /* Colors - Màu sắc theo guidelines */
   --color-navy-primary: #001F3F;
@@ -113,47 +113,9 @@
   --transition-default: all 0.2s ease-in-out;
   --transition-fast: all 0.1s ease-in-out;
   --transition-slow: all 0.3s ease-in-out;
+
+  /* Backward-compatible aliases to avoid undefined vars in legacy rules */
+  --white: var(--color-white);
+  --navy: var(--color-navy-primary);
+  --primary: var(--color-primary);
 }
-*{box-sizing:border-box}
-html,body,#__next{height:100%}
-/* Base Styles - Theo guidelines */
-body {
-  margin: 0;
-  font-family: var(--font-family-primary);
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
-}
-
-a, a:visited { 
-  text-decoration: none; 
-  transition: var(--transition-default);
-}
-
-.container {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: var(--space-6);
-}
-
-/* [modularized] card moved to components/card.css */
-
-/* [modularized] buttons moved to components/buttons.css */
-
-/* [modularized] grid/table/searchbar moved to base/utilities.css, components/table.css, components/search.css */
-
-/* Form Inputs - Modern styling */
-/* [modularized] forms moved to base/forms.css */
-
-/* Typography Hierarchy - Theo guidelines */
-/* [modularized] typography moved to base/typography.css */
-
-/* Mobile & Tablet Responsive */
-/* [modularized] container responsive moved to base/base.css */
-/* [modularized] modal, request-form, table & states moved to components */
-/* [modularized] page header & page layout moved to layout/page.css */
-/* [modularized] spinner moved to components/spinner.css */
-/* [modularized] sr-only moved to base/utilities.css */
-/* [modularized] main-content moved to layout/main-content.css */

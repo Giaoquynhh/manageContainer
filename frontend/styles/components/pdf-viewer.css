@@ -1,0 +1,28 @@
+/* PDF Viewer Styles - extracted from globals.css */
+.pdf-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pdf-iframe {
+  flex: 1;
+  min-height: 600px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.pdf-info {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .pdf-iframe {
+    min-height: 400px;
+  }
+}

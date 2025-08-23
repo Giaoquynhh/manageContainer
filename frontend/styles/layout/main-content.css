@@ -1,0 +1,57 @@
+/* Main Content Layout */
+.main-content {
+  padding: var(--space-6);
+  width: 100%;
+  margin: 0;
+  margin-left: 240px; /* Space for the fixed sidebar */
+  transition: margin-left 0.3s ease-in-out;
+}
+
+.main-content.full-width {
+  margin-left: 0; /* When sidebar is hidden */
+}
+
+/* Khi sidebar bị ẩn - Giao diện to hơn */
+.main-content.sidebar-hidden {
+  margin-left: 0 !important; /* Force margin 0 */
+  width: 100% !important; /* Sử dụng toàn bộ width */
+  max-width: 100%; /* Mở rộng tối đa */
+}
+
+/* Khi sidebar mở - Giao diện nhỏ hơn */
+.main-content.sidebar-visible {
+  margin-left: 240px !important; /* Force margin 240px */
+  width: calc(100% - 240px) !important; /* Điều chỉnh width khi sidebar mở */
+  max-width: none; /* Không giới hạn width */
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: var(--space-4);
+    margin-left: 0 !important; /* Force margin 0 trên màn hình nhỏ */
+    width: 100% !important; /* Force width 100% */
+  }
+  
+  .main-content.sidebar-visible,
+  .main-content.sidebar-hidden {
+    margin-left: 0 !important; /* Không cần margin trên màn hình nhỏ */
+    width: 100% !important; /* Sử dụng toàn bộ width */
+    max-width: 100% !important; /* Mở rộng tối đa */
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important; /* Force margin 0 trên mobile */
+    width: 100% !important; /* Force width 100% */
+    padding: var(--space-3); /* Giảm padding trên mobile */
+  }
+  
+  .main-content.sidebar-visible,
+  .main-content.sidebar-hidden {
+    margin-left: 0 !important; /* Không cần margin trên mobile */
+    width: 100% !important; /* Sử dụng toàn bộ width */
+    max-width: 100% !important; /* Mở rộng tối đa */
+  }
+}

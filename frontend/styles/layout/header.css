@@ -1,0 +1,347 @@
+/* Header - Navy blue background theo guidelines */
+.header {
+  background: var(--color-bg-navy);
+  color: var(--color-text-inverse);
+  padding: var(--space-3) 0;
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+}
+
+/* Header Inner Layout */
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0 var(--space-6);
+}
+
+/* Navigation Toggle Button */
+.nav-toggle {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-white);
+  color: var(--color-navy-primary);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  z-index: 1001;
+}
+
+.nav-toggle:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-gray-50);
+}
+
+.nav-toggle:active {
+  transform: translateY(-50%) scale(0.98);
+}
+
+.nav-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Brand Section */
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: var(--space-12); /* Space for nav toggle */
+}
+
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  transition: var(--transition-default);
+}
+
+.header-logo-link:hover {
+  transform: scale(1.02);
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+  transition: var(--transition-default);
+}
+
+.header-title {
+  font-weight: var(--font-weight-extrabold);
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-inverse);
+  margin: 0;
+}
+
+/* Header Actions Section */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  visibility: visible;
+  opacity: 1;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.user-role {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-inverse);
+  opacity: 0.8;
+  font-weight: var(--font-weight-medium);
+}
+
+.user-email {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-inverse);
+  opacity: 0.9;
+  font-weight: var(--font-weight-medium);
+}
+
+.user-loading {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2);
+}
+
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid var(--color-text-inverse);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  visibility: visible;
+  opacity: 1;
+  position: relative;
+  z-index: 20;
+}
+
+.header-logout-btn,
+.header-login-btn {
+  background: transparent !important;
+  color: var(--color-text-inverse) !important;
+  border: 2px solid var(--color-text-inverse) !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md) !important;
+  transition: var(--transition-default);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 10;
+  min-height: 36px;
+  min-width: auto;
+}
+
+.header-logout-btn:hover,
+.header-login-btn:hover {
+  background: var(--color-text-inverse);
+  color: var(--color-navy-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Account Dropdown Styles */
+.account-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.header-account-btn {
+  background: transparent !important;
+  color: var(--color-text-inverse) !important;
+  border: 2px solid var(--color-text-inverse) !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md) !important;
+  transition: var(--transition-default);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 10;
+  min-height: 36px;
+  min-width: auto;
+}
+
+.header-account-btn:hover {
+  background: var(--color-text-inverse);
+  color: var(--color-navy-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.account-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--space-2);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 220px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-default);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: var(--color-gray-50);
+  color: var(--color-navy-primary);
+}
+
+.dropdown-item svg {
+  color: var(--color-gray-500);
+  flex-shrink: 0;
+}
+
+.dropdown-item:hover svg {
+  color: var(--color-navy-primary);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--color-gray-200);
+  margin: var(--space-1) 0;
+}
+
+.dropdown-item-danger {
+  color: var(--color-danger);
+}
+
+.dropdown-item-danger:hover {
+  background: var(--color-red-50);
+  color: var(--color-danger);
+}
+
+.dropdown-item-danger svg {
+  color: var(--color-danger);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 640px) {
+  .header-inner {
+    padding: 0 var(--space-4);
+  }
+  
+  .nav-toggle {
+    left: var(--space-3);
+    width: 36px;
+    height: 36px;
+  }
+  
+  .header-brand {
+    margin-left: var(--space-10);
+  }
+  
+  .header-title {
+    font-size: var(--font-size-xl);
+    display: none; /* Hide title on very small screens */
+  }
+  
+  .user-info {
+    display: none; /* Hide user info on mobile */
+  }
+  
+  .header-actions {
+    gap: var(--space-2);
+  }
+  
+  .header-logout-btn,
+  .header-login-btn {
+    padding: var(--space-2);
+    font-size: var(--font-size-xs);
+  }
+  
+  .header-logout-btn span,
+  .header-login-btn span {
+    display: none; /* Show only icon on mobile */
+  }
+  
+  /* On small mobile screens, hide the text label inside the account button */
+  .header-account-btn span {
+    display: none;
+  }
+}
+
+/* Medium Mobile */
+@media (min-width: 641px) and (max-width: 768px) {
+  .header-title {
+    font-size: var(--font-size-xl);
+  }
+  
+  .user-email {
+    display: none; /* Hide email, keep only role */
+  }
+}
