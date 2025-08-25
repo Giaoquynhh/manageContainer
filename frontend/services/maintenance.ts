@@ -36,6 +36,10 @@ export const maintenanceApi = {
   async updateInventory(id: string, payload: any){
     const { data } = await api.put(`/maintenance/inventory/items/${id}`, payload);
     return data;
+  },
+  async createInventory(payload: any){
+    const { data } = await api.post('/maintenance/inventory/items', payload);
+    return data;
   }
 };
 

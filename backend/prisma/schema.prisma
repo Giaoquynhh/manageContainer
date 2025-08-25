@@ -299,6 +299,7 @@ model InventoryItem {
   uom           String
   qty_on_hand   Int                  @default(0)
   reorder_point Int                  @default(0)
+  unit_price    Int                  @default(0)  // Đơn giá (VND)
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   movements     InventoryMovement[]

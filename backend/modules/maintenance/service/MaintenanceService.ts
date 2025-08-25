@@ -210,11 +210,36 @@ export class MaintenanceService {
     return prisma.inventoryItem.findMany({ where, orderBy: { name: 'asc' } });
   }
 
-  async updateInventory(actor: any, id: string, payload: { qty_on_hand: number; reorder_point: number }) {
+  async updateInventory(actor: any, id: string, payload: { qty_on_hand: number; reorder_point: number; unit_price: number }) {
     if (payload.qty_on_hand < 0) throw new Error('Số lượng âm không hợp lệ');
-    const updated = await prisma.inventoryItem.update({ where: { id }, data: { qty_on_hand: payload.qty_on_hand, reorder_point: payload.qty_on_hand } });
+    if (payload.unit_price < 0) throw new Error('Đơn giá âm không hợp lệ');
+    const updated = await prisma.inventoryItem.update({ 
+      where: { id }, 
+      data: { 
+        qty_on_hand: payload.qty_on_hand, 
+        reorder_point: payload.reorder_point,
+        unit_price: payload.unit_price
+      } 
+    });
     await audit(actor._id, 'INVENTORY.UPDATED', 'INVENTORY', id, payload);
     return updated;
+  }
+
+  async createInventory(actor: any, payload: { name: string; uom: string; qty_on_hand: number; reorder_point: number; unit_price: number }) {
+    if (payload.qty_on_hand < 0) throw new Error('Số lượng âm không hợp lệ');
+    if (payload.unit_price < 0) throw new Error('Đơn giá âm không hợp lệ');
+    
+    const created = await prisma.inventoryItem.create({ 
+      data: { 
+        name: payload.name,
+        uom: payload.uom,
+        qty_on_hand: payload.qty_on_hand, 
+        reorder_point: payload.reorder_point,
+        unit_price: payload.unit_price
+      } 
+    });
+    await audit(actor._id, 'INVENTORY.CREATED', 'INVENTORY', created.id, payload);
+    return created;
   }
 }
 

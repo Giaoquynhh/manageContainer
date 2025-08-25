@@ -26,7 +26,16 @@ export const rejectSchema = Joi.object({
 
 export const updateInventorySchema = Joi.object({
   qty_on_hand: Joi.number().integer().required(),
-  reorder_point: Joi.number().integer().min(0).required()
+  reorder_point: Joi.number().integer().min(0).required(),
+  unit_price: Joi.number().integer().min(0).required()
+});
+
+export const createInventorySchema = Joi.object({
+  name: Joi.string().required(),
+  uom: Joi.string().required(),
+  qty_on_hand: Joi.number().integer().min(0).default(0),
+  reorder_point: Joi.number().integer().min(0).default(0),
+  unit_price: Joi.number().integer().min(0).default(0)
 });
 
 

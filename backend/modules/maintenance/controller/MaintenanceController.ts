@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../../shared/middlewares/auth';
 import service from '../service/MaintenanceService';
-import { approveSchema, createRepairSchema, listRepairsSchema, rejectSchema, updateInventorySchema } from '../dto/MaintenanceDtos';
+import { approveSchema, createRepairSchema, listRepairsSchema, rejectSchema, updateInventorySchema, createInventorySchema } from '../dto/MaintenanceDtos';
 
 export class MaintenanceController {
   async listRepairs(req: AuthRequest, res: Response) {
@@ -44,6 +44,12 @@ export class MaintenanceController {
     const { error, value } = updateInventorySchema.validate(req.body);
     if (error) return res.status(400).json({ message: error.message });
     try { return res.json(await service.updateInventory(req.user!, req.params.id, value)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
+  }
+
+  async createInventory(req: AuthRequest, res: Response) {
+    const { error, value } = createInventorySchema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+    try { return res.status(201).json(await service.createInventory(req.user!, value)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
   }
 }
 

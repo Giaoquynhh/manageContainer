@@ -16,6 +16,7 @@ router.post('/repairs/:id/complete-check', (req, res) => controller.completeChec
 
 // Inventory
 router.get('/inventory/items', (req, res) => controller.listInventory(req as any, res));
+router.post('/inventory/items', (req, res) => controller.createInventory(req as any, res));
 router.put('/inventory/items/:id', (req, res) => controller.updateInventory(req as any, res));
 
 // Expose equipments for FE select (simple list)

@@ -91,9 +91,9 @@ async function main(){
 	const invCount = await prisma.inventoryItem.count();
 	if (invCount === 0) {
 		await prisma.inventoryItem.createMany({ data: [
-			{ name: 'Sơn chống rỉ', uom: 'lit', qty_on_hand: 50, reorder_point: 10 },
-			{ name: 'Đinh tán', uom: 'pcs', qty_on_hand: 1000, reorder_point: 200 },
-			{ name: 'Ron cao su', uom: 'pcs', qty_on_hand: 500, reorder_point: 100 }
+			{ name: 'Sơn chống rỉ', uom: 'lit', qty_on_hand: 50, reorder_point: 10, unit_price: 150000 },
+			{ name: 'Đinh tán', uom: 'pcs', qty_on_hand: 1000, reorder_point: 200, unit_price: 500 },
+			{ name: 'Ron cao su', uom: 'pcs', qty_on_hand: 500, reorder_point: 100, unit_price: 2500 }
 		] });
 	}
 }

@@ -24,59 +24,68 @@ backend/
 │     ├─ passwordPolicy.ts      # Chính sách mật khẩu
 │     ├─ pagination.ts          # Tiện ích phân trang
 │     └─ csv.ts                 # Xuất CSV
-└─ modules/                     # Chia theo domain nghiệp vụ
-   ├─ auth/
-   │  ├─ controller/
-   │  │  ├─ authController.ts
-   │  │  └─ authRoutes.ts
-   │  ├─ dto/
-   │  │  └─ AuthDtos.ts         # Joi schema: login/profile/change-password
-   │  ├─ model/                 # (để mở rộng, nếu cần)
-   │  ├─ repository/            # (để mở rộng, nếu cần)
-   │  └─ service/
-   │     └─ AuthService.ts
-   ├─ users/
-   │  ├─ controller/
-   │  │  ├─ userController.ts
-   │  │  └─ userRoutes.ts
-   │  ├─ dto/
-   │  │  └─ UserDtos.ts         # Joi schema: tạo/cập nhật user
-   │  ├─ model/
-   │  │  └─ User.ts             # RBAC, state machine, scope tenant/partner
-   │  ├─ repository/
-   │  │  └─ UserRepository.ts
-   │  └─ service/
-   │     └─ UserService.ts      # Lifecycle: INVITED/ACTIVE/DISABLED/LOCKED
-   ├─ customers/
-   │  ├─ controller/
-   │  │  ├─ customerController.ts
-   │  │  └─ customerRoutes.ts
-   │  ├─ dto/
-   │  │  └─ CustomerDtos.ts     # Joi schema: create/update
-   │  ├─ model/
-   │  │  └─ Customer.ts         # Unique: tax_code
-   │  ├─ repository/
-   │  │  └─ CustomerRepository.ts
-   │  └─ service/
-   │     └─ CustomerService.ts  # Auto-provision CustomerAdmin (INVITED)
-   ├─ partners/
-   │  ├─ controller/
-   │  │  ├─ partnerController.ts
-   │  │  └─ partnerRoutes.ts
-   │  ├─ dto/
-   │  │  └─ PartnerDtos.ts      # Joi schema: create/update
-   │  ├─ model/
-   │  │  └─ Partner.ts          # Unique: name, trạng thái DRAFT/ACTIVE/INACTIVE
-   │  ├─ repository/
-   │  │  └─ PartnerRepository.ts
-   │  └─ service/
-   │     └─ PartnerService.ts   # Activate/Deactivate, Primary admin invite
-   └─ audit/
-      ├─ controller/
-      │  ├─ auditController.ts
-      │  └─ auditRoutes.ts      # GET /audit?… (export CSV)
-      └─ model/
-         └─ AuditLog.ts         # Nhật ký hành động, có thể export
+   └─ modules/                     # Chia theo domain nghiệp vụ
+      ├─ auth/
+      │  ├─ controller/
+      │  │  ├─ authController.ts
+      │  │  └─ authRoutes.ts
+      │  ├─ dto/
+      │  │  └─ AuthDtos.ts         # Joi schema: login/profile/change-password
+      │  ├─ model/                 # (để mở rộng, nếu cần)
+      │  ├─ repository/            # (để mở rộng, nếu cần)
+      │  └─ service/
+      │     └─ AuthService.ts
+      ├─ users/
+      │  ├─ controller/
+      │  │  ├─ userController.ts
+      │  │  └─ userRoutes.ts
+      │  ├─ dto/
+      │  │  └─ UserDtos.ts         # Joi schema: tạo/cập nhật user
+      │  ├─ model/
+      │  │  └─ User.ts             # RBAC, state machine, scope tenant/partner
+      │  ├─ repository/
+      │  │  └─ UserRepository.ts
+      │  └─ service/
+      │     └─ UserService.ts      # Lifecycle: INVITED/ACTIVE/DISABLED/LOCKED
+      ├─ customers/
+      │  ├─ controller/
+      │  │  ├─ customerController.ts
+      │  │  └─ customerRoutes.ts
+      │  ├─ dto/
+      │  │  └─ CustomerDtos.ts     # Joi schema: create/update
+      │  ├─ model/
+      │  │  └─ Customer.ts         # Unique: tax_code
+      │  ├─ repository/
+      │  │  └─ CustomerRepository.ts
+      │  └─ service/
+      │     └─ CustomerService.ts  # Auto-provision CustomerAdmin (INVITED)
+      ├─ partners/
+      │  ├─ controller/
+      │  │  ├─ partnerController.ts
+      │  │  └─ partnerRoutes.ts
+      │  ├─ dto/
+      │  │  └─ PartnerDtos.ts      # Joi schema: create/update
+      │  ├─ model/
+      │  │  └─ Partner.ts          # Unique: name, trạng thái DRAFT/ACTIVE/INACTIVE
+      │  ├─ repository/
+      │  │  └─ PartnerRepository.ts
+      │  └─ service/
+      │     └─ PartnerService.ts   # Activate/Deactivate, Primary admin invite
+      ├─ maintenance/               # ⭐ **MỚI**: Module quản lý bảo trì & vật tư
+      │  ├─ controller/
+      │  │  ├─ MaintenanceController.ts
+      │  │  └─ MaintenanceRoutes.ts
+      │  ├─ dto/
+      │  │  └─ MaintenanceDtos.ts  # Joi schema: repair/inventory CRUD
+      │  ├─ service/
+      │  │  └─ MaintenanceService.ts # Business logic: repair workflow, inventory management
+      │  └─ model/                 # Prisma models: Equipment, InventoryItem, RepairTicket
+      └─ audit/
+         ├─ controller/
+         │  ├─ auditController.ts
+         │  └─ auditRoutes.ts      # GET /audit?… (export CSV)
+         └─ model/
+            └─ AuditLog.ts         # Nhật ký hành động, có thể export
 ```
 
 ### Vai trò từng lớp
@@ -89,7 +98,7 @@ backend/
 ### Chuẩn module hóa
 - Mỗi domain nằm trong `modules/<domain>/` và đầy đủ 5 nhóm: `controller`, `service`, `repository`, `model`, `dto`.
 - Đường dẫn HTTP mount ở `main.ts`:
-  - `/auth`, `/users`, `/customers`, `/partners`, `/audit`.
+  - `/auth`, `/users`, `/customers`, `/partners`, `/maintenance`, `/audit`.
 - Áp dụng middleware:
   - `authenticate` trước các route cần JWT.
   - `requireRoles(...)` cho RBAC theo vai.
