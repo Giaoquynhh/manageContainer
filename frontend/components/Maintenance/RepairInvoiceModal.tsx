@@ -8,6 +8,7 @@ interface RepairInvoiceModalProps {
   onClose: () => void;
   repairTicket: any;
   onSuccess: () => void;
+  onInvoiceCreated?: (repairTicketId: string) => void;
 }
 
 interface InventoryItem {
@@ -23,7 +24,7 @@ interface SelectedPart {
   quantity: number;
 }
 
-export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSuccess }: RepairInvoiceModalProps) {
+export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSuccess, onInvoiceCreated }: RepairInvoiceModalProps) {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [laborCost, setLaborCost] = useState<string>('');
@@ -228,8 +229,8 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
       doc.text(`Ngay xuat: ${new Date().toLocaleDateString('vi-VN')}`, 20, finalY + 40);
       doc.text('Chu ky nguoi lap:', 120, finalY + 40);
     
-      // Tạo tên file
-      const fileName = `Hoa_don_sua_chua_${repairTicket.code}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Tạo tên file đơn giản: ten_phieu.pdf
+      const fileName = `${repairTicket.code}.pdf`;
       
       // Lưu file local trước
       doc.save(fileName);
@@ -253,7 +254,7 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
     }
   };
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (selectedParts.length === 0) {
       setMessage('Vui lòng chọn ít nhất một phụ tùng');
       return;
@@ -273,24 +274,198 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
     }
 
     setLoading(true);
-    setMessage('');
+    setMessage('Đang tạo hóa đơn...');
 
     try {
-             const payload = {
-         repair_ticket_id: repairTicket.id,
-         labor_cost: Number(laborCost) || 0,
-         selected_parts: selectedParts,
-         problem_description: problemDescription
-       };
+      // 1. Tạo hóa đơn trong database
+      const payload = {
+        repair_ticket_id: repairTicket.id,
+        labor_cost: Number(laborCost) || 0,
+        selected_parts: selectedParts
+      };
 
       await maintenanceApi.createRepairInvoice(repairTicket.id, payload);
-      setMessage('Đã tạo hóa đơn sửa chữa thành công');
-      onSuccess();
-      onClose();
+      setMessage('Đã tạo hóa đơn! Đang cập nhật trạng thái...');
+
+      // 2. Cập nhật trạng thái phiếu thành PENDING_ACCEPT
+      await maintenanceApi.updateRepairStatus(repairTicket.id, 'PENDING_ACCEPT', 'Đã tạo hóa đơn sửa chữa');
+      setMessage('Đã cập nhật trạng thái! Đang tạo PDF...');
+
+      // 3. Tạo và upload PDF tự động
+      await generateAndUploadPDF();
+
+      setMessage('Hoàn thành! Đã tạo hóa đơn, cập nhật trạng thái và upload PDF thành công!');
+      
+      // Thông báo cho component cha biết hóa đơn đã được tạo
+      if (onInvoiceCreated) {
+        onInvoiceCreated(repairTicket.id);
+      }
+      
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 2000);
     } catch (error: any) {
-      setMessage('Lỗi tạo hóa đơn: ' + (error.response?.data?.message || error.message));
+      setMessage('Lỗi: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function riêng để tạo và upload PDF
+  const generateAndUploadPDF = async () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Sử dụng font hỗ trợ Unicode để hiển thị tiếng Việt
+      doc.setFont('helvetica');
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('HOA DON SUA CHUA', 105, 20, { align: 'center' });
+      
+      // Vẽ đường kẻ dưới header
+      doc.setDrawColor(41, 128, 185);
+      doc.setLineWidth(0.5);
+      doc.line(20, 25, 190, 25);
+      
+      // Thông tin công ty
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Smartlog Container Manager', 105, 30, { align: 'center' });
+      doc.text('Dia chi: 123 Duong ABC, Quan XYZ, TP.HCM', 105, 37, { align: 'center' });
+      doc.text('Dien thoai: 028-1234-5678 | Email: info@smartlog.com', 105, 44, { align: 'center' });
+      
+      // Thông tin phiếu
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('THONG TIN PHIEU SUA CHUA', 20, 60);
+      
+      // Vẽ khung cho thông tin phiếu
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.2);
+      doc.rect(18, 55, 174, 45);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Ma phieu: ${repairTicket.code}`, 20, 70);
+      doc.text(`Ma container: ${repairTicket.container_no || 'N/A'}`, 20, 77);
+      doc.text(`Thoi gian tao: ${new Date(repairTicket.createdAt).toLocaleString('vi-VN')}`, 20, 84);
+      // Xử lý text tiếng Việt để tránh lỗi font
+      const cleanDescription = cleanVietnameseText(problemDescription);
+      doc.text(`Mo ta loi: ${cleanDescription}`, 20, 91);
+      
+      // Chi phí công sửa chữa
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CHI PHI CONG SUA CHUA', 20, 105);
+      
+      // Vẽ khung cho chi phí công
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.2);
+      doc.rect(18, 100, 174, 25);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Chi phi cong: ${(Number(laborCost) || 0).toLocaleString('vi-VN')} VND`, 20, 115);
+    
+      // Table phụ tùng
+      if (selectedParts.length > 0) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PHU TUNG SU DUNG', 20, 130);
+        
+        // Vẽ khung cho section phụ tùng
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.2);
+        doc.rect(18, 125, 174, 25);
+        
+        const tableData = selectedParts.map(part => {
+          const item = inventoryItems.find(i => i.id === part.inventory_item_id);
+          if (!item) return [];
+          
+          // Xử lý tên phụ tùng tiếng Việt
+          const cleanItemName = cleanVietnameseText(item.name);
+          
+          return [
+            cleanItemName + ' (' + item.uom + ')',
+            item.unit_price.toLocaleString('vi-VN'),
+            part.quantity.toString(),
+            (item.unit_price * part.quantity).toLocaleString('vi-VN')
+          ];
+        }).filter(row => row.length > 0);
+        
+        (doc as any).autoTable({
+          startY: 140,
+          head: [['Ten phu tung', 'Don gia (VND)', 'So luong', 'Thanh tien (VND)']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [41, 128, 185], 
+            textColor: 255,
+            fontSize: 10,
+            fontStyle: 'bold'
+          },
+          styles: { 
+            fontSize: 9,
+            cellPadding: 4,
+            lineWidth: 0.1
+          },
+          columnStyles: {
+            0: { cellWidth: 75, halign: 'left' },
+            1: { cellWidth: 35, halign: 'center' },
+            2: { cellWidth: 25, halign: 'center' },
+            3: { cellWidth: 35, halign: 'right' }
+          },
+          margin: { top: 15, right: 20, bottom: 15, left: 20 },
+          tableWidth: 170
+        });
+      }
+      
+      // Tổng kết chi phí
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TONG KET CHI PHI', 20, finalY);
+      
+      // Vẽ khung cho section tổng kết
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.2);
+      doc.rect(18, finalY - 5, 174, 40);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Chi phi phu tung: ${calculatePartsCost().toLocaleString('vi-VN')} VND`, 20, finalY + 10);
+      doc.text(`Chi phi cong sua chua: ${(Number(laborCost) || 0).toLocaleString('vi-VN')} VND`, 20, finalY + 17);
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`TONG CHI PHI SUA CHUA: ${calculateTotalCost().toLocaleString('vi-VN')} VND`, 20, finalY + 27);
+    
+      // Footer
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Ngay xuat: ${new Date().toLocaleDateString('vi-VN')}`, 20, finalY + 40);
+      doc.text('Chu ky nguoi lap:', 120, finalY + 40);
+    
+      // Tạo tên file đơn giản: ten_phieu.pdf
+      const fileName = `${repairTicket.code}.pdf`;
+      
+      // Lưu file local trước
+      doc.save(fileName);
+      
+      // Chuyển PDF thành base64 để upload lên backend
+      const pdfOutput = doc.output('datauristring');
+      const base64Data = pdfOutput.split(',')[1]; // Lấy phần base64 từ data URI
+      
+      // Upload lên backend
+      setMessage('Đang upload PDF lên server...');
+      await maintenanceApi.uploadRepairInvoicePDF(repairTicket.id, base64Data, fileName);
+      
+    } catch (error: any) {
+      console.error('Lỗi khi tạo PDF:', error);
+      throw new Error('Lỗi khi tạo PDF: ' + error.message);
     }
   };
 
@@ -666,22 +841,24 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
 
                      {/* Nút hành động */}
            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-             <button
-               onClick={generatePDF}
-               style={{
-                 backgroundColor: '#3b82f6',
-                 color: 'white',
-                 border: 'none',
-                 padding: '12px 24px',
-                 borderRadius: '6px',
-                 cursor: 'pointer',
-                 display: 'flex',
-                 alignItems: 'center',
-                 gap: '8px'
-               }}
-             >
-               📄 Xuất PDF
-             </button>
+                           <button
+                onClick={handleSubmit}
+                disabled={loading}
+                style={{
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '6px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {loading ? '🔄 Đang xử lý...' : '📄 Tạo hóa đơn & PDF'}
+              </button>
              <button
                onClick={onClose}
                style={{
@@ -695,21 +872,19 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
              >
                Hủy
              </button>
-             <button
-               onClick={handleSubmit}
-               disabled={loading}
-               style={{
-                 backgroundColor: '#059669',
-                 color: 'white',
-                 border: 'none',
-                 padding: '12px 24px',
-                 borderRadius: '6px',
-                 cursor: loading ? 'not-allowed' : 'pointer',
-                 opacity: loading ? 0.6 : 1
-               }}
-             >
-               {loading ? 'Đang xử lý...' : 'Tạo hóa đơn'}
-             </button>
+                           <button
+                onClick={onClose}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy
+              </button>
            </div>
         </div>
       </div>

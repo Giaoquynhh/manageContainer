@@ -17,7 +17,23 @@ export default function RepairsPage() {
   const [isRepairInvoiceModalOpen, setIsRepairInvoiceModalOpen] = useState(false);
   const [selectedRepairTicket, setSelectedRepairTicket] = useState<any>(null);
   const key = ['repairs', filter].join(':');
-  const { data: repairs } = useSWR(key, async () => maintenanceApi.listRepairs(filter || undefined));
+  const { data: repairs } = useSWR(key, async () => {
+    const repairsList = await maintenanceApi.listRepairs(filter || undefined);
+    
+    // Kiểm tra hóa đơn thực tế cho mỗi phiếu
+    const repairsWithInvoice = await Promise.all(
+      repairsList.map(async (repair) => {
+        try {
+          const invoiceCheck = await maintenanceApi.checkRepairInvoice(repair.id);
+          return { ...repair, hasInvoice: invoiceCheck.hasInvoice };
+        } catch (error) {
+          return { ...repair, hasInvoice: false };
+        }
+      })
+    );
+    
+    return repairsWithInvoice;
+  });
   const [msg, setMsg] = useState('');
 
   const approve = async (id: string) => {
@@ -121,6 +137,20 @@ export default function RepairsPage() {
     setTimeout(() => setMsg(''), 3000);
   };
 
+  const handleInvoiceCreated = (repairTicketId: string) => {
+    // Cập nhật trạng thái hóa đơn cho phiếu vừa tạo trong cache
+    mutate(key, (currentRepairs: any[] | undefined) => 
+      currentRepairs?.map(repair => 
+        repair.id === repairTicketId 
+          ? { ...repair, hasInvoice: true }
+          : repair
+      ) || []
+    );
+    
+    // Refresh lại để đảm bảo dữ liệu chính xác
+    mutate(key);
+  };
+
   const handleCloseRepairInvoiceModal = () => {
     setIsRepairInvoiceModalOpen(false);
     setSelectedRepairTicket(null);
@@ -161,6 +191,7 @@ export default function RepairsPage() {
             onClose={handleCloseRepairInvoiceModal}
             repairTicket={selectedRepairTicket}
             onSuccess={handleRepairInvoiceSuccess}
+            onInvoiceCreated={handleInvoiceCreated}
           />
         )}
       </main>

@@ -323,11 +323,16 @@ export class MaintenanceService {
 
     const totalCost = partsCost + (repairTicket.labor_cost || 0);
 
+    // Kiểm tra xem file PDF có tồn tại không
+    const pdfPath = await this.getRepairInvoicePDFPath(repairTicketId, repairTicket.code);
+    const pdfExists = !!pdfPath; // Chuyển đường dẫn thành boolean
+
     return {
       ...repairTicket,
       parts_cost: partsCost,
       total_cost: totalCost,
-      parts_details: partsDetails
+      parts_details: partsDetails,
+      pdfExists // Thêm trường này vào kết quả trả về
     };
   }
 
@@ -345,10 +350,9 @@ export class MaintenanceService {
         fs.mkdirSync(repairInvoicesDir, { recursive: true });
       }
 
-      // Tạo tên file unique
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const uniqueFileName = `${repairTicketId}_${timestamp}_${fileName}`;
-      const filePath = path.join(repairInvoicesDir, uniqueFileName);
+      // Tạo tên file đơn giản: ten_phieu.pdf
+      const simpleFileName = `${fileName.replace('.pdf', '')}.pdf`;
+      const filePath = path.join(repairInvoicesDir, simpleFileName);
 
       // Chuyển base64 thành buffer và lưu file
       const pdfBuffer = Buffer.from(pdfBase64, 'base64');
@@ -358,13 +362,120 @@ export class MaintenanceService {
       // Có thể tạo bảng mới để lưu thông tin file
 
       return {
-        fileName: uniqueFileName,
+        fileName: simpleFileName,
         filePath: filePath,
         fileSize: pdfBuffer.length,
         uploadedAt: new Date()
       };
     } catch (error: any) {
       throw new Error('Lỗi khi upload PDF: ' + error.message);
+    }
+  }
+
+  async getRepairTicketById(repairTicketId: string) {
+    try {
+      const repairTicket = await prisma.repairTicket.findUnique({
+        where: { id: repairTicketId },
+        select: {
+          id: true,
+          code: true,
+          container_no: true,
+          status: true,
+          problem_description: true,
+          estimated_cost: true,
+          createdAt: true
+        }
+      });
+      
+      if (!repairTicket) {
+        throw new Error('Phiếu sửa chữa không tồn tại');
+      }
+      
+      return repairTicket;
+    } catch (error: any) {
+      throw new Error('Lỗi khi lấy thông tin phiếu: ' + error.message);
+    }
+  }
+
+  async getRepairInvoicePDFPath(repairTicketId: string, ticketCode?: string) {
+    try {
+      // Tìm file PDF trong thư mục uploads/repair-invoices
+      const uploadsDir = path.join(__dirname, '../../../uploads');
+      const repairInvoicesDir = path.join(uploadsDir, 'repair-invoices');
+      
+      if (!fs.existsSync(repairInvoicesDir)) {
+        return null;
+      }
+
+      // Tìm file PDF theo cả 2 định dạng: cũ và mới
+      const files = fs.readdirSync(repairInvoicesDir);
+      
+      // Tìm file PDF theo thứ tự ưu tiên:
+      // 1. Định dạng mới: REP-xxx.pdf
+      // 2. Định dạng cũ: repairTicketId_timestamp_filename.pdf
+      // 3. Tìm theo pattern matching với cả repairTicketId và ticketCode
+      let pdfFile = null;
+      
+      if (ticketCode) {
+        // Tìm theo định dạng mới: REP-xxx.pdf
+        pdfFile = files.find(file => {
+          const isPdf = file.endsWith('.pdf');
+          const isNewFormat = file.startsWith(`${ticketCode}`);
+          return isPdf && isNewFormat;
+        });
+      }
+      
+      // Nếu không tìm thấy định dạng mới, tìm định dạng cũ
+      if (!pdfFile) {
+        pdfFile = files.find(file => {
+          const isPdf = file.endsWith('.pdf');
+          const isOldFormat = file.startsWith(repairTicketId + '_');
+          return isPdf && isOldFormat;
+        });
+      }
+      
+      // Nếu vẫn không tìm thấy, tìm bất kỳ file PDF nào có chứa repairTicketId hoặc ticketCode
+      if (!pdfFile) {
+        pdfFile = files.find(file => {
+          const isPdf = file.endsWith('.pdf');
+          const containsRepairId = file.includes(repairTicketId);
+          const containsTicketCode = ticketCode ? file.includes(ticketCode) : false;
+          return isPdf && (containsRepairId || containsTicketCode);
+        });
+      }
+      
+      // Nếu vẫn không tìm thấy, tìm bất kỳ file PDF nào có chứa một phần của repairTicketId hoặc ticketCode
+      if (!pdfFile) {
+        pdfFile = files.find(file => {
+          const isPdf = file.endsWith('.pdf');
+          
+          // Tìm theo một phần của repairTicketId (ví dụ: 6 ký tự cuối)
+          const last6CharsOfRepairId = repairTicketId.slice(-6);
+          const containsLast6Chars = file.includes(last6CharsOfRepairId);
+          
+          // Tìm theo một phần của ticketCode (ví dụ: số cuối)
+          let containsTicketCodePart = false;
+          if (ticketCode) {
+            const ticketCodeMatch = ticketCode.match(/\d+$/);
+            if (ticketCodeMatch) {
+              const ticketCodeNumber = ticketCodeMatch[0];
+              containsTicketCodePart = file.includes(ticketCodeNumber);
+            }
+          }
+          
+          return isPdf && (containsLast6Chars || containsTicketCodePart);
+        });
+      }
+      
+      if (!pdfFile) {
+        return null;
+      }
+
+      const fullPath = path.join(repairInvoicesDir, pdfFile);
+      return fullPath;
+    } catch (error: any) {
+      console.error('Lỗi khi tìm file PDF:', error);
+      return null;
     }
   }
 }

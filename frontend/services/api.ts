@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const api = axios.create({ baseURL: '/backend' });
+export const api = axios.create({ baseURL: 'http://localhost:1000' });
 
 export async function feLog(message: string, meta?: any){
 	try{
@@ -27,7 +27,7 @@ api.interceptors.response.use(r => r, async (error) => {
 			const refresh_token = localStorage.getItem('refresh_token');
 			const user_id = localStorage.getItem('user_id');
 			if (refresh_token && user_id) {
-				const resp = await axios.post('/backend/auth/refresh', { user_id, refresh_token });
+				const resp = await axios.post('http://localhost:1000/auth/refresh', { user_id, refresh_token });
 				localStorage.setItem('token', resp.data.access_token);
 				localStorage.setItem('refresh_token', resp.data.refresh_token);
 				pending.forEach(fn => fn(resp.data.access_token));

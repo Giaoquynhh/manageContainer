@@ -3,6 +3,7 @@ import { AuthRequest } from '../../../shared/middlewares/auth';
 import service from '../service/MaintenanceService';
 import { approveSchema, createRepairSchema, listRepairsSchema, rejectSchema, updateInventorySchema, createInventorySchema, createRepairInvoiceSchema } from '../dto/MaintenanceDtos';
 import { Request } from 'express';
+import path from 'path';
 
 export class MaintenanceController {
   async listRepairs(req: AuthRequest, res: Response) {
@@ -65,7 +66,7 @@ export class MaintenanceController {
 
   async uploadRepairInvoicePDF(req: Request, res: Response) {
     try {
-      const { repairTicketId } = req.params;
+      const { id } = req.params;
       const { pdfBase64, fileName } = req.body;
 
       if (!pdfBase64 || !fileName) {
@@ -77,7 +78,7 @@ export class MaintenanceController {
 
       // Gọi service để xử lý upload
       const result = await service.uploadRepairInvoicePDF(
-        repairTicketId,
+        id,
         pdfBase64,
         fileName
       );
@@ -91,6 +92,43 @@ export class MaintenanceController {
       res.status(500).json({
         success: false,
         message: 'Lỗi khi upload PDF: ' + error.message
+      });
+    }
+  }
+
+  async downloadRepairInvoicePDF(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      
+      // Lấy thông tin phiếu để có ticketCode
+      const repairTicket = await service.getRepairTicketById(id);
+      
+      if (!repairTicket) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy phiếu sửa chữa'
+        });
+      }
+      
+      // Gọi service để lấy file PDF với ticketCode
+      const pdfPath = await service.getRepairInvoicePDFPath(id, repairTicket.code);
+      
+      if (!pdfPath) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy hóa đơn PDF'
+        });
+      }
+
+      // Gửi file PDF với headers phù hợp
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${path.basename(pdfPath)}"`);
+      res.download(pdfPath);
+    } catch (error: any) {
+      console.error('Lỗi trong downloadRepairInvoicePDF:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi download PDF: ' + error.message
       });
     }
   }

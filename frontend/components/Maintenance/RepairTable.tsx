@@ -1,3 +1,6 @@
+import React from 'react';
+import { maintenanceApi } from '@services/maintenance';
+
 interface RepairTableProps {
   repairs: any[];
   onApprove: (id: string) => void;
@@ -14,9 +17,31 @@ export default function RepairTable({ repairs, onApprove, onReject, onPassStanda
     return num.toLocaleString('vi-VN');
   };
 
+  const handleViewPDF = async (repairId: string) => {
+    try {
+      // Gọi API với authentication để lấy PDF
+      const response = await maintenanceApi.downloadRepairInvoicePDF(repairId);
+      
+      // Tạo blob từ response data
+      const blob = new Blob([response], { type: 'application/pdf' });
+      
+      // Tạo URL cho blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Mở PDF trong tab mới
+      window.open(url, '_blank');
+      
+      // Cleanup URL sau khi sử dụng
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (error: any) {
+      console.error('Lỗi khi tải PDF:', error);
+      alert('Lỗi khi tải PDF: ' + (error.message || 'Không thể tải file'));
+    }
+  };
+
   return (
     <div style={{ overflow: 'auto' }}>
-      <table className="table" style={{ width: '100%', minWidth: '800px' }}>
+      <table className="table" style={{ width: '100%', minWidth: '900px' }}>
         <thead>
           <tr>
             <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Mã</th>
@@ -24,6 +49,7 @@ export default function RepairTable({ repairs, onApprove, onReject, onPassStanda
             <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Trạng thái</th>
             <th style={{ padding: '12px 8px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Mô tả</th>
             <th style={{ padding: '12px 8px', textAlign: 'right', borderBottom: '1px solid #e5e7eb' }}>Chi phí (đ)</th>
+            <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Hóa đơn</th>
             <th style={{ padding: '12px 8px', textAlign: 'center', borderBottom: '1px solid #e5e7eb' }}>Hành động</th>
           </tr>
         </thead>
@@ -63,6 +89,33 @@ export default function RepairTable({ repairs, onApprove, onReject, onPassStanda
                 {r.problem_description || '-'}
               </td>
               <td style={{ padding: '12px 8px', textAlign: 'right' }}>{fmt(r.estimated_cost)}</td>
+              <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                {r.hasInvoice ? (
+                  <button 
+                    onClick={() => handleViewPDF(r.id)}
+                    style={{
+                      padding: '4px 8px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      background: '#3b82f6',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                    title="Xem hóa đơn PDF"
+                  >
+                    📄 Xem chi tiết
+                  </button>
+                ) : (
+                  <span style={{ 
+                    color: '#6b7280', 
+                    fontSize: '12px',
+                    fontStyle: 'italic'
+                  }}>
+                    Chưa có hóa đơn
+                  </span>
+                )}
+              </td>
               <td style={{ padding: '12px 8px', textAlign: 'center' }}>
                 {r.status === 'PENDING_APPROVAL' && (
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
@@ -165,7 +218,7 @@ export default function RepairTable({ repairs, onApprove, onReject, onPassStanda
           ))}
           {(!repairs || repairs.length === 0) && (
             <tr>
-              <td colSpan={6} style={{
+              <td colSpan={7} style={{
                 padding: '40px 8px',
                 textAlign: 'center',
                 color: '#6b7280',

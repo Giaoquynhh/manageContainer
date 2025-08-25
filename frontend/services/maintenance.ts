@@ -58,6 +58,23 @@ export const maintenanceApi = {
       fileName
     });
     return response.data;
+  },
+
+  async checkRepairInvoice(repairTicketId: string) {
+    try {
+      const { data } = await api.get(`/maintenance/repairs/${repairTicketId}/invoice`);
+      // Bây giờ 'data' sẽ chứa trường 'pdfExists' từ backend
+      return { hasInvoice: data.pdfExists, invoice: data }; // Chỉ có hóa đơn nếu file PDF tồn tại
+    } catch (error) {
+      return { hasInvoice: false, invoice: null };
+    }
+  },
+
+  async downloadRepairInvoicePDF(repairTicketId: string) {
+    const response = await api.get(`/maintenance/repairs/${repairTicketId}/invoice/pdf`, {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 
