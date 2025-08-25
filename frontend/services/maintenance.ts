@@ -40,6 +40,16 @@ export const maintenanceApi = {
   async createInventory(payload: any){
     const { data } = await api.post('/maintenance/inventory/items', payload);
     return data;
+  },
+
+  async createRepairInvoice(repairTicketId: string, payload: any){
+    const { data } = await api.post(`/maintenance/repairs/${repairTicketId}/invoice`, payload);
+    return data;
+  },
+
+  async getRepairInvoice(repairTicketId: string){
+    const { data } = await api.get(`/maintenance/repairs/${repairTicketId}/invoice`);
+    return data;
   }
 };
 

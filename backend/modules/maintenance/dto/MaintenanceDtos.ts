@@ -38,5 +38,14 @@ export const createInventorySchema = Joi.object({
   unit_price: Joi.number().integer().min(0).default(0)
 });
 
+export const createRepairInvoiceSchema = Joi.object({
+  repair_ticket_id: Joi.string().required(),
+  labor_cost: Joi.number().integer().min(0).required(),
+  selected_parts: Joi.array().items(Joi.object({
+    inventory_item_id: Joi.string().required(),
+    quantity: Joi.number().integer().min(1).required()
+  })).required()
+});
+
 
 

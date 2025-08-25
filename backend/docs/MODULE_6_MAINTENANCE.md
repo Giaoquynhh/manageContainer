@@ -23,6 +23,8 @@
   - `POST /maintenance/repairs/:id/reject`
   - `PATCH /maintenance/repairs/:id/status`
   - `POST /maintenance/repairs/:id/complete-check`
+  - `POST /maintenance/repairs/:id/invoice` ⭐ **MỚI**: Tạo hóa đơn sửa chữa
+  - `GET /maintenance/repairs/:id/invoice` ⭐ **MỚI**: Xem hóa đơn sửa chữa
 - Inventory
   - `GET /maintenance/inventory/items`
   - `POST /maintenance/inventory/items` ⭐ **MỚI**
@@ -66,6 +68,17 @@ async createInventory(actor: any, payload: {
 }) {
   // Validation và tạo mới inventory item
 }
+
+async createRepairInvoice(actor: any, payload: { 
+  repair_ticket_id: string; labor_cost: number; 
+  selected_parts: Array<{ inventory_item_id: string; quantity: number }> 
+}) {
+  // Tạo hóa đơn sửa chữa với chi phí phụ tùng và công sửa chữa
+}
+
+async getRepairInvoice(repairTicketId: string) {
+  // Lấy thông tin hóa đơn sửa chữa với chi tiết chi phí
+}
 ```
 
 ## 9) Liên kết module
@@ -89,6 +102,25 @@ async createInventory(actor: any, payload: {
 - **Database**: Thêm cột `unit_price` vào bảng `InventoryItem`
 - **Frontend**: Hiển thị và cho phép chỉnh sửa đơn giá
 - **Backend**: Validation và cập nhật đơn giá trong API update
+
+### Hóa đơn sửa chữa ⭐ **MỚI**
+- **Frontend**: Component `RepairInvoiceModal` với form tạo hóa đơn
+- **Backend**: API `POST /maintenance/repairs/:id/invoice` và `GET /maintenance/repairs/:id/invoice`
+- **Tính năng**:
+  - Hiển thị thông tin phiếu: Mã phiếu, Mã container, Thời gian tạo, Mô tả lỗi
+  - Nhập chi phí công sửa chữa (chỉ số nguyên không âm)
+  - Chọn phụ tùng từ inventory với số lượng (chỉ số nguyên không âm)
+  - **Table phụ tùng đã sử dụng**: Hiển thị tên, đơn giá, số lượng, thành tiền
+  - Tính toán tự động: Chi phí phụ tùng + Chi phí công = Tổng chi phí sửa chữa
+- **Validation**: 
+  - Chi phí công ≥ 0 (chỉ số nguyên)
+  - Số lượng phụ tùng > 0 (chỉ số nguyên)
+  - Phải chọn ít nhất 1 phụ tùng
+- **UI/UX**: 
+  - Input validation real-time (chỉ cho phép nhập số nguyên)
+  - Table hiển thị rõ ràng với border và màu sắc
+  - Tổng kết chi phí được highlight
+- **Audit**: Ghi log `REPAIR.INVOICE_CREATED` khi tạo hóa đơn
 
 ### Seed data mẫu
 ```typescript

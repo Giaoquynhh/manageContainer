@@ -330,6 +330,7 @@ model RepairTicket {
   problem_description String
   estimated_cost      Float?             @default(0)
   manager_comment     String?
+  labor_cost          Float?             @default(0)  // Chi phí công sửa chữa
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 

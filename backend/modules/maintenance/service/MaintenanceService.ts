@@ -241,6 +241,93 @@ export class MaintenanceService {
     await audit(actor._id, 'INVENTORY.CREATED', 'INVENTORY', created.id, payload);
     return created;
   }
+
+  async createRepairInvoice(actor: any, payload: { repair_ticket_id: string; labor_cost: number; selected_parts: Array<{ inventory_item_id: string; quantity: number }> }) {
+    // Kiểm tra phiếu sửa chữa tồn tại
+    const repairTicket = await prisma.repairTicket.findUnique({ 
+      where: { id: payload.repair_ticket_id },
+      include: { items: true }
+    });
+    if (!repairTicket) throw new Error('Phiếu sửa chữa không tồn tại');
+    if (repairTicket.status !== 'CHECKING') throw new Error('Chỉ tạo hóa đơn cho phiếu đang kiểm tra');
+
+    // Tính toán chi phí phụ tùng
+    let partsCost = 0;
+    for (const part of payload.selected_parts) {
+      const inventoryItem = await prisma.inventoryItem.findUnique({ where: { id: part.inventory_item_id } });
+      if (!inventoryItem) throw new Error(`Phụ tùng ${part.inventory_item_id} không tồn tại`);
+      partsCost += inventoryItem.unit_price * part.quantity;
+    }
+
+    // Tính tổng chi phí
+    const totalCost = partsCost + payload.labor_cost;
+
+    // Cập nhật phiếu sửa chữa với thông tin hóa đơn
+    const updatedTicket = await prisma.repairTicket.update({
+      where: { id: payload.repair_ticket_id },
+      data: {
+        estimated_cost: totalCost,
+        labor_cost: payload.labor_cost,
+        status: 'REPAIRING' as any,
+        items: {
+          deleteMany: {}, // Xóa items cũ
+          create: payload.selected_parts.map(part => ({
+            inventory_item_id: part.inventory_item_id,
+            quantity: part.quantity
+          }))
+        }
+      },
+      include: { items: true }
+    });
+
+    await audit(actor._id, 'REPAIR.INVOICE_CREATED', 'REPAIR', payload.repair_ticket_id, {
+      labor_cost: payload.labor_cost,
+      parts_cost: partsCost,
+      total_cost: totalCost,
+      selected_parts: payload.selected_parts
+    });
+
+    return {
+      ...updatedTicket,
+      parts_cost: partsCost,
+      total_cost: totalCost
+    };
+  }
+
+  async getRepairInvoice(repairTicketId: string) {
+    const repairTicket = await prisma.repairTicket.findUnique({
+      where: { id: repairTicketId },
+      include: { 
+        items: { 
+          include: { 
+            inventoryItem: true 
+          } 
+        } 
+      }
+    });
+
+    if (!repairTicket) throw new Error('Phiếu sửa chữa không tồn tại');
+
+    // Tính toán chi phí
+    let partsCost = 0;
+    const partsDetails = repairTicket.items.map((item: any) => {
+      const itemCost = item.inventoryItem.unit_price * item.quantity;
+      partsCost += itemCost;
+      return {
+        ...item,
+        item_cost: itemCost
+      };
+    });
+
+    const totalCost = partsCost + (repairTicket.labor_cost || 0);
+
+    return {
+      ...repairTicket,
+      parts_cost: partsCost,
+      total_cost: totalCost,
+      parts_details: partsDetails
+    };
+  }
 }
 
 export default new MaintenanceService();

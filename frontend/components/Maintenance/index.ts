@@ -11,3 +11,4 @@ export { default as LoadingDisplay } from './LoadingDisplay';
 export { default as RepairTable } from './RepairTable';
 export { default as RepairPageHeader } from './RepairPageHeader';
 export { default as MessageDisplay } from './MessageDisplay';
+export { default as RepairInvoiceModal } from './RepairInvoiceModal';

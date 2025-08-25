@@ -90,6 +90,10 @@ await prisma.inventoryItem.createMany({ data: [
 - `POST /maintenance/inventory/items` - **MỚI**: Tạo vật tư mới
 - `PUT /maintenance/inventory/items/:id` - Cập nhật vật tư (bao gồm đơn giá)
 
+### Repair Invoice Management ⭐ **MỚI**
+- `POST /maintenance/repairs/:id/invoice` - Tạo hóa đơn sửa chữa
+- `GET /maintenance/repairs/:id/invoice` - Xem hóa đơn sửa chữa
+
 ### Request/Response Examples
 
 #### Tạo vật tư mới
@@ -118,6 +122,53 @@ Content-Type: application/json
 }
 ```
 
+#### Tạo hóa đơn sửa chữa ⭐ **MỚI**
+```http
+POST /maintenance/repairs/:id/invoice
+Content-Type: application/json
+
+{
+  "repair_ticket_id": "repair_123",
+  "labor_cost": 500000,
+  "selected_parts": [
+    {
+      "inventory_item_id": "inv_456",
+      "quantity": 2
+    },
+    {
+      "inventory_item_id": "inv_789",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+**Response Example:**
+```json
+{
+  "id": "repair_123",
+  "code": "REP-1756122766815",
+  "container_no": "ISO 1111",
+  "status": "REPAIRING",
+  "estimated_cost": 3500000,
+  "labor_cost": 500000,
+  "parts_cost": 3000000,
+  "total_cost": 3500000,
+  "items": [
+    {
+      "id": "item_1",
+      "inventory_item_id": "inv_456",
+      "quantity": 2,
+      "inventoryItem": {
+        "name": "Sơn chống rỉ",
+        "uom": "lit",
+        "unit_price": 1500000
+      }
+    }
+  ]
+}
+```
+
 ## Validation Rules
 
 ### Tạo mới
@@ -141,6 +192,30 @@ Content-Type: application/json
 ### Metadata
 - Lưu toàn bộ payload trong audit log để tracking
 
+## UI/UX Improvements (v2025-08-25) ⭐ **MỚI**
+
+### Popup Hóa đơn Sửa chữa
+- **Component**: `RepairInvoiceModal.tsx`
+- **Tính năng chính**:
+  - **Input Validation**: Chi phí công và số lượng phụ tùng chỉ cho phép nhập số nguyên
+  - **Table phụ tùng**: Hiển thị rõ ràng với cột: Tên phụ tùng, Đơn giá (VND), Số lượng, Thành tiền (VND)
+  - **Tính toán tự động**: Chi phí phụ tùng + Chi phí công = Tổng chi phí
+  - **Real-time updates**: Cập nhật tổng chi phí ngay khi thay đổi input
+
+### Validation Rules
+- **Chi phí công sửa chữa**: Số nguyên ≥ 0, regex `/^\d+$/`
+- **Số lượng phụ tùng**: Số nguyên > 0, regex `/^\d+$/`
+- **Phụ tùng**: Phải chọn ít nhất 1 phụ tùng
+
+### Styling & Layout
+- **Modal responsive**: Max-width 800px, scrollable khi cần
+- **Table design**: Border, màu sắc, căn chỉnh text phù hợp
+- **Color scheme**: 
+  - Header: #1f2937 (dark gray)
+  - Success: #059669 (green)
+  - Warning: #dc2626 (red)
+  - Info: #1e40af (blue)
+
 ## Testing
 
 ### Backend
@@ -150,8 +225,8 @@ Content-Type: application/json
 
 ### Frontend
 1. Khởi động frontend: `npm run dev`
-2. Truy cập `/Maintenance/Inventory`
-3. Test chức năng thêm sản phẩm mới
+2. Truy cập `/Maintenance/Inventory` - Test thêm sản phẩm mới
+3. Truy cập `/Maintenance/Repairs` - Test popup hóa đơn sửa chữa
 4. Test chỉnh sửa đơn giá
 
 ## Rollback
@@ -166,3 +241,17 @@ Content-Type: application/json
 - Form thêm mới có validation client-side và server-side
 - UI responsive với grid layout cho form
 - Tất cả thay đổi đều có audit logging
+
+## Cải tiến gần đây (v2025-08-25)
+
+### Popup Hóa đơn Sửa chữa
+- **Input Validation**: Chi phí công và số lượng phụ tùng chỉ cho phép nhập số nguyên
+- **Table phụ tùng**: Hiển thị rõ ràng với cột: Tên phụ tùng, Đơn giá (VND), Số lượng, Thành tiền (VND)
+- **Real-time calculation**: Tự động tính toán và cập nhật tổng chi phí
+- **Enhanced UX**: Modal responsive, styling chuyên nghiệp, validation real-time
+
+### Technical Improvements
+- **Regex validation**: `/^\d+$/` cho input số nguyên
+- **State management**: Sử dụng string state cho input, convert sang number khi submit
+- **Error handling**: Validation messages rõ ràng cho từng trường
+- **Performance**: Optimized re-renders với proper state updates

@@ -7,12 +7,15 @@ import {
   PendingContainersModal,
   RepairTable,
   RepairPageHeader,
-  MessageDisplay
+  MessageDisplay,
+  RepairInvoiceModal
 } from '@components/Maintenance';
 
 export default function RepairsPage() {
   const [filter, setFilter] = useState<string>('CHECKING');
   const [isPendingContainersModalOpen, setIsPendingContainersModalOpen] = useState(false);
+  const [isRepairInvoiceModalOpen, setIsRepairInvoiceModalOpen] = useState(false);
+  const [selectedRepairTicket, setSelectedRepairTicket] = useState<any>(null);
   const key = ['repairs', filter].join(':');
   const { data: repairs } = useSWR(key, async () => maintenanceApi.listRepairs(filter || undefined));
   const [msg, setMsg] = useState('');
@@ -78,14 +81,12 @@ export default function RepairsPage() {
   const handleRepairable = async (id: string) => {
     setMsg('');
     try {
-      // Cập nhật manager_comment để đánh dấu có thể sửa chữa
-      await maintenanceApi.updateRepairStatus(id, 'CHECKING', 'Container không đạt chuẩn nhưng có thể sửa chữa');
-      
-      // Refresh danh sách
-      mutate(key);
-      
-      setMsg('Container có thể sửa chữa - đang chờ xử lý');
-      setTimeout(() => setMsg(''), 3000);
+      // Tìm repair ticket để hiển thị trong popup
+      const repairTicket = repairs?.find(r => r.id === id);
+      if (repairTicket) {
+        setSelectedRepairTicket(repairTicket);
+        setIsRepairInvoiceModalOpen(true);
+      }
     } catch (e: any) {
       setMsg(e?.response?.data?.message || 'Lỗi khi xử lý');
     }
@@ -111,6 +112,18 @@ export default function RepairsPage() {
   const handleFilterChange = (newFilter: string) => {
     setFilter(newFilter);
     mutate(key);
+  };
+
+  const handleRepairInvoiceSuccess = () => {
+    // Refresh danh sách sau khi tạo hóa đơn thành công
+    mutate(key);
+    setMsg('Đã tạo hóa đơn sửa chữa thành công');
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  const handleCloseRepairInvoiceModal = () => {
+    setIsRepairInvoiceModalOpen(false);
+    setSelectedRepairTicket(null);
   };
 
   return (
@@ -141,6 +154,15 @@ export default function RepairsPage() {
           isOpen={isPendingContainersModalOpen}
           onClose={() => setIsPendingContainersModalOpen(false)}
         />
+
+        {selectedRepairTicket && (
+          <RepairInvoiceModal
+            isOpen={isRepairInvoiceModalOpen}
+            onClose={handleCloseRepairInvoiceModal}
+            repairTicket={selectedRepairTicket}
+            onSuccess={handleRepairInvoiceSuccess}
+          />
+        )}
       </main>
     </>
   );

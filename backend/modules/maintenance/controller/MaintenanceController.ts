@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../../shared/middlewares/auth';
 import service from '../service/MaintenanceService';
-import { approveSchema, createRepairSchema, listRepairsSchema, rejectSchema, updateInventorySchema, createInventorySchema } from '../dto/MaintenanceDtos';
+import { approveSchema, createRepairSchema, listRepairsSchema, rejectSchema, updateInventorySchema, createInventorySchema, createRepairInvoiceSchema } from '../dto/MaintenanceDtos';
 
 export class MaintenanceController {
   async listRepairs(req: AuthRequest, res: Response) {
@@ -50,6 +50,16 @@ export class MaintenanceController {
     const { error, value } = createInventorySchema.validate(req.body);
     if (error) return res.status(400).json({ message: error.message });
     try { return res.status(201).json(await service.createInventory(req.user!, value)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
+  }
+
+  async createRepairInvoice(req: AuthRequest, res: Response) {
+    const { error, value } = createRepairInvoiceSchema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+    try { return res.status(201).json(await service.createRepairInvoice(req.user!, value)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
+  }
+
+  async getRepairInvoice(req: AuthRequest, res: Response) {
+    try { return res.json(await service.getRepairInvoice(req.params.id)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
   }
 }
 
