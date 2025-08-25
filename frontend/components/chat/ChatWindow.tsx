@@ -55,10 +55,12 @@ export default function ChatWindow({
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check if chat is allowed based on request status (match backend logic)
-  const isChatAllowed = currentRequestStatus === 'APPROVED' || 
+  const isChatAllowed = currentRequestStatus === 'SCHEDULED' || 
+                       currentRequestStatus === 'APPROVED' || 
                        currentRequestStatus === 'IN_PROGRESS' || 
                        currentRequestStatus === 'COMPLETED' || 
-                       currentRequestStatus === 'EXPORTED';
+                       currentRequestStatus === 'EXPORTED' ||
+                       currentRequestStatus === 'PENDING_ACCEPT'; // Thêm PENDING_ACCEPT
   const isRejected = currentRequestStatus === 'REJECTED';
   const isReceived = currentRequestStatus === 'RECEIVED';
 
@@ -77,6 +79,7 @@ export default function ChatWindow({
       'PENDING': '📋 Đơn hàng đã được tạo và đang chờ xử lý',
       'RECEIVED': '✅ Đơn hàng đã được tiếp nhận. Chat sẽ khả dụng khi được chấp nhận (APPROVED).',
       'SCHEDULED': '📅 Đơn hàng đã được lên lịch hẹn',
+      'PENDING_ACCEPT': '📧 Đơn hàng đã được gửi xác nhận - Chat đã được kích hoạt', // Thêm PENDING_ACCEPT
       'IN_PROGRESS': '🔄 Đơn hàng đang được xử lý tại kho',
       'COMPLETED': '✅ Đơn hàng đã hoàn tất',
       'EXPORTED': '📦 Đơn hàng đã xuất kho',
@@ -161,6 +164,38 @@ export default function ChatWindow({
       try {
         setLoading(true);
         
+        // Cho trạng thái PENDING_ACCEPT, load từ localStorage
+        if (currentRequestStatus === 'PENDING_ACCEPT') {
+          const storageKey = `chat_messages_${requestId}`;
+          const savedMessages = localStorage.getItem(storageKey);
+          
+          if (savedMessages) {
+            try {
+              const parsedMessages = JSON.parse(savedMessages);
+              setMessages(parsedMessages);
+              console.log('Loaded messages from localStorage for PENDING_ACCEPT:', parsedMessages);
+              setLoading(false);
+              return;
+            } catch (error) {
+              console.error('Error parsing saved messages:', error);
+              localStorage.removeItem(storageKey);
+            }
+          }
+          
+          // Nếu không có tin nhắn đã lưu, tạo welcome message
+          const welcomeMessage: ChatMessage = {
+            id: 'welcome-pending-accept-' + Date.now(),
+            message: `📧 **XÁC NHẬN ĐÃ GỬI:** Đơn hàng đã được gửi xác nhận cho khách hàng!\n\n📦 Container: ${containerNo || 'N/A'}\n📋 Trạng thái: Chờ chấp nhận\n\nBây giờ bạn có thể chat trực tiếp với nhân viên kho để trao đổi thông tin chi tiết.`,
+            type: 'system',
+            createdAt: new Date().toISOString()
+          };
+          
+          setMessages([welcomeMessage]);
+          localStorage.setItem(storageKey, JSON.stringify([welcomeMessage]));
+          setLoading(false);
+          return;
+        }
+        
         // Get or create chat room
         const chatRoomResponse = await api.get(`/chat/request/${requestId}`);
         setChatRoomId(chatRoomResponse.data.id);
@@ -218,6 +253,8 @@ export default function ChatWindow({
           messages.push(appointmentMessage);
         }
         
+
+        
         setMessages([...messages, ...initialMessages]);
         setLastMessageCount(initialMessages.length);
         
@@ -241,7 +278,8 @@ export default function ChatWindow({
 
   // Polling for new messages
   useEffect(() => {
-    if (chatRoomId && isChatAllowed) {
+    // Không poll cho trạng thái PENDING_ACCEPT
+    if (chatRoomId && isChatAllowed && currentRequestStatus !== 'PENDING_ACCEPT') {
       pollingIntervalRef.current = setInterval(() => {
         loadMessages();
       }, 3000); // Poll every 3 seconds
@@ -252,7 +290,33 @@ export default function ChatWindow({
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [chatRoomId, isChatAllowed, loadMessages]);
+  }, [chatRoomId, isChatAllowed, currentRequestStatus, loadMessages]);
+
+  // Poll localStorage cho trạng thái PENDING_ACCEPT để đồng bộ tin nhắn
+  useEffect(() => {
+    if (currentRequestStatus !== 'PENDING_ACCEPT') return;
+
+    const pollLocalStorage = () => {
+      const storageKey = `chat_messages_${requestId}`;
+      const savedMessages = localStorage.getItem(storageKey);
+      
+      if (savedMessages) {
+        try {
+          const parsedMessages = JSON.parse(savedMessages);
+          // Chỉ cập nhật nếu có tin nhắn mới
+          if (parsedMessages.length !== messages.length) {
+            setMessages(parsedMessages);
+            console.log('Synced messages from localStorage:', parsedMessages);
+          }
+        } catch (error) {
+          console.error('Error parsing saved messages during polling:', error);
+        }
+      }
+    };
+
+    const interval = setInterval(pollLocalStorage, 1000); // Poll every 1 second for real-time sync
+    return () => clearInterval(interval);
+  }, [requestId, currentRequestStatus, messages.length]);
 
   // Update status when prop changes
   useEffect(() => {
@@ -260,7 +324,36 @@ export default function ChatWindow({
   }, [requestStatus]);
 
   const sendMessage = async (message: string) => {
-    if (!message.trim() || !chatRoomId || !isChatAllowed) return;
+    if (!message.trim() || !isChatAllowed) return;
+
+    // Cho trạng thái PENDING_ACCEPT, luôn sử dụng local message (offline mode)
+    if (currentRequestStatus === 'PENDING_ACCEPT') {
+      const newMsg: ChatMessage = {
+        id: Date.now().toString(),
+        message: message.trim(),
+        type: 'text',
+        sender: {
+          id: 'current-user',
+          full_name: 'Bạn',
+          email: '',
+          role: 'user'
+        },
+        createdAt: new Date().toISOString()
+      };
+      
+      // Cập nhật state và lưu vào localStorage
+      setMessages(prev => {
+        const updatedMessages = [...prev, newMsg];
+        const storageKey = `chat_messages_${requestId}`;
+        localStorage.setItem(storageKey, JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
+      
+      return;
+    }
+
+    // Cho các trạng thái khác, gọi API
+    if (!chatRoomId) return;
 
     try {
       // Send message to backend

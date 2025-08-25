@@ -50,7 +50,8 @@ export default function DepotChatWindow({
 						 requestStatus === 'APPROVED' || 
 						 requestStatus === 'IN_PROGRESS' || 
 						 requestStatus === 'COMPLETED' || 
-						 requestStatus === 'EXPORTED';
+						 requestStatus === 'EXPORTED' ||
+						 requestStatus === 'PENDING_ACCEPT'; // Thêm PENDING_ACCEPT
 
 	// Load user info
 	useEffect(() => {
@@ -69,6 +70,45 @@ export default function DepotChatWindow({
 	// Load chat room and messages
 	useEffect(() => {
 		if (!requestId || !isChatAllowed) return;
+
+		// Cho trạng thái PENDING_ACCEPT, load từ localStorage hoặc tạo welcome message
+		if (requestStatus === 'PENDING_ACCEPT') {
+			const storageKey = `chat_messages_${requestId}`;
+			const savedMessages = localStorage.getItem(storageKey);
+			
+			if (savedMessages) {
+				try {
+					const parsedMessages = JSON.parse(savedMessages);
+					setMessages(parsedMessages);
+					console.log('Loaded messages from localStorage:', parsedMessages);
+				} catch (error) {
+					console.error('Error parsing saved messages:', error);
+					// Nếu lỗi parse, xóa localStorage và tạo welcome message mới
+					localStorage.removeItem(storageKey);
+				}
+			}
+			
+			// Nếu không có tin nhắn đã lưu, tạo welcome message
+			if (!savedMessages || messages.length === 0) {
+				const welcomeMessage: ChatMessage = {
+					id: `welcome-pending-accept-${Date.now()}`,
+					message: `📧 **XÁC NHẬN ĐÃ GỬI:** Đơn hàng đã được gửi xác nhận cho khách hàng!\n\n📦 Container: ${containerNo}\n📋 Trạng thái: Chờ chấp nhận\n\nBây giờ bạn có thể chat trực tiếp với khách hàng để trao đổi thông tin chi tiết.`,
+					sender: {
+						id: 'system',
+						full_name: 'Hệ thống',
+						email: 'system@example.com',
+						role: 'System'
+					},
+					createdAt: new Date().toISOString()
+				};
+				
+				setMessages([welcomeMessage]);
+				localStorage.setItem(storageKey, JSON.stringify([welcomeMessage]));
+			}
+			
+			setLoading(false);
+			return;
+		}
 
 		const loadChatRoom = async () => {
 			setLoading(true);
@@ -113,7 +153,7 @@ export default function DepotChatWindow({
 		};
 
 		loadChatRoom();
-	}, [requestId, isChatAllowed, me]);
+	}, [requestId, isChatAllowed, me, requestStatus]);
 
 	// Thêm thông báo khi khách hàng bổ sung thông tin
 	useEffect(() => {
@@ -163,9 +203,36 @@ export default function DepotChatWindow({
 		}
 	}, [isChatAllowed, hasSupplementDocuments, lastSupplementUpdate, containerNo, messages.length]);
 
+	// Tự động tạo welcome message cho PENDING_ACCEPT status
+	useEffect(() => {
+		if (isChatAllowed && requestStatus === 'PENDING_ACCEPT' && messages.length === 0) {
+			console.log('Auto-creating welcome message for PENDING_ACCEPT status...');
+			
+			const welcomeMessage: ChatMessage = {
+				id: `welcome-pending-accept-${Date.now()}`,
+				message: `📧 **XÁC NHẬN ĐÃ GỬI:** Đơn hàng đã được gửi xác nhận cho khách hàng!\n\n📦 Container: ${containerNo}\n📋 Trạng thái: Chờ chấp nhận\n\nBây giờ bạn có thể chat trực tiếp với khách hàng để trao đổi thông tin chi tiết.`,
+				sender: {
+					id: 'system',
+					full_name: 'Hệ thống',
+					email: 'system@example.com',
+					role: 'System'
+				},
+				createdAt: new Date().toISOString()
+			};
+
+			// Thêm message vào đầu danh sách
+			setMessages([welcomeMessage]);
+			
+			// Lưu vào localStorage
+			const storageKey = `chat_messages_${requestId}`;
+			localStorage.setItem(storageKey, JSON.stringify([welcomeMessage]));
+		}
+	}, [isChatAllowed, requestStatus, containerNo, messages.length, requestId]);
+
 	// Poll for new messages
 	useEffect(() => {
-		if (!chatRoomId) return;
+		// Không poll cho trạng thái PENDING_ACCEPT
+		if (!chatRoomId || requestStatus === 'PENDING_ACCEPT') return;
 
 		const pollMessages = async () => {
 			try {
@@ -178,10 +245,65 @@ export default function DepotChatWindow({
 
 		const interval = setInterval(pollMessages, 3000); // Poll every 3 seconds
 		return () => clearInterval(interval);
-	}, [chatRoomId]);
+	}, [chatRoomId, requestStatus]);
+
+	// Poll localStorage cho trạng thái PENDING_ACCEPT để đồng bộ tin nhắn
+	useEffect(() => {
+		if (requestStatus !== 'PENDING_ACCEPT') return;
+
+		const pollLocalStorage = () => {
+			const storageKey = `chat_messages_${requestId}`;
+			const savedMessages = localStorage.getItem(storageKey);
+			
+			if (savedMessages) {
+				try {
+					const parsedMessages = JSON.parse(savedMessages);
+					// Chỉ cập nhật nếu có tin nhắn mới
+					if (parsedMessages.length !== messages.length) {
+						setMessages(parsedMessages);
+						console.log('Synced messages from localStorage:', parsedMessages);
+					}
+				} catch (error) {
+					console.error('Error parsing saved messages during polling:', error);
+				}
+			}
+		};
+
+		const interval = setInterval(pollLocalStorage, 1000); // Poll every 1 second for real-time sync
+		return () => clearInterval(interval);
+	}, [requestId, requestStatus, messages.length]);
 
 	const sendMessage = async () => {
-		if (!newMessage.trim() || !chatRoomId || !me) return;
+		if (!newMessage.trim() || !me) return;
+
+		// Cho trạng thái PENDING_ACCEPT, luôn sử dụng local message
+		if (requestStatus === 'PENDING_ACCEPT') {
+			const newMsg: ChatMessage = {
+				id: Date.now().toString(),
+				message: newMessage.trim(),
+				sender: {
+					id: me?.id || 'depot1',
+					full_name: me?.full_name || 'Nhân viên Kho',
+					email: me?.email || 'depot@example.com',
+					role: me?.role || 'Depot Staff'
+				},
+				createdAt: new Date().toISOString()
+			};
+			
+			// Cập nhật state và lưu vào localStorage
+			setMessages(prev => {
+				const updatedMessages = [...prev, newMsg];
+				const storageKey = `chat_messages_${requestId}`;
+				localStorage.setItem(storageKey, JSON.stringify(updatedMessages));
+				return updatedMessages;
+			});
+			
+			setNewMessage('');
+			return;
+		}
+
+		// Cho các trạng thái khác, gọi API
+		if (!chatRoomId) return;
 
 		setSending(true);
 		try {
@@ -227,6 +349,7 @@ export default function DepotChatWindow({
 			'IN_PROGRESS': '🔄 Đơn hàng đang được xử lý tại kho - Chat đã được kích hoạt',
 			'COMPLETED': '✅ Đơn hàng đã hoàn tất - Chat vẫn hoạt động',
 			'EXPORTED': '📦 Đơn hàng đã xuất kho - Chat vẫn hoạt động',
+			'PENDING_ACCEPT': '📧 Đơn hàng đã gửi xác nhận - Chat đã được kích hoạt',
 			'PENDING': '📋 Đơn hàng đang chờ xử lý - Chat sẽ được kích hoạt khi đơn hàng được lên lịch',
 			'RECEIVED': '📥 Đơn hàng đã được tiếp nhận - Chat sẽ được kích hoạt khi được chấp nhận',
 			'REJECTED': '❌ Đơn hàng bị từ chối - Chat không khả dụng'
@@ -319,6 +442,28 @@ export default function DepotChatWindow({
 										}}
 									>
 										🧪 Test Supplement Notification
+									</button>
+									
+									{/* Debug button để test localStorage */}
+									<button
+										onClick={() => {
+											const storageKey = `chat_messages_${requestId}`;
+											const savedMessages = localStorage.getItem(storageKey);
+											console.log('Current localStorage content:', savedMessages);
+											console.log('Current messages state:', messages);
+										}}
+										style={{
+											background: '#10b981',
+											color: 'white',
+											border: 'none',
+											padding: '4px 8px',
+											borderRadius: '4px',
+											fontSize: '11px',
+											cursor: 'pointer',
+											marginLeft: '8px'
+										}}
+									>
+										🔍 Debug localStorage
 									</button>
 								</div>
 							)}
