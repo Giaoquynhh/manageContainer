@@ -1,6 +1,8 @@
 import { prisma } from '../../../shared/config/database';
 import { audit } from '../../../shared/middlewares/audit';
 import { RepairStatus } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
 
 export class MaintenanceService {
   async listRepairs(query: any) {
@@ -327,6 +329,43 @@ export class MaintenanceService {
       total_cost: totalCost,
       parts_details: partsDetails
     };
+  }
+
+  async uploadRepairInvoicePDF(repairTicketId: string, pdfBase64: string, fileName: string) {
+    try {
+      // Tạo thư mục uploads nếu chưa có
+      const uploadsDir = path.join(__dirname, '../../../uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      // Tạo thư mục con cho repair invoices
+      const repairInvoicesDir = path.join(uploadsDir, 'repair-invoices');
+      if (!fs.existsSync(repairInvoicesDir)) {
+        fs.mkdirSync(repairInvoicesDir, { recursive: true });
+      }
+
+      // Tạo tên file unique
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const uniqueFileName = `${repairTicketId}_${timestamp}_${fileName}`;
+      const filePath = path.join(repairInvoicesDir, uniqueFileName);
+
+      // Chuyển base64 thành buffer và lưu file
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      fs.writeFileSync(filePath, pdfBuffer);
+
+      // Lưu thông tin file vào database (nếu cần)
+      // Có thể tạo bảng mới để lưu thông tin file
+
+      return {
+        fileName: uniqueFileName,
+        filePath: filePath,
+        fileSize: pdfBuffer.length,
+        uploadedAt: new Date()
+      };
+    } catch (error: any) {
+      throw new Error('Lỗi khi upload PDF: ' + error.message);
+    }
   }
 }
 

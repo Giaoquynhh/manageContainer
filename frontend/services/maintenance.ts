@@ -50,6 +50,14 @@ export const maintenanceApi = {
   async getRepairInvoice(repairTicketId: string){
     const { data } = await api.get(`/maintenance/repairs/${repairTicketId}/invoice`);
     return data;
+  },
+
+  async uploadRepairInvoicePDF(repairTicketId: string, pdfBase64: string, fileName: string) {
+    const response = await api.post(`/maintenance/repairs/${repairTicketId}/pdf`, {
+      pdfBase64,
+      fileName
+    });
+    return response.data;
   }
 };
 

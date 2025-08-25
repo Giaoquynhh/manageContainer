@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../../../shared/middlewares/auth';
 import service from '../service/MaintenanceService';
 import { approveSchema, createRepairSchema, listRepairsSchema, rejectSchema, updateInventorySchema, createInventorySchema, createRepairInvoiceSchema } from '../dto/MaintenanceDtos';
+import { Request } from 'express';
 
 export class MaintenanceController {
   async listRepairs(req: AuthRequest, res: Response) {
@@ -60,6 +61,38 @@ export class MaintenanceController {
 
   async getRepairInvoice(req: AuthRequest, res: Response) {
     try { return res.json(await service.getRepairInvoice(req.params.id)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
+  }
+
+  async uploadRepairInvoicePDF(req: Request, res: Response) {
+    try {
+      const { repairTicketId } = req.params;
+      const { pdfBase64, fileName } = req.body;
+
+      if (!pdfBase64 || !fileName) {
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu dữ liệu PDF hoặc tên file'
+        });
+      }
+
+      // Gọi service để xử lý upload
+      const result = await service.uploadRepairInvoicePDF(
+        repairTicketId,
+        pdfBase64,
+        fileName
+      );
+
+      res.json({
+        success: true,
+        message: 'Đã upload PDF thành công',
+        data: result
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi upload PDF: ' + error.message
+      });
+    }
   }
 }
 
