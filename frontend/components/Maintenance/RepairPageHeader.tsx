@@ -2,14 +2,12 @@ interface RepairPageHeaderProps {
   filter: string;
   onFilterChange: (filter: string) => void;
   onOpenPendingContainers: () => void;
-  onCreateRepair: () => void;
 }
 
 export default function RepairPageHeader({ 
   filter, 
   onFilterChange, 
-  onOpenPendingContainers, 
-  onCreateRepair 
+  onOpenPendingContainers
 }: RepairPageHeaderProps) {
   return (
     <div style={{
@@ -31,8 +29,10 @@ export default function RepairPageHeader({
           }}
         >
           <option value="">Tất cả</option>
-          <option value="PENDING_APPROVAL">Chờ duyệt</option>
-          <option value="APPROVED">Đã duyệt</option>
+          <option value="CHECKING">Đang kiểm tra</option>
+          <option value="PENDING_ACCEPT">Chờ chấp nhận</option>
+          <option value="REPAIRING">Đang sửa chữa</option>
+          <option value="CHECKED">Đã kiểm tra</option>
           <option value="REJECTED">Đã từ chối</option>
         </select>
       </div>
@@ -55,25 +55,6 @@ export default function RepairPageHeader({
         >
           <span>📋</span>
           Danh sách container đang chờ
-        </button>
-        
-        <button 
-          onClick={onCreateRepair}
-          style={{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '4px',
-            background: '#1e40af',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <span>+</span>
-          Tạo phiếu mới
         </button>
       </div>
     </div>

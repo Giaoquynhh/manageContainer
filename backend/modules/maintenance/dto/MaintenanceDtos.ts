@@ -13,7 +13,7 @@ export const createRepairSchema = Joi.object({
 });
 
 export const listRepairsSchema = Joi.object({
-  status: Joi.string().valid('PENDING_APPROVAL','APPROVED','REJECTED').optional()
+  status: Joi.string().valid('CHECKING','PENDING_ACCEPT','REPAIRING','CHECKED','REJECTED').optional()
 });
 
 export const approveSchema = Joi.object({

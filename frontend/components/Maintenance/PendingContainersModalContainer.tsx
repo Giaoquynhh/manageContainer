@@ -12,6 +12,7 @@ interface PendingContainersModalContainerProps {
   onCheckContainer: (requestId: string) => void;
   onCheckResult: (requestId: string, result: 'PASS' | 'FAIL') => void;
   onFailOption: (requestId: string, option: 'UNREPAIRABLE' | 'REPAIRABLE') => void;
+  title?: string;
 }
 
 export default function PendingContainersModalContainer({
@@ -23,7 +24,8 @@ export default function PendingContainersModalContainer({
   onRetry,
   onCheckContainer,
   onCheckResult,
-  onFailOption
+  onFailOption,
+  title
 }: PendingContainersModalContainerProps) {
   return (
     <div className="modal-content" style={{
@@ -35,7 +37,7 @@ export default function PendingContainersModalContainer({
       maxHeight: '90vh',
       overflow: 'auto'
     }}>
-      <PendingContainersModalHeader onClose={onClose} />
+      <PendingContainersModalHeader onClose={onClose} title={title} />
       
       <PendingContainersModalContent
         loading={loading}

@@ -85,7 +85,7 @@ model ServiceRequest {
     type          String   // IMPORT | EXPORT | CONVERT
     container_no  String
     eta           DateTime?
-    status        String   // PENDING | SCHEDULED | FORWARDED | GATE_IN | GATE_REJECTED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
+    status        String   // PENDING | SCHEDULED | FORWARDED | GATE_IN | CHECKING | GATE_REJECTED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD
     forwarded_at    DateTime?
     forwarded_by    String?
     gate_checked_at DateTime?
@@ -276,8 +276,10 @@ enum InventoryMoveType {
 }
 
 enum RepairStatus {
-  PENDING_APPROVAL
-  APPROVED
+  CHECKING
+  PENDING_ACCEPT
+  REPAIRING
+  CHECKED
   REJECTED
 }
 
@@ -323,7 +325,7 @@ model RepairTicket {
   container_no        String?            // Container number (optional)
   equipment_id        String?            // Làm cho equipment_id optional
   created_by          String
-  status              RepairStatus       @default(PENDING_APPROVAL)
+  status              RepairStatus       @default(CHECKING)
   problem_description String
   estimated_cost      Float?             @default(0)
   manager_comment     String?

@@ -32,6 +32,7 @@ export default function PendingContainersModal({ isOpen, onClose }: PendingConta
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
+      // Chỉ lấy container có trạng thái GATE_IN
       const response = await fetch('http://localhost:1000/gate/requests/search?status=GATE_IN&limit=100', {
         method: 'GET',
         headers: {
@@ -76,66 +77,220 @@ export default function PendingContainersModal({ isOpen, onClose }: PendingConta
 
   const handleCheckContainer = async (requestId: string) => {
     try {
+      // Cập nhật request status thành CHECKING trong database
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+      }
+
+      // Cập nhật request status thành CHECKING
+      const updateResponse = await fetch(`http://localhost:1000/requests/${requestId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'CHECKING' })
+      });
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${updateResponse.status}: ${updateResponse.statusText}`);
+      }
+
+      // Cập nhật UI
       setRequests(prev => prev.map(req => 
         req.id === requestId 
           ? { ...req, status: 'CHECKING' }
           : req
       ));
-      alert('Đã bắt đầu kiểm tra container. Trạng thái đã chuyển sang CHECKING.');
+
+      // Tạo phiếu sửa chữa cho container
+      const container = requests.find(req => req.id === requestId);
+      if (container) {
+        const repairPayload = {
+          code: `REP-${Date.now()}`,
+          container_no: container.container_no || null,
+          problem_description: 'Container đang được kiểm tra',
+          estimated_cost: 0,
+          items: []
+        };
+
+        try {
+          const repairResult = await maintenanceApi.createRepair(repairPayload);
+          if (repairResult) {
+            console.log('Đã tạo phiếu sửa chữa:', repairResult);
+            // Cập nhật trạng thái phiếu sửa chữa thành CHECKING
+            try {
+              await maintenanceApi.updateRepairStatus(repairResult.id, 'CHECKING', 'Container đang được kiểm tra');
+              console.log('Đã cập nhật trạng thái phiếu sửa chữa thành CHECKING');
+            } catch (statusErr) {
+              console.error('Lỗi khi cập nhật trạng thái phiếu sửa chữa:', statusErr);
+            }
+            // Refresh danh sách phiếu sửa chữa
+            mutate(['repairs', 'CHECKING']);
+          }
+        } catch (repairErr) {
+          console.error('Lỗi khi tạo phiếu sửa chữa:', repairErr);
+          // Không throw error vì việc tạo phiếu sửa chữa không ảnh hưởng đến việc kiểm tra
+        }
+      }
+
+      alert('Đã bắt đầu kiểm tra container. Trạng thái đã chuyển sang CHECKING và đã tạo phiếu sửa chữa.');
     } catch (err: any) {
       console.error('Error starting container check:', err);
       alert(`Lỗi khi bắt đầu kiểm tra container: ${err.message}`);
     }
   };
 
-  const handleCheckResult = (requestId: string, result: 'PASS' | 'FAIL') => {
-    if (result === 'PASS') {
-      setRequests(prev => prev.filter(req => req.id !== requestId));
-      alert('Kết quả kiểm tra: Đạt chuẩn. Container đã được xóa khỏi danh sách chờ.');
-    } else {
-      setCheckResults(prev => ({
-        ...prev,
-        [requestId]: 'FAIL_WITH_OPTIONS'
-      }));
+  const handleCheckResult = async (requestId: string, result: 'PASS' | 'FAIL') => {
+    try {
+      // Tìm container và phiếu sửa chữa
+      const container = requests.find(req => req.id === requestId);
+      if (!container) {
+        alert('Không tìm thấy container');
+        return;
+      }
+
+      // Tìm phiếu sửa chữa có trạng thái CHECKING
+      const repairTickets = await maintenanceApi.listRepairs('CHECKING');
+      const repairTicket = repairTickets.find(ticket => ticket.container_no === container.container_no);
+      
+      if (repairTicket) {
+        // Hoàn thành kiểm tra phiếu sửa chữa
+        await maintenanceApi.completeRepairCheck(repairTicket.id, result);
+        
+        // Cập nhật request status nếu cần
+        if (result === 'PASS') {
+          // Cập nhật request status thành CHECKED
+          try {
+            const token = localStorage.getItem('token');
+            if (token) {
+              await fetch(`http://localhost:1000/requests/${requestId}/status`, {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: 'CHECKED' })
+              });
+            }
+          } catch (error) {
+            console.error('Lỗi khi cập nhật request status:', error);
+          }
+          
+          setRequests(prev => prev.filter(req => req.id !== requestId));
+          alert('Kết quả kiểm tra: Đạt chuẩn. Container đã được xóa khỏi danh sách chờ.');
+        } else {
+          setCheckResults(prev => ({
+            ...prev,
+            [requestId]: 'FAIL_WITH_OPTIONS'
+          }));
+        }
+        
+        // Refresh danh sách phiếu sửa chữa
+        mutate(['repairs', 'CHECKING']);
+        mutate(['repairs', 'CHECKED']);
+        mutate(['repairs', 'REJECTED']);
+      } else {
+        // Nếu không tìm thấy phiếu sửa chữa, xử lý như cũ
+        if (result === 'PASS') {
+          setRequests(prev => prev.filter(req => req.id !== requestId));
+          alert('Kết quả kiểm tra: Đạt chuẩn. Container đã được xóa khỏi danh sách chờ.');
+        } else {
+          setCheckResults(prev => ({
+            ...prev,
+            [requestId]: 'FAIL_WITH_OPTIONS'
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý kết quả kiểm tra:', error);
+      alert(`Lỗi khi xử lý kết quả kiểm tra: ${error.message}`);
     }
   };
 
-  const handleFailOption = (requestId: string, option: 'UNREPAIRABLE' | 'REPAIRABLE') => {
-    if (option === 'UNREPAIRABLE') {
-      const reason = 'Container không đạt chuẩn';
-      setCheckResults(prev => ({
-        ...prev,
-        [requestId]: option
-      }));
-      setRequests(prev => prev.filter(req => req.id !== requestId));
-      alert(`Kết quả kiểm tra: ${reason}. Container đã được xóa khỏi danh sách chờ.`);
-    } else {
-      const container = requests.find(req => req.id === requestId);
-      
-      const findEquipmentForContainer = async () => {
-        try {
-          const token = localStorage.getItem('token');
-          if (!token) {
-            throw new Error('Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+  const handleFailOption = async (requestId: string, option: 'UNREPAIRABLE' | 'REPAIRABLE') => {
+    try {
+      if (option === 'UNREPAIRABLE') {
+        // Tìm container và phiếu sửa chữa
+        const container = requests.find(req => req.id === requestId);
+        if (!container) {
+          alert('Không tìm thấy container');
+          return;
+        }
+
+        // Tìm phiếu sửa chữa có trạng thái CHECKING
+        const repairTickets = await maintenanceApi.listRepairs('CHECKING');
+        const repairTicket = repairTickets.find(ticket => ticket.container_no === container.container_no);
+        
+        if (repairTicket) {
+          // Hoàn thành kiểm tra với kết quả FAIL (REJECTED)
+          await maintenanceApi.completeRepairCheck(repairTicket.id, 'FAIL', 'Container không đạt chuẩn');
+          
+          // Cập nhật request status thành REJECTED
+          try {
+            const token = localStorage.getItem('token');
+            if (token) {
+              await fetch(`http://localhost:1000/requests/${requestId}/status`, {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: 'REJECTED' })
+              });
+            }
+          } catch (error) {
+            console.error('Lỗi khi cập nhật request status:', error);
           }
           
-          const response = await fetch(`http://localhost:1000/maintenance/equipments?type=CONTAINER&code=${container?.container_no}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
+          // Refresh danh sách phiếu sửa chữa
+          mutate(['repairs', 'CHECKING']);
+          mutate(['repairs', 'REJECTED']);
+        }
+
+        const reason = 'Container không đạt chuẩn';
+        setCheckResults(prev => ({
+          ...prev,
+          [requestId]: option
+        }));
+        setRequests(prev => prev.filter(req => req.id !== requestId));
+        alert(`Kết quả kiểm tra: ${reason}. Container đã được xóa khỏi danh sách chờ.`);
+      } else {
+        const container = requests.find(req => req.id === requestId);
+        
+        const findEquipmentForContainer = async () => {
+          try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              throw new Error('Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
             }
-          });
-          
-          if (response.ok) {
-            const equipments = await response.json();
-            if (equipments.data && equipments.data.length > 0) {
-              const equipment = equipments.data[0];
-              setSelectedContainerForRepair({
-                ...container,
-                equipment_id: equipment.id,
-                equipment_code: equipment.code
-              });
+            
+            const response = await fetch(`http://localhost:1000/maintenance/equipments?type=CONTAINER&code=${container?.container_no}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (response.ok) {
+              const equipments = await response.json();
+              if (equipments.data && equipments.data.length > 0) {
+                const equipment = equipments.data[0];
+                setSelectedContainerForRepair({
+                  ...container,
+                  equipment_id: equipment.id,
+                  equipment_code: equipment.code
+                });
+              } else {
+                setSelectedContainerForRepair({
+                  ...container,
+                  equipment_id: '1',
+                  equipment_code: container?.container_no || 'Unknown'
+                });
+              }
             } else {
               setSelectedContainerForRepair({
                 ...container,
@@ -143,26 +298,23 @@ export default function PendingContainersModal({ isOpen, onClose }: PendingConta
                 equipment_code: container?.container_no || 'Unknown'
               });
             }
-          } else {
+          } catch (err) {
+            console.error('Error finding equipment:', err);
             setSelectedContainerForRepair({
               ...container,
               equipment_id: '1',
               equipment_code: container?.container_no || 'Unknown'
             });
           }
-        } catch (err) {
-          console.error('Error finding equipment:', err);
-          setSelectedContainerForRepair({
-            ...container,
-            equipment_id: '1',
-            equipment_code: container?.container_no || 'Unknown'
-          });
-        }
+          
+          setIsCreateRepairModalOpen(true);
+        };
         
-        setIsCreateRepairModalOpen(true);
-      };
-      
-      findEquipmentForContainer();
+        findEquipmentForContainer();
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý tùy chọn thất bại:', error);
+      alert(`Lỗi khi xử lý tùy chọn thất bại: ${error.message}`);
     }
   };
 
@@ -199,6 +351,23 @@ export default function PendingContainersModal({ isOpen, onClose }: PendingConta
         throw new Error('API không trả về dữ liệu');
       }
       
+      // Cập nhật request status thành CHECKED
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          await fetch(`http://localhost:1000/requests/${selectedContainerForRepair.id}/status`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'CHECKED' })
+          });
+        }
+      } catch (error) {
+        console.error('Lỗi khi cập nhật request status:', error);
+      }
+      
       setRequests(prev => prev.filter(req => req.id !== selectedContainerForRepair.id));
       setCheckResults(prev => ({
         ...prev,
@@ -208,7 +377,7 @@ export default function PendingContainersModal({ isOpen, onClose }: PendingConta
       setIsCreateRepairModalOpen(false);
       setSelectedContainerForRepair(null);
       
-      mutate(['repairs', 'PENDING_APPROVAL']);
+      mutate(['repairs', 'CHECKING']);
       
       alert('Đã tạo phiếu sửa chữa thành công cho container! Container đã được xóa khỏi danh sách chờ.');
       
@@ -278,6 +447,7 @@ export default function PendingContainersModal({ isOpen, onClose }: PendingConta
           onCheckContainer={handleCheckContainer}
           onCheckResult={handleCheckResult}
           onFailOption={handleFailOption}
+          title="Danh sách container đang chờ (GATE_IN)"
         />
       </div>
 

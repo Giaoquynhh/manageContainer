@@ -21,6 +21,14 @@ export const maintenanceApi = {
     const { data } = await api.post(`/maintenance/repairs/${id}/reject`, { reason });
     return data;
   },
+  async updateRepairStatus(id: string, status: string, manager_comment?: string){
+    const { data } = await api.patch(`/maintenance/repairs/${id}/status`, { status, manager_comment });
+    return data;
+  },
+  async completeRepairCheck(id: string, result: 'PASS' | 'FAIL', manager_comment?: string){
+    const { data } = await api.post(`/maintenance/repairs/${id}/complete-check`, { result, manager_comment });
+    return data;
+  },
   async listInventory(params?: { q?: string; low?: boolean }){
     const { data } = await api.get('/maintenance/inventory/items', { params });
     return data as any[];

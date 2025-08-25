@@ -25,6 +25,18 @@ export class MaintenanceController {
     try { return res.json(await service.rejectRepair(req.user!, req.params.id, value.manager_comment)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
   }
 
+  async updateStatus(req: AuthRequest, res: Response) {
+    const { status, manager_comment } = req.body;
+    if (!status) return res.status(400).json({ message: 'Trạng thái là bắt buộc' });
+    try { return res.json(await service.updateRepairStatus(req.user!, req.params.id, status, manager_comment)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
+  }
+
+  async completeCheck(req: AuthRequest, res: Response) {
+    const { result, manager_comment } = req.body;
+    if (!result || !['PASS', 'FAIL'].includes(result)) return res.status(400).json({ message: 'Kết quả kiểm tra phải là PASS hoặc FAIL' });
+    try { return res.json(await service.completeRepairCheck(req.user!, req.params.id, result, manager_comment)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
+  }
+
   async listInventory(req: AuthRequest, res: Response) {
     try { return res.json(await service.listInventory(req.query)); } catch (e:any){ return res.status(400).json({ message: e.message }); }
   }

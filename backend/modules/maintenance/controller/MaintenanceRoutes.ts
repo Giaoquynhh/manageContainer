@@ -11,6 +11,8 @@ router.get('/repairs', (req, res) => controller.listRepairs(req as any, res));
 router.post('/repairs', (req, res) => controller.createRepair(req as any, res));
 router.post('/repairs/:id/approve', (req, res) => controller.approve(req as any, res));
 router.post('/repairs/:id/reject', (req, res) => controller.reject(req as any, res));
+router.patch('/repairs/:id/status', (req, res) => controller.updateStatus(req as any, res));
+router.post('/repairs/:id/complete-check', (req, res) => controller.completeCheck(req as any, res));
 
 // Inventory
 router.get('/inventory/items', (req, res) => controller.listInventory(req as any, res));

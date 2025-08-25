@@ -1,8 +1,9 @@
 interface PendingContainersModalHeaderProps {
   onClose: () => void;
+  title?: string;
 }
 
-export default function PendingContainersModalHeader({ onClose }: PendingContainersModalHeaderProps) {
+export default function PendingContainersModalHeader({ onClose, title }: PendingContainersModalHeaderProps) {
   return (
     <div style={{
       display: 'flex',
@@ -10,7 +11,9 @@ export default function PendingContainersModalHeader({ onClose }: PendingContain
       alignItems: 'center',
       marginBottom: '20px'
     }}>
-      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Danh sách container đang chờ</h3>
+      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+        {title || 'Danh sách container đang chờ'}
+      </h3>
       <button 
         onClick={onClose}
         style={{

@@ -16,6 +16,8 @@ export class RequestStateMachine {
     'SCHEDULED_INFO_ADDED',
     'FORWARDED',
     'SENT_TO_GATE',
+    'GATE_IN',
+    'CHECKING',
     'REJECTED',
     'COMPLETED'
   ];
@@ -95,6 +97,25 @@ export class RequestStateMachine {
       to: 'COMPLETED',
       allowedRoles: ['SaleAdmin', 'SystemAdmin', 'System'],
       description: 'Hoàn tất xử lý tại Gate'
+    },
+    {
+      from: 'GATE_IN',
+      to: 'CHECKING',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Bắt đầu kiểm tra container'
+    },
+    {
+      from: 'CHECKING',
+      to: 'CHECKED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      description: 'Hoàn thành kiểm tra - đạt chuẩn'
+    },
+    {
+      from: 'CHECKING',
+      to: 'REJECTED',
+      allowedRoles: ['SaleAdmin', 'SystemAdmin'],
+      requiresReason: true,
+      description: 'Hoàn thành kiểm tra - không đạt chuẩn'
     }
   ];
 

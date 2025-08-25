@@ -7,7 +7,7 @@ export const createRequestSchema = Joi.object({
 });
 
 export const updateRequestStatusSchema = Joi.object({
-	status: Joi.string().valid('PENDING','SCHEDULED','SCHEDULED_INFO_ADDED','FORWARDED','SENT_TO_GATE','REJECTED','COMPLETED').required(),
+	status: Joi.string().valid('PENDING','SCHEDULED','SCHEDULED_INFO_ADDED','FORWARDED','SENT_TO_GATE','CHECKING','REJECTED','COMPLETED').required(),
 	reason: Joi.string().optional()
 });
 

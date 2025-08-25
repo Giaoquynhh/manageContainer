@@ -2,9 +2,13 @@ interface RepairTableProps {
   repairs: any[];
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  onPassStandard: (id: string) => void;
+  onFailStandard: (id: string) => void;
+  onRepairable: (id: string) => void;
+  onUnrepairable: (id: string) => void;
 }
 
-export default function RepairTable({ repairs, onApprove, onReject }: RepairTableProps) {
+export default function RepairTable({ repairs, onApprove, onReject, onPassStandard, onFailStandard, onRepairable, onUnrepairable }: RepairTableProps) {
   const fmt = (n: any) => {
     const num = Number(n || 0);
     return num.toLocaleString('vi-VN');
@@ -35,12 +39,24 @@ export default function RepairTable({ repairs, onApprove, onReject }: RepairTabl
                   fontSize: '12px',
                   fontWeight: '500',
                   background: r.status === 'PENDING_APPROVAL' ? '#fef3c7' : 
-                             r.status === 'APPROVED' ? '#d1fae5' : '#fee2e2',
+                             r.status === 'CHECKING' ? '#fbbf24' :
+                             r.status === 'PENDING_ACCEPT' ? '#f59e0b' :
+                             r.status === 'REPAIRING' ? '#3b82f6' :
+                             r.status === 'CHECKED' ? '#10b981' :
+                             r.status === 'REJECTED' ? '#ef4444' : '#fee2e2',
                   color: r.status === 'PENDING_APPROVAL' ? '#92400e' : 
-                         r.status === 'APPROVED' ? '#065f46' : '#991b1b'
+                         r.status === 'CHECKING' ? '#78350f' :
+                         r.status === 'PENDING_ACCEPT' ? '#92400e' :
+                         r.status === 'REPAIRING' ? '#1e40af' :
+                         r.status === 'CHECKED' ? '#065f46' : 
+                         r.status === 'REJECTED' ? '#991b1b' : '#991b1b'
                 }}>
                   {r.status === 'PENDING_APPROVAL' ? 'Chờ duyệt' :
-                   r.status === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối'}
+                   r.status === 'CHECKING' ? 'Đang kiểm tra' :
+                   r.status === 'PENDING_ACCEPT' ? 'Chờ chấp nhận' :
+                   r.status === 'REPAIRING' ? 'Đang sửa chữa' :
+                   r.status === 'CHECKED' ? 'Đã kiểm tra' :
+                   r.status === 'REJECTED' ? 'Đã từ chối' : 'Không xác định'}
                 </span>
               </td>
               <td style={{ padding: '12px 8px', maxWidth: '200px' }} title={r.problem_description}>
@@ -77,6 +93,70 @@ export default function RepairTable({ repairs, onApprove, onReject }: RepairTabl
                       }}
                     >
                       Từ chối
+                    </button>
+                  </div>
+                )}
+                {r.status === 'CHECKING' && !r.manager_comment?.includes('không đạt chuẩn') && (
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                    <button 
+                      onClick={() => onPassStandard(r.id)}
+                      style={{
+                        padding: '4px 8px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        background: '#10b981',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Đạt chuẩn
+                    </button>
+                    <button 
+                      onClick={() => onFailStandard(r.id)}
+                      style={{
+                        padding: '4px 8px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        background: '#f59e0b',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Không đạt chuẩn
+                    </button>
+                  </div>
+                )}
+                {r.status === 'CHECKING' && r.manager_comment?.includes('không đạt chuẩn') && (
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                    <button 
+                      onClick={() => onRepairable(r.id)}
+                      style={{
+                        padding: '4px 8px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        background: '#3b82f6',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Có thể sửa chữa
+                    </button>
+                    <button 
+                      onClick={() => onUnrepairable(r.id)}
+                      style={{
+                        padding: '4px 8px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        background: '#ef4444',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Không thể sửa chữa
                     </button>
                   </div>
                 )}
