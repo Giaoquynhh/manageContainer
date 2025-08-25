@@ -18,6 +18,24 @@ export default function DepotRequests() {
 	const { data, error, isLoading } = useSWR('/requests?page=1&limit=20', fetcher);
 	const [state, actions] = useDepotActions();
 
+	// Cập nhật dữ liệu requests trong hook khi data thay đổi
+	React.useEffect(() => {
+		console.log('🔍 Depot: useEffect triggered with data:', data);
+		if (data?.data) {
+			console.log('🔍 Depot: Setting requestsData with:', data.data.length, 'items');
+			console.log('🔍 Depot: Sample container numbers:', data.data.slice(0, 3).map(r => r.container_no));
+			actions.setRequestsData(data.data);
+		}
+	}, [data, actions]);
+	
+	// Debug logging cho state.requestsData
+	React.useEffect(() => {
+		console.log('🔍 Depot: state.requestsData updated:', state.requestsData.length, 'items');
+		if (state.requestsData.length > 0) {
+			console.log('🔍 Depot: state.requestsData container numbers:', state.requestsData.map(r => r.container_no));
+		}
+	}, [state.requestsData]);
+
 	// Filter data based on search and filter
 	const filteredData = data?.data?.filter((item: any) => {
 		const matchesSearch = state.searchQuery === '' ||
@@ -26,6 +44,12 @@ export default function DepotRequests() {
 		const matchesStatusFilter = state.filterStatus === 'all' || item.status === state.filterStatus;
 		return matchesSearch && matchesTypeFilter && matchesStatusFilter;
 	});
+	
+	console.log('🔍 Depot: filteredData created:', filteredData?.length, 'items');
+	if (filteredData && filteredData.length > 0) {
+		console.log('🔍 Depot: Filtered container numbers:', filteredData.map(r => r.container_no));
+		console.log('🔍 Depot: Filtered statuses:', filteredData.map(r => r.status));
+	}
 
 	// Add action buttons to each request
 	const requestsWithActions = filteredData?.map((item: any) => ({
@@ -44,6 +68,12 @@ export default function DepotRequests() {
 			}
 		}
 	}));
+	
+	console.log('🔍 Depot: requestsWithActions created:', requestsWithActions?.length, 'items');
+	if (requestsWithActions && requestsWithActions.length > 0) {
+		console.log('🔍 Depot: First request container_no:', requestsWithActions[0].container_no);
+		console.log('🔍 Depot: First request status:', requestsWithActions[0].status);
+	}
 
 	const handleSearch = (query: string) => {
 		actions.setSearchQuery(query);
@@ -113,6 +143,9 @@ export default function DepotRequests() {
 						<option value="COMPLETED">Hoàn thành</option>
 						<option value="EXPORTED">Đã xuất</option>
 						<option value="REJECTED">Từ chối</option>
+						<option value="PENDING_ACCEPT">Chờ chấp nhận</option>
+						<option value="CHECKING">Đang kiểm tra</option>
+						<option value="CHECKED">Đã kiểm tra</option>
 					</select>
 				</div>
 
@@ -128,6 +161,8 @@ export default function DepotRequests() {
 					onChangeStatus={actions.changeStatus}
 					onSendPayment={actions.sendPayment}
 					onSoftDelete={(id: string, scope: string) => actions.softDeleteRequest(id, scope as 'depot' | 'customer')}
+					onViewInvoice={actions.handleViewInvoice}
+					onSendCustomerConfirmation={actions.handleSendCustomerConfirmation}
 					loadingId={state.loadingId}
 					actLabel={{
 						RECEIVED: 'Tiếp nhận',
@@ -135,6 +170,10 @@ export default function DepotRequests() {
 						COMPLETED: 'Hoàn tất',
 						EXPORTED: 'Đã xuất kho'
 					}}
+					// Chat props
+					activeChatRequests={state.activeChatRequests}
+					onToggleChat={actions.toggleChat}
+					onCloseChat={actions.closeChat}
 				/>
 
 				{/* Status Message */}

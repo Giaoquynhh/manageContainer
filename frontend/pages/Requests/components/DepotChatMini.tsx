@@ -9,6 +9,8 @@ interface DepotChatMiniProps {
 	// Thêm props để theo dõi thay đổi thông tin
 	hasSupplementDocuments?: boolean;
 	lastSupplementUpdate?: string;
+	// Chat control props
+	onClose?: () => void;
 }
 
 export default function DepotChatMini({
@@ -17,20 +19,22 @@ export default function DepotChatMini({
 	requestType,
 	requestStatus,
 	hasSupplementDocuments = false,
-	lastSupplementUpdate
+	lastSupplementUpdate,
+	onClose
 }: DepotChatMiniProps) {
-	const [isOpen, setIsOpen] = useState(false);
+	const [isOpen, setIsOpen] = useState(false); // Không tự động mở chat
 	const [isMinimized, setIsMinimized] = useState(false);
 	const [position, setPosition] = useState({ x: 20, y: 20 });
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-	// Check if chat is allowed based on request status (allow SCHEDULED for demo)
+	// Check if chat is allowed based on request status
 	const isChatAllowed = requestStatus === 'SCHEDULED' || 
 						 requestStatus === 'APPROVED' || 
 						 requestStatus === 'IN_PROGRESS' || 
 						 requestStatus === 'COMPLETED' || 
-						 requestStatus === 'EXPORTED';
+						 requestStatus === 'EXPORTED' ||
+						 requestStatus === 'PENDING_ACCEPT'; // Thêm PENDING_ACCEPT
 
 	// Handle drag functionality
 	const handleMouseDown = (e: React.MouseEvent) => {
@@ -76,15 +80,17 @@ export default function DepotChatMini({
 		}
 	}, []);
 
-	const handleOpen = () => {
-		setIsOpen(true);
-		setIsMinimized(false);
-	};
-
 	const handleClose = () => {
 		setIsOpen(false);
 		setIsMinimized(false);
+		// Gọi callback từ parent component
+		onClose?.();
 	};
+
+	// Mở chat khi component được mount (được gọi từ parent)
+	useEffect(() => {
+		setIsOpen(true);
+	}, []);
 
 	const handleMinimize = () => {
 		setIsMinimized(true);
@@ -94,28 +100,9 @@ export default function DepotChatMini({
 		setIsMinimized(false);
 	};
 
-	// Chat trigger button (when closed)
-	if (!isOpen) {
-		return (
-			<button
-				onClick={handleOpen}
-				className="depot-chat-mini-trigger"
-				title={isChatAllowed ? "Mở chat với khách hàng" : "Chat chưa khả dụng"}
-				disabled={!isChatAllowed}
-			>
-				{isChatAllowed ? (
-					<>
-						💬 Chat
-						<span className="chat-status-indicator active"></span>
-					</>
-				) : (
-					<>
-						💬 Chat
-						<span className="chat-status-indicator inactive"></span>
-					</>
-				)}
-			</button>
-		);
+	// Nếu chat không được cho phép, không hiển thị gì
+	if (!isChatAllowed) {
+		return null;
 	}
 
 	// Minimized chat (showing as a small bar)

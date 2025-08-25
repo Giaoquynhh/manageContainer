@@ -20,6 +20,10 @@ router.get('/repairs/:id/invoice', controller.getRepairInvoice.bind(controller))
 router.post('/repairs/:id/pdf', controller.uploadRepairInvoicePDF.bind(controller));
 router.get('/repairs/:id/invoice/pdf', controller.downloadRepairInvoicePDF.bind(controller));
 
+// Repair Invoice Actions
+router.put('/repairs/:id/invoice', controller.updateRepairInvoice.bind(controller));
+router.post('/repairs/:id/confirmation-request', controller.sendConfirmationRequest.bind(controller));
+
 // Inventory
 router.get('/inventory/items', (req, res) => controller.listInventory(req as any, res));
 router.post('/inventory/items', (req, res) => controller.createInventory(req as any, res));

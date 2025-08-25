@@ -75,6 +75,18 @@ export const maintenanceApi = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  // Cập nhật hóa đơn sửa chữa
+  async updateRepairInvoice(repairTicketId: string, invoiceData: any) {
+    const { data } = await api.put(`/maintenance/repairs/${repairTicketId}/invoice`, invoiceData);
+    return data;
+  },
+
+  // Gửi yêu cầu xác nhận
+  async sendConfirmationRequest(repairTicketId: string) {
+    const { data } = await api.post(`/maintenance/repairs/${repairTicketId}/confirmation-request`);
+    return data;
   }
 };
 

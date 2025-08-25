@@ -98,6 +98,69 @@ async getRepairInvoice(repairTicketId: string) {
 - **Validation**: Tên và ĐVT là bắt buộc, các trường số không âm
 - **Audit**: Ghi log `INVENTORY.CREATED` khi tạo mới
 
+## 12) Trạng thái PENDING_ACCEPT (v2025-08-26)
+
+### Mô tả trạng thái
+- **Trạng thái mới**: `PENDING_ACCEPT` (Chờ chấp nhận)
+- **Áp dụng cho**: Cả `RepairTicket` và `ServiceRequest`
+- **Điều kiện**: Khi tạo hóa đơn sửa chữa
+
+### Logic hoạt động
+1. **User tạo hóa đơn** → Bấm "Tạo hóa đơn & PDF"
+2. **Backend `createRepairInvoice`** → Cập nhật phiếu thành `PENDING_ACCEPT`
+3. **Tự động cập nhật request** → Tìm request theo `container_no` và set `PENDING_ACCEPT`
+4. **Kết quả**: Cả phiếu sửa chữa và request đều có trạng thái `PENDING_ACCEPT`
+
+### Cập nhật Database Schema
+```prisma
+model ServiceRequest {
+  // ... existing fields
+  status        String   // PENDING | SCHEDULED | FORWARDED | GATE_IN | CHECKING | GATE_REJECTED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD | PENDING_ACCEPT
+}
+```
+
+### Cập nhật Backend Service
+```typescript
+async createRepairInvoice(actor: any, payload: { 
+  repair_ticket_id: string; labor_cost: number; 
+  selected_parts: Array<{ inventory_item_id: string; quantity: number }> 
+}) {
+  // ... existing logic
+  
+  // Cập nhật phiếu sửa chữa thành PENDING_ACCEPT
+  const updatedTicket = await prisma.repairTicket.update({
+    where: { id: payload.repair_ticket_id },
+    data: {
+      estimated_cost: totalCost,
+      labor_cost: payload.labor_cost,
+      status: 'PENDING_ACCEPT', // Thay đổi từ REPAIRING
+      items: { /* ... */ }
+    }
+  });
+
+  // Tự động cập nhật trạng thái request thành PENDING_ACCEPT
+  if (repairTicket.container_no) {
+    await prisma.serviceRequest.updateMany({
+      where: { 
+        container_no: repairTicket.container_no,
+        status: { not: 'COMPLETED' }
+      },
+      data: { status: 'PENDING_ACCEPT' }
+    });
+  }
+}
+```
+
+### Frontend Display
+- **Màu sắc**: Cam (`#f59e0b`)
+- **Label**: "Chờ chấp nhận"
+- **Vị trí**: Cột "Trạng thái" trong bảng phiếu sửa chữa
+
+### Migration
+```bash
+npx prisma migrate dev --name add_pending_accept_status
+```
+
 ### Cập nhật trường đơn giá
 - **Database**: Thêm cột `unit_price` vào bảng `InventoryItem`
 - **Frontend**: Hiển thị và cho phép chỉnh sửa đơn giá

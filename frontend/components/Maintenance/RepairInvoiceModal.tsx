@@ -277,26 +277,55 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
     setMessage('Đang tạo hóa đơn...');
 
     try {
-      // 1. Tạo hóa đơn trong database
-      const payload = {
-        repair_ticket_id: repairTicket.id,
-        labor_cost: Number(laborCost) || 0,
-        selected_parts: selectedParts
-      };
+      // Kiểm tra xem đây có phải là cập nhật hóa đơn hay tạo mới
+      const isUpdate = repairTicket.status === 'PENDING_ACCEPT';
+      
+      if (isUpdate) {
+        // Cập nhật hóa đơn hiện có
+        const payload = {
+          total_amount: calculateTotalCost(),
+          labor_cost: Number(laborCost) || 0,
+          problem_description: problemDescription,
+          items: selectedParts.map(part => {
+            const item = inventoryItems.find(i => i.id === part.inventory_item_id);
+            return {
+              inventory_item_id: part.inventory_item_id,
+              quantity: part.quantity,
+              description: item?.name || '',
+              unit_price: item?.unit_price || 0,
+              total_price: (item?.unit_price || 0) * part.quantity
+            };
+          })
+        };
 
-      await maintenanceApi.createRepairInvoice(repairTicket.id, payload);
-      setMessage('Đã tạo hóa đơn! Đang cập nhật trạng thái...');
+        await maintenanceApi.updateRepairInvoice(repairTicket.id, payload);
+        setMessage('Đã cập nhật hóa đơn! Đang tạo PDF mới...');
+      } else {
+        // Tạo hóa đơn mới
+        const payload = {
+          repair_ticket_id: repairTicket.id,
+          labor_cost: Number(laborCost) || 0,
+          selected_parts: selectedParts
+        };
 
-      // 2. Cập nhật trạng thái phiếu thành PENDING_ACCEPT
-      await maintenanceApi.updateRepairStatus(repairTicket.id, 'PENDING_ACCEPT', 'Đã tạo hóa đơn sửa chữa');
-      setMessage('Đã cập nhật trạng thái! Đang tạo PDF...');
+        await maintenanceApi.createRepairInvoice(repairTicket.id, payload);
+        setMessage('Đã tạo hóa đơn! Đang cập nhật trạng thái...');
 
-      // 3. Tạo và upload PDF tự động
+        // Cập nhật trạng thái phiếu thành PENDING_ACCEPT
+        await maintenanceApi.updateRepairStatus(repairTicket.id, 'PENDING_ACCEPT', 'Đã tạo hóa đơn sửa chữa');
+        setMessage('Đã cập nhật trạng thái! Đang tạo PDF...');
+      }
+
+      // Tạo và upload PDF tự động
       await generateAndUploadPDF();
 
-      setMessage('Hoàn thành! Đã tạo hóa đơn, cập nhật trạng thái và upload PDF thành công!');
+      const successMessage = isUpdate 
+        ? 'Hoàn thành! Đã cập nhật hóa đơn và tạo PDF mới thành công!'
+        : 'Hoàn thành! Đã tạo hóa đơn, cập nhật trạng thái và upload PDF thành công!';
       
-      // Thông báo cho component cha biết hóa đơn đã được tạo
+      setMessage(successMessage);
+      
+      // Thông báo cho component cha biết hóa đơn đã được tạo/cập nhật
       if (onInvoiceCreated) {
         onInvoiceCreated(repairTicket.id);
       }
@@ -501,7 +530,9 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
           borderBottom: '1px solid #e5e7eb',
           paddingBottom: '16px'
         }}>
-          <h2 style={{ margin: 0, color: '#1f2937' }}>Hóa đơn Sửa chữa</h2>
+          <h2 style={{ margin: 0, color: '#1f2937' }}>
+            {repairTicket.status === 'PENDING_ACCEPT' ? '✏️ Sửa hóa đơn sửa chữa' : '📄 Tạo hóa đơn sửa chữa'}
+          </h2>
           <button 
             onClick={onClose}
             style={{
@@ -857,7 +888,7 @@ export default function RepairInvoiceModal({ isOpen, onClose, repairTicket, onSu
                   gap: '8px'
                 }}
               >
-                {loading ? '🔄 Đang xử lý...' : '📄 Tạo hóa đơn & PDF'}
+                {loading ? '🔄 Đang xử lý...' : (repairTicket.status === 'PENDING_ACCEPT' ? '✏️ Cập nhật hóa đơn & PDF' : '📄 Tạo hóa đơn & PDF')}
               </button>
              <button
                onClick={onClose}

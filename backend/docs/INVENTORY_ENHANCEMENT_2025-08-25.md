@@ -255,3 +255,71 @@ Content-Type: application/json
 - **State management**: Sử dụng string state cho input, convert sang number khi submit
 - **Error handling**: Validation messages rõ ràng cho từng trường
 - **Performance**: Optimized re-renders với proper state updates
+
+## Trạng thái PENDING_ACCEPT (v2025-08-26) ⭐ **MỚI**
+
+### Mô tả
+- **Trạng thái mới**: `PENDING_ACCEPT` (Chờ chấp nhận)
+- **Áp dụng cho**: Cả `RepairTicket` và `ServiceRequest`
+- **Điều kiện kích hoạt**: Khi tạo hóa đơn sửa chữa
+
+### Logic hoạt động
+1. **User tạo hóa đơn** → Bấm "Tạo hóa đơn & PDF"
+2. **Backend `createRepairInvoice`** → Cập nhật phiếu thành `PENDING_ACCEPT`
+3. **Tự động cập nhật request** → Tìm request theo `container_no` và set `PENDING_ACCEPT`
+4. **Kết quả**: Cả phiếu sửa chữa và request đều có trạng thái `PENDING_ACCEPT`
+
+### Cập nhật Database Schema
+```prisma
+model ServiceRequest {
+  // ... existing fields
+  status        String   // PENDING | SCHEDULED | FORWARDED | GATE_IN | CHECKING | GATE_REJECTED | REJECTED | COMPLETED | EXPORTED | IN_YARD | LEFT_YARD | PENDING_ACCEPT
+}
+```
+
+### Cập nhật Backend Service
+```typescript
+async createRepairInvoice(actor: any, payload: { 
+  repair_ticket_id: string; labor_cost: number; 
+  selected_parts: Array<{ inventory_item_id: string; quantity: number }> 
+}) {
+  // ... existing logic
+  
+  // Cập nhật phiếu sửa chữa thành PENDING_ACCEPT
+  const updatedTicket = await prisma.repairTicket.update({
+    where: { id: payload.repair_ticket_id },
+    data: {
+      estimated_cost: totalCost,
+      labor_cost: payload.labor_cost,
+      status: 'PENDING_ACCEPT', // Thay đổi từ REPAIRING
+      items: { /* ... */ }
+    }
+  });
+
+  // Tự động cập nhật trạng thái request thành PENDING_ACCEPT
+  if (repairTicket.container_no) {
+    await prisma.serviceRequest.updateMany({
+      where: { 
+        container_no: repairTicket.container_no,
+        status: { not: 'COMPLETED' }
+      },
+      data: { status: 'PENDING_ACCEPT' }
+    });
+  }
+}
+```
+
+### Frontend Display
+- **Màu sắc**: Cam (`#f59e0b`)
+- **Label**: "Chờ chấp nhận"
+- **Vị trí**: Cột "Trạng thái" trong bảng phiếu sửa chữa
+
+### Migration
+```bash
+npx prisma migrate dev --name add_pending_accept_status
+```
+
+### Lợi ích
+- **Quản lý trạng thái rõ ràng**: Phân biệt giữa "đang kiểm tra" và "chờ chấp nhận"
+- **Đồng bộ trạng thái**: Request và phiếu sửa chữa có trạng thái tương ứng
+- **Workflow hoàn chỉnh**: Từ kiểm tra → tạo hóa đơn → chờ chấp nhận → sửa chữa

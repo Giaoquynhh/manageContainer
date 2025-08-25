@@ -125,6 +125,39 @@ export default function RepairsPage() {
     }
   };
 
+  const handleEditInvoice = async (id: string) => {
+    setMsg('');
+    try {
+      // Tìm repair ticket để hiển thị trong popup sửa hóa đơn
+      const repairTicket = repairs?.find(r => r.id === id);
+      if (repairTicket) {
+        setSelectedRepairTicket(repairTicket);
+        setIsRepairInvoiceModalOpen(true);
+      }
+      setMsg('Mở modal sửa hóa đơn');
+      setTimeout(() => setMsg(''), 3000);
+    } catch (e: any) {
+      setMsg(e?.response?.data?.message || 'Lỗi khi mở modal sửa hóa chữa');
+    }
+  };
+
+  const handleRequestConfirmation = async (id: string) => {
+    setMsg('');
+    try {
+      // Gọi API để gửi yêu cầu xác nhận
+      const result = await maintenanceApi.sendConfirmationRequest(id);
+      setMsg(result.message || 'Đã gửi yêu cầu xác nhận thành công');
+      
+      // Refresh danh sách để cập nhật trạng thái
+      mutate(key);
+      
+      // Hiển thị thông báo lâu hơn để user đọc
+      setTimeout(() => setMsg(''), 5000);
+    } catch (e: any) {
+      setMsg(e?.response?.data?.message || 'Lỗi khi gửi yêu cầu xác nhận');
+    }
+  };
+
   const handleFilterChange = (newFilter: string) => {
     setFilter(newFilter);
     mutate(key);
@@ -171,12 +204,12 @@ export default function RepairsPage() {
 
           <RepairTable
             repairs={repairs || []}
-            onApprove={approve}
-            onReject={reject}
             onPassStandard={handlePassStandard}
             onFailStandard={handleFailStandard}
             onRepairable={handleRepairable}
             onUnrepairable={handleUnrepairable}
+            onEditInvoice={handleEditInvoice}
+            onRequestConfirmation={handleRequestConfirmation}
           />
         </Card>
 

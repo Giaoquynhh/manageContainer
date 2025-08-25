@@ -132,6 +132,54 @@ export class MaintenanceController {
       });
     }
   }
+
+  // Cập nhật hóa đơn sửa chữa
+  async updateRepairInvoice(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const invoiceData = req.body;
+
+      if (!invoiceData) {
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu dữ liệu hóa đơn'
+        });
+      }
+
+      const result = await service.updateRepairInvoice(req.user!, id, invoiceData);
+
+      res.json({
+        success: true,
+        message: 'Đã cập nhật hóa đơn thành công',
+        data: result
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi cập nhật hóa đơn: ' + error.message
+      });
+    }
+  }
+
+  // Gửi yêu cầu xác nhận
+  async sendConfirmationRequest(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const result = await service.sendConfirmationRequest(req.user!, id);
+
+      res.json({
+        success: true,
+        message: result.message,
+        data: result
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi gửi yêu cầu xác nhận: ' + error.message
+      });
+    }
+  }
 }
 
 export default new MaintenanceController();

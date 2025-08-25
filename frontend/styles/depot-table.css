@@ -68,6 +68,21 @@
   color: #7c3aed;
 }
 
+.status-pending-accept {
+  background-color: #fed7aa;
+  color: #9a3412;
+}
+
+.status-checking {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-checked {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
 .status-default {
   background-color: #f3f4f6;
   color: #374151;

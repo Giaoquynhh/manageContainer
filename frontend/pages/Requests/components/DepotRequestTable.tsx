@@ -11,7 +11,13 @@ interface DepotRequestTableProps {
 	onChangeStatus?: (id: string, status: string) => void;
 	onSendPayment?: (id: string) => void;
 	onSoftDelete?: (id: string, scope: string) => void;
+	onViewInvoice?: (id: string) => void;
+	onSendCustomerConfirmation?: (id: string) => void;
 	loadingId?: string;
+	// Chat props
+	activeChatRequests?: Set<string>;
+	onToggleChat?: (requestId: string) => void;
+	onCloseChat?: (requestId: string) => void;
 }
 
 export default function DepotRequestTable({ 
@@ -24,7 +30,13 @@ export default function DepotRequestTable({
 	onChangeStatus,
 	onSendPayment,
 	onSoftDelete,
-	loadingId 
+	onViewInvoice,
+	onSendCustomerConfirmation,
+	loadingId,
+	// Chat props
+	activeChatRequests = new Set(),
+	onToggleChat,
+	onCloseChat
 }: DepotRequestTableProps) {
 	const getStatusBadge = (status: string) => {
 		const statusConfig: Record<string, { label: string; className: string }> = {
@@ -34,7 +46,10 @@ export default function DepotRequestTable({
 			EXPORTED: { label: 'Đã xuất', className: 'status-exported' },
 			REJECTED: { label: 'Từ chối', className: 'status-rejected' },
 			IN_YARD: { label: 'Trong kho', className: 'status-in-yard' },
-			LEFT_YARD: { label: 'Đã rời kho', className: 'status-left-yard' }
+			LEFT_YARD: { label: 'Đã rời kho', className: 'status-left-yard' },
+			PENDING_ACCEPT: { label: 'Chờ chấp nhận', className: 'status-pending-accept' },
+			CHECKING: { label: 'Đang kiểm tra', className: 'status-checking' },
+			CHECKED: { label: 'Đã kiểm tra', className: 'status-checked' }
 		};
 
 		const config = statusConfig[status] || { label: status, className: 'status-default' };
@@ -134,14 +149,47 @@ export default function DepotRequestTable({
 
 							<td>
 								<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-									<DepotChatMini
-										requestId={demoItem.id}
-										containerNo={demoItem.container_no}
-										requestType={demoItem.type}
-										requestStatus={demoItem.status}
-										hasSupplementDocuments={demoItem.has_supplement_documents}
-										lastSupplementUpdate={demoItem.last_supplement_update}
-									/>
+									{/* Chat button - hiển thị cho các trạng thái được phép chat */}
+									{(demoItem.status === 'SCHEDULED' || 
+									  demoItem.status === 'APPROVED' || 
+									  demoItem.status === 'IN_PROGRESS' || 
+									  demoItem.status === 'COMPLETED' || 
+									  demoItem.status === 'EXPORTED' ||
+									  demoItem.status === 'PENDING_ACCEPT') && (
+										<button
+											onClick={() => onToggleChat?.(demoItem.id)}
+											className="depot-chat-mini-trigger"
+											title={activeChatRequests.has(demoItem.id) ? "Đóng chat" : "Mở chat với khách hàng"}
+											style={{
+												background: activeChatRequests.has(demoItem.id) ? '#10b981' : '#3b82f6',
+												color: 'white',
+												border: 'none',
+												borderRadius: '6px',
+												padding: '6px 12px',
+												fontSize: '12px',
+												cursor: 'pointer',
+												display: 'flex',
+												alignItems: 'center',
+												gap: '4px'
+											}}
+										>
+											{activeChatRequests.has(demoItem.id) ? '💬 Đóng Chat' : '💬 Mở Chat'}
+										</button>
+									)}
+									
+									{/* Chat window - hiển thị khi chat được mở */}
+									{activeChatRequests.has(demoItem.id) && (
+										<DepotChatMini
+											requestId={demoItem.id}
+											containerNo={demoItem.container_no}
+											requestType={demoItem.type}
+											requestStatus={demoItem.status}
+											hasSupplementDocuments={demoItem.has_supplement_documents}
+											lastSupplementUpdate={demoItem.last_supplement_update}
+											onClose={() => onCloseChat?.(demoItem.id)}
+										/>
+									)}
+									
 									{/* Indicator cho supplement documents */}
 									{demoItem.has_supplement_documents && (
 										<div style={{
@@ -233,6 +281,27 @@ export default function DepotRequestTable({
 										>
 											{loadingId === item.id + 'PAY' ? '⏳' : '💰'} Thanh toán
 										</button>
+									)}
+									{/* Actions cho trạng thái PENDING_ACCEPT */}
+									{item.status === 'PENDING_ACCEPT' && (
+										<>
+											<button
+												className="btn btn-sm btn-info"
+												disabled={loadingId === item.id + 'VIEW_INVOICE'}
+												onClick={() => onViewInvoice?.(item.id)}
+												title="Xem hóa đơn sửa chữa"
+											>
+												{loadingId === item.id + 'VIEW_INVOICE' ? '⏳' : '📄'} Xem hóa đơn
+											</button>
+											<button
+												className="btn btn-sm btn-success"
+												disabled={loadingId === item.id + 'CONFIRM'}
+												onClick={() => onSendCustomerConfirmation?.(item.id)}
+												title="Gửi xác nhận cho khách hàng"
+											>
+												{loadingId === item.id + 'CONFIRM' ? '⏳' : '📧'} Gửi xác nhận
+											</button>
+										</>
 									)}
 									{/* Soft delete buttons */}
 									{['REJECTED', 'COMPLETED', 'EXPORTED'].includes(item.status) && (
