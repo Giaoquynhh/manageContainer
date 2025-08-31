@@ -1,0 +1,297 @@
+{
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "edit": "Sửa",
+    "delete": "Xóa",
+    "add": "Thêm",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "export": "Xuất báo cáo",
+    "import": "Nhập dữ liệu",
+    "refresh": "Làm mới",
+    "close": "Đóng",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước đó",
+    "submit": "Gửi",
+    "reset": "Đặt lại",
+    "retry": "Thử lại",
+    "prev": "Trước",
+    "page": "Trang",
+    "sortBy": "Sắp xếp theo",
+    "na": "Không có",
+    "processing": "Đang xử lý..."
+  },
+  "header": {
+    "brand": "Smartlog Container Manager",
+    "account": "Tài khoản",
+    "accountInfo": "Thông tin tài khoản",
+    "userManagement": "Quản lý người dùng",
+    "logout": "Đăng xuất",
+    "login": "Đăng nhập",
+    "toggleMenu": "Chuyển đổi menu",
+    "closeMenu": "Đóng menu",
+    "openMenu": "Mở menu"
+  },
+  "sidebar": {
+    "mainMenu": "Menu chính",
+    "usersPartners": "Người dùng/Đối tác",
+    "permissions": "Phân quyền",
+    "requests": "Yêu cầu",
+    "customerRequests": "Yêu cầu khách hàng",
+    "gate": "Cổng",
+    "yard": "Bãi",
+    "containerManagement": "Quản lý container",
+    "forkliftManagement": "Quản lý xe nâng",
+    "dashboard": "Bảng điều khiển",
+    "repairTickets": "Phiếu sửa chữa",
+    "inventory": "Tồn kho",
+    "invoices": "Hóa đơn",
+    "createInvoice": "Tạo hóa đơn",
+    "reports": "Báo cáo",
+    "account": "Tài khoản"
+  },
+  "language": {
+    "selectLanguage": "Chọn Ngôn Ngữ",
+    "selectLanguageSubtitle": "Select your preferred language",
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "vi": "VI",
+    "en": "EN"
+  },
+  "pages": {
+    "requests": {
+      "title": "Quản lý yêu cầu dịch vụ",
+      "depotTitle": "Quản lý yêu cầu dịch vụ",
+      "customerTitle": "Quản lý yêu cầu dịch vụ (Khách hàng)",
+      "searchPlaceholder": "Tìm kiếm theo mã container...",
+      "searchByLicensePlate": "Tìm kiếm theo biển số xe...",
+      "allTypes": "Tất cả loại",
+      "allStatuses": "Tất cả trạng thái",
+      "noRequests": "Chưa có yêu cầu nào",
+      "noRequestsSubtitle": "Không có yêu cầu nào để xử lý",
+      "searchButton": "Tìm kiếm",
+      "clearFilters": "Xóa bộ lọc",
+      "applyFilters": "Áp dụng bộ lọc",
+      "viewDetail": "Xem chi tiết",
+      "containerDetailTitle": "Chi tiết container",
+      "statusLabel": "Trạng thái",
+      "typeLabel": "Loại",
+      "exportReport": "Xuất báo cáo",
+      "filterOptions": {
+        "import": "Nhập",
+        "export": "Xuất",
+        "convert": "Chuyển đổi",
+        "pending": "Chờ xử lý",
+        "received": "Đã nhận",
+        "completed": "Hoàn thành",
+        "exported": "Đã xuất",
+        "rejected": "Từ chối",
+        "pendingAccept": "Chờ chấp nhận",
+        "checking": "Đang kiểm tra",
+        "checked": "Đã kiểm tra",
+        "inYard": "Trong kho",
+        "leftYard": "Đã rời kho",
+        "scheduled": "Đã lên lịch",
+        "approved": "Đã duyệt",
+        "inProgress": "Đang xử lý",
+        "gateIn": "Đã cho phép vào",
+        "gateOut": "Đã cho phép ra",
+        "gateRejected": "Đã từ chối"
+      },
+      "actionLabels": {
+        "received": "Tiếp nhận",
+        "rejected": "Từ chối",
+        "completed": "Hoàn tất",
+        "exported": "Đã xuất kho"
+      },
+      "supplementDocuments": "Tài liệu bổ sung",
+      "close": "Đóng",
+      "tableHeaders": {
+        "container": "Container",
+        "eta": "ETA",
+        "status": "Trạng thái",
+        "documents": "Chứng từ",
+        "chat": "Chat",
+        "actions": "Hành động"
+      }
+    },
+    "gate": {
+      "title": "Bảng điều khiển cổng",
+      "subtitle": "Quản lý xe ra/vào cổng",
+      "welcome": "Chào mừng đến với hệ thống quản lý cổng",
+      "searchByContainer": "Tìm kiếm theo mã container...",
+      "searchByLicensePlate": "Tìm kiếm theo biển số xe...",
+      "searchButton": "Tìm kiếm",
+      "clearFilters": "Xóa bộ lọc",
+      "statusLabel": "Trạng thái",
+      "typeLabel": "Loại",
+      "allStatuses": "Tất cả trạng thái",
+      "allTypes": "Tất cả loại",
+      "noData": "Không có dữ liệu",
+      "noRequestsToDisplay": "Không có yêu cầu nào để hiển thị",
+      "viewDetail": "Xem chi tiết",
+      "viewDocuments": "Xem danh sách chứng từ",
+      "noDocuments": "Không có",
+      "actions": {
+        "approve": "Cho phép",
+        "reject": "Từ chối",
+        "cancel": "Hủy",
+        "confirmApprove": "Xác nhận cho phép",
+        "confirmReject": "Xác nhận từ chối"
+      },
+      "validation": {
+        "invalidPlate": "Vui lòng nhập biển số xe hợp lệ (tối thiểu 5 ký tự).",
+        "invalidDriver": "Vui lòng nhập tên tài xế (tối thiểu 2 ký tự).",
+        "rejectReasonMin": "Lý do từ chối phải có ít nhất 5 ký tự"
+      },
+      "messages": {
+        "approveErrorPrefix": "Lỗi khi cho phép",
+        "rejectErrorPrefix": "Lỗi khi từ chối",
+        "rejected": "Đơn hàng bị từ chối",
+        "noAuthToken": "Không có token xác thực",
+        "fetchDocumentsError": "Có lỗi xảy ra khi tải danh sách chứng từ",
+        "noDocumentsForRequest": "Không có chứng từ nào cho yêu cầu này",
+        "exportError": "Không thể xuất báo cáo. Vui lòng thử lại."
+      },
+      "modals": {
+        "approve": { "title": "Nhập thông tin tài xế và biển số xe" },
+        "reject": { "title": "Lý do từ chối" }
+      },
+      "placeholders": {
+        "driverName": "VD: Nguyễn Văn A",
+        "plateNo": "VD: 51C-123.45",
+        "rejectReason": "Nhập lý do từ chối (tối thiểu 5 ký tự)..."
+      },
+      "typeOptions": {
+        "import": "Nhập",
+        "export": "Xuất",
+        "empty": "Rỗng"
+      },
+      "statusOptions": {
+        "scheduled": "Đã lên lịch",
+        "forwarded": "Đã chuyển tiếp",
+        "gateIn": "Đã cho phép vào",
+        "gateOut": "Đã cho phép ra",
+        "gateRejected": "Đã từ chối",
+        "completed": "Hoàn tất"
+      },
+      "tableHeaders": {
+        "container": "Container",
+        "type": "Loại",
+        "status": "Trạng thái",
+        "eta": "ETA",
+        "driverName": "Tên tài xế",
+        "licensePlate": "Biển số xe",
+        "documents": "Chứng từ",
+        "actions": "Hành động"
+      }
+    },
+    "yard": {
+      "title": "Quản lý bãi",
+      "welcome": "Chào mừng đến với hệ thống quản lý bãi",
+      "searchPlaceholder": "Tìm kiếm theo mã container...",
+      "searchButton": "Tìm kiếm",
+      "clearFilters": "Xóa bộ lọc",
+      "noData": "Không có dữ liệu",
+      "noDataSubtitle": "Không có dữ liệu để hiển thị",
+      "yardMap": "Sơ đồ bãi"
+    },
+    "containers": {
+      "title": "Quản lý container",
+      "welcome": "Chào mừng đến với hệ thống quản lý container",
+      "searchPlaceholder": "Tìm kiếm theo mã container...",
+      "searchButton": "Tìm kiếm",
+      "clearFilters": "Xóa bộ lọc",
+      "noData": "Không có dữ liệu",
+      "noDataSubtitle": "Không có container nào để hiển thị"
+    },
+    "forklift": {
+      "title": "Quản lý xe nâng",
+      "welcome": "Chào mừng đến với hệ thống quản lý xe nâng",
+      "searchPlaceholder": "Tìm kiếm theo biển số xe...",
+      "searchButton": "Tìm kiếm",
+      "clearFilters": "Xóa bộ lọc",
+      "noData": "Không có dữ liệu",
+      "noDataSubtitle": "Không có xe nâng nào để hiển thị"
+    },
+    "maintenance": {
+      "repairs": {
+        "title": "Phiếu sửa chữa",
+        "welcome": "Chào mừng đến với hệ thống quản lý phiếu sửa chữa",
+        "searchPlaceholder": "Tìm kiếm theo mã phiếu...",
+        "searchButton": "Tìm kiếm",
+        "clearFilters": "Xóa bộ lọc",
+        "noData": "Không có dữ liệu",
+        "noDataSubtitle": "Không có phiếu sửa chữa nào để hiển thị"
+      },
+      "inventory": {
+        "title": "Tồn kho",
+        "welcome": "Chào mừng đến với hệ thống quản lý tồn kho",
+        "searchPlaceholder": "Tìm kiếm theo mã sản phẩm...",
+        "searchButton": "Tìm kiếm",
+        "clearFilters": "Xóa bộ lọc",
+        "noData": "Không có dữ liệu",
+        "noDataSubtitle": "Không có sản phẩm nào trong tồn kho"
+      }
+    },
+    "finance": {
+      "invoices": {
+        "title": "Hóa đơn",
+        "welcome": "Chào mừng đến với hệ thống quản lý hóa đơn",
+        "searchPlaceholder": "Tìm kiếm theo mã hóa đơn...",
+        "searchButton": "Tìm kiếm",
+        "clearFilters": "Xóa bộ lọc",
+        "noData": "Không có dữ liệu",
+        "noDataSubtitle": "Không có hóa đơn nào để hiển thị"
+      },
+      "createInvoice": {
+        "title": "Tạo hóa đơn",
+        "welcome": "Chào mừng đến với hệ thống tạo hóa đơn",
+        "searchPlaceholder": "Tìm kiếm theo mã hóa đơn...",
+        "searchButton": "Tìm kiếm",
+        "clearFilters": "Xóa bộ lọc",
+        "noData": "Không có dữ liệu",
+        "noDataSubtitle": "Không có hóa đơn nào để hiển thị"
+      }
+    },
+    "reports": {
+      "title": "Báo cáo",
+      "welcome": "Chào mừng đến với hệ thống báo cáo",
+      "searchPlaceholder": "Tìm kiếm theo tên báo cáo...",
+      "searchButton": "Tìm kiếm",
+      "clearFilters": "Xóa bộ lọc",
+      "noData": "Không có dữ liệu",
+      "noDataSubtitle": "Không có báo cáo nào để hiển thị"
+    },
+    "account": {
+      "title": "Tài khoản",
+      "welcome": "Chào mừng đến với trang quản lý tài khoản",
+      "searchPlaceholder": "Tìm kiếm theo email...",
+      "searchButton": "Tìm kiếm",
+      "clearFilters": "Xóa bộ lọc",
+      "noData": "Không có dữ liệu",
+      "noDataSubtitle": "Không có tài khoản nào để hiển thị"
+    }
+  },
+  "user": {
+    "role": "Vai trò",
+    "email": "Email",
+    "permissions": "Quyền hạn",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt",
+    "security": "Bảo mật"
+  },
+  "status": {
+    "active": "Hoạt động",
+    "inactive": "Không hoạt động",
+    "pending": "Chờ xử lý",
+    "completed": "Hoàn thành",
+    "cancelled": "Đã hủy",
+    "processing": "Đang xử lý"
+  }
+}

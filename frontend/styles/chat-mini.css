@@ -1,5 +1,172 @@
 /* Chat Mini System - Modern UI Design */
 
+/* Depot Chat - compatibility mapping for legacy classes */
+.depot-chat-window-container {
+  position: fixed;
+  z-index: 10000;
+}
+
+.depot-chat-mini-bar {
+  position: fixed;
+  z-index: 10000;
+  cursor: grab;
+  user-select: none;
+}
+
+.depot-chat-mini-bar:active {
+  cursor: grabbing;
+}
+
+/* Minimized bar content */
+.chat-mini-content {
+  background: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition-default);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.depot-chat-mini-bar:hover .chat-mini-content {
+  background: #0056b3;
+  transform: translateY(-2px);
+}
+
+.chat-mini-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chat-mini-title {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Chat window container */
+.depot-chat-window {
+  width: 400px;
+  height: 500px;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-gray-200);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: chatWindowFadeIn 0.3s ease-out;
+}
+
+/* Header helpers */
+.chat-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chat-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: var(--color-white);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-default);
+}
+
+.chat-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.chat-close:hover,
+.chat-close-btn:hover {
+  background: var(--color-danger);
+}
+
+/* Body and states */
+.chat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+}
+
+.chat-status-message {
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  border-bottom: 1px dashed var(--color-gray-200);
+}
+
+.chat-loading {
+  width: 400px;
+  height: 500px;
+  background: var(--color-bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.chat-message-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+  gap: var(--space-2);
+}
+
+.chat-message-content {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* Chat input area */
+.chat-input-area {
+  border-top: 1px solid var(--color-gray-200);
+  background: var(--color-bg-primary);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+.chat-input {
+  flex: 1;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-primary);
+  outline: none;
+  transition: var(--transition-default);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  resize: none;
+}
+
+.chat-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 /* Chat Trigger Button */
 .chat-mini-trigger {
   position: fixed;
@@ -117,6 +284,7 @@
   padding: var(--space-4);
   cursor: grab;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  user-select: none;
 }
 
 .chat-header:active {
@@ -431,12 +599,14 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .chat-window {
+  .chat-window,
+  .depot-chat-window {
     width: 320px;
     height: 450px;
   }
   
-  .chat-window-loading {
+  .chat-window-loading,
+  .chat-loading {
     width: 320px;
     height: 450px;
   }
@@ -459,12 +629,14 @@
 }
 
 @media (max-width: 480px) {
-  .chat-window {
+  .chat-window,
+  .depot-chat-window {
     width: 280px;
     height: 400px;
   }
   
-  .chat-window-loading {
+  .chat-window-loading,
+  .chat-loading {
     width: 280px;
     height: 400px;
   }

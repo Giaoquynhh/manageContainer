@@ -23,7 +23,6 @@ export default function AppointmentMini({
   mode = 'create',
 }: AppointmentMiniProps) {
   const [isOpen, setIsOpen] = useState(true); // Auto-open when component is rendered
-  const [isMinimized, setIsMinimized] = useState(false);
   
   // Debug log
   useEffect(() => {
@@ -58,7 +57,6 @@ export default function AppointmentMini({
 
   // Handle drag functionality
   const handleDragStart = (e: React.MouseEvent) => {
-    if (isMinimized) return;
     setIsDragging(true);
     const rect = appointmentRef.current?.getBoundingClientRect();
     if (rect) {
@@ -102,14 +100,6 @@ export default function AppointmentMini({
     onSuccess?.();
   };
 
-  const handleMinimize = () => {
-    setIsMinimized(true);
-  };
-
-  const handleRestore = () => {
-    setIsMinimized(false);
-  };
-
   // Trigger button
   if (!isOpen) {
     return (
@@ -126,32 +116,6 @@ export default function AppointmentMini({
         </svg>
         Tạo lịch hẹn
       </button>
-    );
-  }
-
-  // Minimized state
-  if (isMinimized) {
-    return (
-      <div
-        className="appointment-mini-minimized"
-        style={{
-          position: 'fixed',
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          zIndex: 1000
-        }}
-        onClick={handleRestore}
-      >
-        <div className="appointment-mini-minimized-content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <span>Lịch hẹn - {requestData?.container_no}</span>
-        </div>
-      </div>
     );
   }
 
@@ -190,7 +154,6 @@ export default function AppointmentMini({
           requestData={requestData}
           onClose={handleClose}
           onSuccess={handleSuccess}
-          onMinimize={handleMinimize}
           onDragStart={handleDragStart}
           mode={mode}
         />

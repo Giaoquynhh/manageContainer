@@ -6,6 +6,7 @@ import '../styles/chat-mini.css';
 import '../styles/appointment-mini.css';
 import '../styles/supplement-mini.css';
 import '../styles/gate.css';
+import '../styles/depot-table.css';
 import DriverNotification from '@components/DriverNotification';
 
 

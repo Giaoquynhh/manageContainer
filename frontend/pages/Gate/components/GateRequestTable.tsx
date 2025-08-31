@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import GateActionButtons from './GateActionButtons';
 import DocumentsModal from './DocumentsModal';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface GateRequest {
   id: string;
@@ -24,6 +25,40 @@ interface GateRequestTableProps {
 export default function GateRequestTable({ requests, loading, onRefresh }: GateRequestTableProps) {
   const [selectedRequest, setSelectedRequest] = useState<GateRequest | null>(null);
   const [documentsModalOpen, setDocumentsModalOpen] = useState(false);
+  const { t, currentLanguage } = useTranslation();
+
+  // Helpers: map raw type/status codes to localized labels
+  const typeLabel = (type: string) => {
+    switch (type) {
+      case 'IMPORT':
+        return `📥 ${t('pages.gate.typeOptions.import')}`;
+      case 'EXPORT':
+        return `📤 ${t('pages.gate.typeOptions.export')}`;
+      case 'EMPTY':
+        return `🗳️ ${t('pages.gate.typeOptions.empty')}`;
+      default:
+        return type;
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case 'SCHEDULED':
+        return t('pages.gate.statusOptions.scheduled');
+      case 'FORWARDED':
+        return t('pages.gate.statusOptions.forwarded');
+      case 'GATE_IN':
+        return `🟢 ${t('pages.gate.statusOptions.gateIn')}`;
+      case 'GATE_OUT':
+        return `🟣 ${t('pages.gate.statusOptions.gateOut')}`;
+      case 'GATE_REJECTED':
+        return `⛔ ${t('pages.gate.statusOptions.gateRejected')}`;
+      case 'COMPLETED':
+        return t('pages.gate.statusOptions.completed');
+      default:
+        return status;
+    }
+  };
 
   const handleViewDocuments = (request: GateRequest) => {
     setSelectedRequest(request);
@@ -51,8 +86,8 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
             <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
           </svg>
         </div>
-        <h3>Không có dữ liệu</h3>
-        <p>Không có yêu cầu nào để hiển thị</p>
+        <h3>{t('pages.gate.noData')}</h3>
+        <p>{t('pages.gate.noRequestsToDisplay')}</p>
       </div>
     );
   }
@@ -60,21 +95,17 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
   return (
     <>
       <div className="gate-table-container">
-        <div className="gate-table-header">
-          <h2>Danh sách yêu cầu ({requests.length})</h2>
-        </div>
-        
         <table className="gate-table">
           <thead>
             <tr>
-              <th>Container</th>
-              <th>Loại</th>
-              <th>Trạng thái</th>
-              <th>ETA</th>
-              <th>Tên tài xế</th>
-              <th>Biển số xe</th>
-              <th>Chứng từ</th>
-              <th>Hành động</th>
+              <th data-column="container">{t('pages.gate.tableHeaders.container')}</th>
+              <th data-column="type">{t('pages.gate.tableHeaders.type')}</th>
+              <th data-column="status">{t('pages.gate.tableHeaders.status')}</th>
+              <th data-column="eta">{t('pages.gate.tableHeaders.eta')}</th>
+              <th data-column="driver">{t('pages.gate.tableHeaders.driverName')}</th>
+              <th data-column="license-plate">{t('pages.gate.tableHeaders.licensePlate')}</th>
+              <th data-column="documents">{t('pages.gate.tableHeaders.documents')}</th>
+              <th data-column="actions">{t('pages.gate.tableHeaders.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -85,23 +116,23 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
                 </td>
                 <td>
                   <span className={`type-badge type-${request.type.toLowerCase()}`}>
-                    {request.type}
+                    {typeLabel(request.type)}
                   </span>
                 </td>
                 <td>
-                  <span className={`status-badge status-${request.status.toLowerCase()}`}>
-                    {request.status}
+                  <span className={`status-badge status-${request.status.toLowerCase().replace(/_/g, '-')}`}>
+                    {statusLabel(request.status)}
                   </span>
                 </td>
-                <td>{request.eta ? new Date(request.eta).toLocaleString('vi-VN') : 'N/A'}</td>
+                <td>{request.eta ? new Date(request.eta).toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US') : t('common.na')}</td>
                 <td>
                   <span className="driver-name">
-                    {request.driver_name || 'N/A'}
+                    {request.driver_name || t('common.na')}
                   </span>
                 </td>
                 <td>
                   <span className="license-plate">
-                    {request.license_plate || 'N/A'}
+                    {request.license_plate || t('common.na')}
                   </span>
                 </td>
                 <td>
@@ -120,19 +151,19 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
                           </div>
                           <div className="document-count-content">
                             <span className="document-count-number">{request.docs.length}</span>
-                            <span className="document-count-label">chứng từ</span>
+                            <span className="document-count-label">{t('pages.gate.tableHeaders.documents')}</span>
                           </div>
                         </div>
                         <button
                           className="view-documents-btn"
                           onClick={() => handleViewDocuments(request)}
-                          title="Xem danh sách chứng từ"
+                          title={t('pages.gate.viewDocuments')}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
                           </svg>
-                          Xem chi tiết
+                          {t('pages.gate.viewDetail')}
                         </button>
                       </>
                     ) : (
@@ -146,7 +177,7 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
                             <polyline points="10,9 9,9 8,9"></polyline>
                           </svg>
                         </div>
-                        <span className="no-documents-text">Không có</span>
+                        <span className="no-documents-text">{t('pages.gate.noDocuments')}</span>
                       </div>
                     )}
                   </div>

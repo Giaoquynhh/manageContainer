@@ -241,15 +241,14 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
         <table className="table table-modern">
           <thead>
             <tr>
-              <th>Loại</th>
-              <th>Container</th>
-              <th>Vị trí</th>
-              <th>ETA</th>
-              <th>Trạng thái</th>
-              <th>Chứng từ</th>
-              <th>Thanh toán</th>
-              <th>Chat</th>
-              <th>Hành động</th>
+              <th data-column="type">Loại</th>
+              <th data-column="container">Container</th>
+              <th data-column="eta">ETA</th>
+              <th data-column="status">Trạng thái</th>
+              <th data-column="documents">Chứng từ</th>
+              <th data-column="payment">Thanh toán</th>
+              <th data-column="chat">Chat</th>
+              <th data-column="actions">Hành động</th>
             </tr>
           </thead>
           <tbody>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
 import GateRequestTable from './GateRequestTable';
 import GateSearchBar from './GateSearchBar';
+import { useTranslation } from '../../../hooks/useTranslation';
+
 
 interface GateRequest {
   id: string;
@@ -19,6 +21,9 @@ export default function GateDashboard() {
   const [requests, setRequests] = useState<GateRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(true); // Thêm state cho sidebar
+  const { t } = useTranslation();
+
+
   const [searchParams, setSearchParams] = useState({
     status: '',
     container_no: '',
@@ -33,6 +38,10 @@ export default function GateDashboard() {
     total: 0,
     pages: 0
   });
+
+
+
+
 
   // Theo dõi trạng thái sidebar
   useEffect(() => {
@@ -98,16 +107,10 @@ export default function GateDashboard() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
+
       
-      // Debug: Kiểm tra authentication
-      const token = localStorage.getItem('token');
-      const user_id = localStorage.getItem('user_id');
-      console.log('🔐 Debug Auth:', { 
-        hasToken: !!token, 
-        hasUserId: !!user_id,
-        tokenLength: token?.length || 0 
-      });
-      
+
+
       const params = new URLSearchParams();
       Object.entries(searchParams).forEach(([key, value]) => {
         if (value) params.append(key, value.toString());
@@ -117,17 +120,32 @@ export default function GateDashboard() {
       if (!searchParams.status || searchParams.status === '') {
         params.append('statuses', 'IN_YARD,IN_CAR');
       }
-
+      console.log('🔍 Calling API:', `/gate/requests/search?${params.toString()}`);
+      console.log('🔍 API base URL:', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1000');
+      console.log('🔍 Full URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1000'}/gate/requests/search?${params.toString()}`);
+   
       const response = await api.get(`/gate/requests/search?${params.toString()}`);
+      console.log('✅ API response:', response.data);
+      
       setRequests(response.data.data);
       setPagination(response.data.pagination);
     } catch (error: any) {
       console.error('Lỗi khi tải danh sách requests:', error);
-      // Debug: Log chi tiết lỗi
+      
+      // Xử lý các loại lỗi cụ thể
       if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 401) {
+          // Redirect to login
+          localStorage.removeItem('token');
+          localStorage.removeItem('refresh_token');
+          window.location.href = '/Login';
+        }
+        
         console.error('Response error:', {
-          status: error.response.status,
-          data: error.response.data,
+          status,
+          data,
           headers: error.response.headers
         });
       }
@@ -137,14 +155,7 @@ export default function GateDashboard() {
   };
 
   useEffect(() => {
-    // Kiểm tra authentication trước
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('❌ Không có token, cần đăng nhập trước');
-      // Redirect to login hoặc hiển thị thông báo
-      return;
-    }
-    
+    // Gọi API ngay khi component mount
     fetchRequests();
   }, [searchParams]);
 
@@ -156,72 +167,119 @@ export default function GateDashboard() {
     setSearchParams(prev => ({ ...prev, page }));
   };
 
-  const handleStatusChange = (status: string) => {
-    setSearchParams(prev => ({ ...prev, status, page: 1 }));
-  };
-
   const handleContainerSearch = (container_no: string) => {
     setSearchParams(prev => ({ ...prev, container_no, page: 1 }));
   };
 
-  const handleTypeChange = (type: string) => {
-    setSearchParams(prev => ({ ...prev, type, page: 1 }));
-  };
 
-  const handleLicensePlateSearch = (license_plate: string) => {
+  const handleLicensePlateChange = (license_plate: string) => {
     setSearchParams(prev => ({ ...prev, license_plate, page: 1 }));
   };
 
+  const handleExportReport = () => {
+    try {
+      const headers = ['ID', 'Container No', 'Type', 'Status', 'ETA', 'Forwarded At', 'License Plate', 'Docs Count', 'Attachments Count'];
+      const rows = requests.map(r => [
+        r.id,
+        r.container_no,
+        r.type,
+        r.status,
+        r.eta || '',
+        r.forwarded_at || '',
+        r.license_plate || '',
+        Array.isArray(r.docs) ? r.docs.length : 0,
+        Array.isArray(r.attachments) ? r.attachments.length : 0
+      ]);
+
+      const csv = [headers, ...rows]
+        .map(row => row.map((cell) => {
+          const val = String(cell ?? '');
+          const escaped = val.replace(/\"/g, '""');
+          return `"${escaped}"`;
+        }).join(','))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.href = url;
+      a.download = `gate-requests-${ts}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Lỗi khi xuất báo cáo:', err);
+      alert(t('pages.gate.messages.exportError'));
+    }
+  };
+
   return (
-    <main className={`main-content ${sidebarVisible ? 'sidebar-visible' : 'sidebar-hidden'}`}>
-      
-      <div className="dashboard-header">
-        <h1>Gate Dashboard</h1>
-        <p>Quản lý xe ra/vào cổng</p>
-      </div>
-
-      <GateSearchBar
-        searchParams={searchParams}
-        onSearch={handleSearch}
-        onStatusChange={handleStatusChange}
-        onContainerSearch={handleContainerSearch}
-        onTypeChange={handleTypeChange}
-        onLicensePlateSearch={handleLicensePlateSearch}
-      />
-
-      <GateRequestTable
-        requests={requests}
-        loading={loading}
-        onRefresh={fetchRequests}
-      />
-
-      {/* Pagination */}
-      {pagination.pages > 1 && (
-        <div className="pagination">
-          <button
-            onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={pagination.page <= 1}
-            className="pagination-btn"
-          >
-            ← Trước
-          </button>
-          
-          <button
-            className="pagination-btn active"
-            disabled
-          >
-            {pagination.page} / {pagination.pages}
-          </button>
-          
-          <button
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page >= pagination.pages}
-            className="pagination-btn"
-          >
-            Sau →
-          </button>
+    <main className={`main-content gate-layout ${sidebarVisible ? 'sidebar-visible' : 'sidebar-hidden'}`}>
+      <div className="container gate-page">
+        <div className="dashboard-header modern-header">
+          <div className="header-content">
+            <div className="header-left">
+              <h1 className="page-title gradient-ultimate">{t('pages.gate.title')}</h1>
+            </div>
+            <div className="header-actions">
+              <button
+                type="button"
+                className="btn btn-export"
+                onClick={handleExportReport}
+                aria-label={t('common.export')}
+              >
+                <span className="dot" aria-hidden="true"></span>
+                {t('common.export')}
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+
+
+
+        <GateSearchBar
+          searchParams={searchParams}
+          onSearch={handleSearch}
+          onContainerSearch={handleContainerSearch}
+          onLicensePlateChange={handleLicensePlateChange}
+        />
+
+        <GateRequestTable
+          requests={requests}
+          loading={loading}
+          onRefresh={fetchRequests}
+        />
+
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <div className="pagination">
+            <button
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+              className="pagination-btn"
+            >
+              ← {t('common.previous')}
+            </button>
+            
+            <button
+              className="pagination-btn active"
+              disabled
+            >
+              {pagination.page} / {pagination.pages}
+            </button>
+            
+            <button
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.pages}
+              className="pagination-btn"
+            >
+              {t('common.next')} →
+            </button>
+          </div>
+        )}
+      </div>
     </main>
   );
 }

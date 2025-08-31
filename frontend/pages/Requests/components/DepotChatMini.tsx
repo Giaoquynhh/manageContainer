@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import DepotChatWindow from './DepotChatWindow';
 
 interface DepotChatMiniProps {
@@ -28,6 +29,12 @@ export default function DepotChatMini({
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+	// Đảm bảo chỉ portal khi đã mount (tránh SSR mismatch)
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
 	// Check if chat is allowed based on request status
 	const isChatAllowed = requestStatus === 'SCHEDULED' || 
 						 requestStatus === 'APPROVED' || 
@@ -38,9 +45,8 @@ export default function DepotChatMini({
 
 	// Handle drag functionality
 	const handleMouseDown = (e: React.MouseEvent) => {
-		if (isMinimized) return;
 		setIsDragging(true);
-		const rect = (e.target as HTMLElement).getBoundingClientRect();
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 		setDragOffset({
 			x: e.clientX - rect.left,
 			y: e.clientY - rect.top
@@ -107,7 +113,7 @@ export default function DepotChatMini({
 
 	// Minimized chat (showing as a small bar)
 	if (isMinimized) {
-		return (
+		return mounted ? createPortal(
 			<div 
 				className="depot-chat-mini-bar"
 				style={{ left: position.x, top: position.y }}
@@ -116,16 +122,16 @@ export default function DepotChatMini({
 				<div className="chat-mini-content">
 					<span className="chat-mini-title">💬 {containerNo}</span>
 					<div className="chat-mini-actions">
-						<button onClick={handleRestore} className="chat-btn chat-restore">□</button>
-						<button onClick={handleClose} className="chat-btn chat-close">×</button>
+						<button onMouseDown={(e) => e.stopPropagation()} onClick={handleRestore} className="chat-btn chat-restore">□</button>
+						<button onMouseDown={(e) => e.stopPropagation()} onClick={handleClose} className="chat-btn chat-close">×</button>
 					</div>
 				</div>
 			</div>
-		);
+		, document.body) : null;
 	}
 
 	// Full chat window
-	return (
+	return mounted ? createPortal(
 		<div 
 			className="depot-chat-window-container"
 			style={{ left: position.x, top: position.y }}
@@ -142,5 +148,5 @@ export default function DepotChatMini({
 						lastSupplementUpdate={lastSupplementUpdate}
 					/>
 		</div>
-	);
+	, document.body) : null;
 }

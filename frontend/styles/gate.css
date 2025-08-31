@@ -4,28 +4,36 @@
   top: var(--header-clearance);
   right: 0;
   left: 0;
-  padding: var(--space-6);
+  /* padding: var(--space-6); */
   transition: left 0.3s ease-in-out;
   overflow-y: auto;
   height: calc(100% - var(--header-clearance));
 }
 
-/* Khi sidebar bị ẩn - Giao diện to hơn */
-.main-content.sidebar-hidden {
-  left: 0;
-}
-
-/* Khi sidebar mở - Giao diện nhỏ hơn */
-.main-content.sidebar-visible {
-  left: 260px;
+/* Gate layout: sidebar luôn mở - ưu tiên desktop */
+@media (min-width: 1024px) {
+  .main-content .gate-page.container {
+    padding-left: 0;           /* Bỏ padding ngang trên desktop */
+    padding-right: 0;
+    max-width: none;           /* Cho phép full-bleed */
+  }
+  body.with-sidebar .main-content.gate-layout .gate-page.container {
+    margin-left: 0;            /* Không bù thêm vì .main-content đã left: 260px */
+    width: 100%;               /* Chiếm trọn vùng hiển thị của main-content */
+    max-width: none;           /* Bỏ giới hạn max-width của container */
+    padding-left: 0;           /* Tránh double padding cùng container */
+    padding-right: 0;          /* Sát mép phải, không chừa khe */
+  }
+  .main-content.gate-layout.sidebar-visible {
+    right: 0; /* Vô hiệu hóa gutter phải 20px chỉ riêng Gate */
+  }
 }
 
 /* Dashboard Header - Sử dụng màu Navy */
 .dashboard-header {
-  text-align: center;
-  margin-bottom: var(--space-8);
-  padding: var(--space-8) var(--space-6);
-  background: linear-gradient(135deg, var(--color-navy-primary) 0%, var(--color-navy-dark) 100%);
+  text-align: left;
+  margin-bottom: var(--space-6); 
+  padding: var(--space-6) var(--space-5); 
   border-radius: var(--radius-2xl);
   color: white;
   box-shadow: var(--shadow-xl);
@@ -34,38 +42,28 @@
   transition: background 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
-/* Khi sidebar ẩn - Header to hơn */
-.main-content.sidebar-hidden .dashboard-header {
-  padding: var(--space-10) var(--space-8);
-  margin-bottom: var(--space-10);
+/* Chỉ đặt nền/viền riêng khi KHÔNG dùng modern-header; nếu có modern-header thì dùng nền/viền từ globals.css */
+.dashboard-header:not(.modern-header) {
+  background: linear-gradient(135deg, var(--color-blue-700) 0%, var(--color-blue-600) 100%);
+  border: 2px solid var(--color-blue-400);
 }
 
-/* Khi sidebar mở - Header nhỏ hơn */
-.main-content.sidebar-visible .dashboard-header {
-  padding: var(--space-8) var(--space-6);
-  margin-bottom: var(--space-8);
-}
-
-.dashboard-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.2;
-  z-index: 0;
-}
 
 .dashboard-header h1 {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-bold);
+  font-size: 2.5rem !important; /* Đồng bộ kích thước với trang Quản lý yêu cầu dịch vụ */
+  font-weight: 900;
   margin-bottom: var(--space-3);
   position: relative;
   z-index: 2;
   color: white;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Cho phép tiêu đề gradient hiển thị đúng trong header Gate */
+.dashboard-header h1.page-title.gradient,
+.dashboard-header h1.page-title.gradient-ultimate {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
 }
 
 .dashboard-header p {
@@ -76,6 +74,55 @@
   z-index: 2;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Bố cục nội dung trong header theo mẫu: trái là tiêu đề, phải là actions */
+.dashboard-header .header-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.dashboard-header .header-left {
+  flex: 1;
+  text-align: left;
+  color: #ffffff;
+}
+
+.dashboard-header .header-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+/* Nút Xuất báo cáo */
+.btn-export {
+  background: linear-gradient(135deg, var(--color-blue-500) 0%, var(--color-blue-700) 100%);
+  color: #ffffff;
+  border: 1px solid var(--color-blue-300);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-export:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, var(--color-blue-600) 0%, var(--color-blue-800) 100%);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-export:active {
+  transform: translateY(0);
+}
+
+.btn-export .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-green-600);
+  border: 2px solid var(--color-green-200);
 }
 
 /* Search and Filter Section - Cải thiện layout */
@@ -89,22 +136,11 @@
   transition: background 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
-/* Khi sidebar ẩn - Search section to hơn */
-.main-content.sidebar-hidden .gate-search-section {
-  padding: var(--space-8);
-  margin-bottom: var(--space-8);
-}
-
-/* Khi sidebar mở - Search section nhỏ hơn */
-.main-content.sidebar-visible .gate-search-section {
-  padding: var(--space-6);
-  margin-bottom: var(--space-6);
-}
 
 /* Cải thiện layout search row để responsive */
 .search-row {
   display: grid;
-  grid-template-columns: 1fr auto auto auto auto;
+  grid-template-columns: 1fr 1fr auto;
   gap: var(--space-6);
   align-items: center;
   row-gap: var(--space-4);
@@ -136,7 +172,7 @@
 /* Responsive grid cho mobile */
 @media (max-width: 1200px) {
   .search-row {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 1fr auto;
     row-gap: var(--space-4);
     gap: var(--space-4);
   }
@@ -309,19 +345,10 @@
 
 /* Table Container */
 .gate-table-container {
-  background: white;
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   border: 1px solid var(--color-gray-100);
-}
-
-/* Table Header */
-.gate-table-header {
-  background: var(--color-navy-primary);
-  color: white;
-  padding: var(--space-6);
-  border-bottom: 1px solid var(--color-navy-dark);
 }
 
 .gate-table-header h2 {
@@ -334,8 +361,25 @@
 .gate-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: rgb(248, 248, 248);
 }
+
+/* Header icons for Gate table */
+.gate-table th[data-column]::before {
+  display: inline-block;
+  margin-right: var(--space-2);
+  font-size: 0.95em;
+  opacity: 0.85;
+  transform: translateY(1px);
+}
+.gate-table th[data-column="container"]::before { content: "📦"; }
+.gate-table th[data-column="type"]::before { content: "🏷️"; }
+.gate-table th[data-column="status"]::before { content: "🔄"; }
+.gate-table th[data-column="eta"]::before { content: "⏰"; }
+.gate-table th[data-column="driver"]::before { content: "👤"; }
+.gate-table th[data-column="license-plate"]::before { content: "🚚"; }
+.gate-table th[data-column="documents"]::before { content: "📄"; }
+.gate-table th[data-column="actions"]::before { content: "⚙️"; }
 
 .gate-table th {
   background: var(--color-gray-50);
@@ -369,6 +413,9 @@
   display: inline-block;
   min-width: 80px;
   text-align: center;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 .status-scheduled {
@@ -384,6 +431,11 @@
 .status-gate-in {
   background: var(--color-green-100);
   color: var(--color-green-800);
+}
+
+.status-gate-out {
+  background: var(--color-purple-100);
+  color: var(--color-purple-800);
 }
 
 .status-gate-rejected {
@@ -446,7 +498,7 @@
 }
 
 .action-btn-primary:hover {
-  background: #1e7e34;
+  background: var(--color-success-dark);
   transform: translateY(-1px);
 }
 
@@ -456,7 +508,7 @@
 }
 
 .action-btn-secondary:hover {
-  background: #c82333;
+  background: var(--color-danger-dark);
   transform: translateY(-1px);
 }
 
@@ -466,7 +518,7 @@
 }
 
 .action-btn-danger:hover {
-  background: #c82333;
+  background: var(--color-danger-dark);
   transform: translateY(-1px);
 }
 
@@ -672,8 +724,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border: 1px solid #cbd5e1;
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-200) 100%);
+  border: 1px solid var(--color-gray-300);
   border-radius: 16px;
   padding: 12px 16px;
   min-width: 120px;
@@ -690,7 +742,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 0;
@@ -701,7 +753,7 @@
 }
 
 .document-count-badge:hover {
-  border-color: #3b82f6;
+  border-color: var(--color-info);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
   transform: translateY(-2px);
 }
@@ -712,7 +764,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
   border-radius: 8px;
   color: white;
   flex-shrink: 0;
@@ -731,7 +783,7 @@
 .document-count-number {
   font-size: 20px;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--color-gray-800);
   line-height: 1;
   margin-bottom: 2px;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -740,7 +792,7 @@
 .document-count-label {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-gray-500);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -751,9 +803,9 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  color: #3b82f6;
-  border: 1px solid #dbeafe;
+  background: linear-gradient(135deg, var(--color-white) 0%, var(--color-gray-50) 100%);
+  color: var(--color-info);
+  border: 1px solid var(--color-blue-100);
   border-radius: 12px;
   cursor: pointer;
   font-size: 12px;
@@ -773,7 +825,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 0;
@@ -784,11 +836,11 @@
 }
 
 .view-documents-btn:hover {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-color: #3b82f6;
+  background: linear-gradient(135deg, var(--color-blue-50) 0%, var(--color-blue-100) 100%);
+  border-color: var(--color-info);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
   transform: translateY(-2px);
-  color: #1d4ed8;
+  color: var(--color-info-dark);
 }
 
 .view-documents-btn:active {
@@ -796,14 +848,14 @@
 }
 
 .view-documents-btn svg {
-  color: #3b82f6;
+  color: var(--color-info);
   z-index: 1;
   position: relative;
   transition: color 0.3s ease;
 }
 
 .view-documents-btn:hover svg {
-  color: #1d4ed8;
+  color: var(--color-info-dark);
 }
 
 .no-documents {
@@ -812,18 +864,18 @@
   align-items: center;
   gap: 8px;
   padding: 16px;
-  color: #94a3b8;
+  color: var(--color-gray-400);
   font-size: 13px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-100) 100%);
+  border: 1px solid var(--color-gray-200);
   border-radius: 12px;
   min-width: 100px;
   transition: all 0.3s ease;
 }
 
 .no-documents:hover {
-  border-color: #cbd5e1;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-color: var(--color-gray-300);
+  background: linear-gradient(135deg, var(--color-gray-100) 0%, var(--color-gray-200) 100%);
 }
 
 .no-documents-icon {
@@ -832,21 +884,21 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  background: linear-gradient(135deg, var(--color-gray-200) 0%, var(--color-gray-300) 100%);
   border-radius: 8px;
-  color: #64748b;
+  color: var(--color-gray-500);
   transition: all 0.3s ease;
 }
 
 .no-documents:hover .no-documents-icon {
-  background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
-  color: #475569;
+  background: linear-gradient(135deg, var(--color-gray-300) 0%, var(--color-gray-400) 100%);
+  color: var(--color-gray-600);
 }
 
 .no-documents-text {
   font-weight: 600;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #64748b;
+  color: var(--color-gray-500);
 }
 
 /* Loading and Error States */
@@ -1048,7 +1100,7 @@
 @media (max-width: 768px) {
   .main-content {
     transform: translateX(0) !important;
-    padding: var(--space-4);
+    padding: 0; /* Container kiểm soát khoảng cách ngang trên mobile */
   }
   
   .main-content.sidebar-visible {
@@ -1090,7 +1142,7 @@
 
 @media (max-width: 480px) {
   .main-content {
-    padding: var(--space-3);
+    padding: 0; /* Tránh double padding: container đã có padding responsive */
   }
   
   .dashboard-header {

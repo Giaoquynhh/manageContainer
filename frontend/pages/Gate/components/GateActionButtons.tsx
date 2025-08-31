@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '@services/api';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface GateActionButtonsProps {
   requestId: string;
@@ -14,12 +15,32 @@ export default function GateActionButtons({
   currentStatus, 
   onActionSuccess 
 }: GateActionButtonsProps) {
+  const { t } = useTranslation();
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [plateNo, setPlateNo] = useState('');
   const [driverName, setDriverName] = useState('');
+
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case 'SCHEDULED':
+        return t('pages.gate.statusOptions.scheduled');
+      case 'FORWARDED':
+        return t('pages.gate.statusOptions.forwarded');
+      case 'GATE_IN':
+        return t('pages.gate.statusOptions.gateIn');
+      case 'GATE_OUT':
+        return t('pages.gate.statusOptions.gateOut');
+      case 'GATE_REJECTED':
+        return t('pages.gate.statusOptions.gateRejected');
+      case 'COMPLETED':
+        return t('pages.gate.statusOptions.completed');
+      default:
+        return status;
+    }
+  };
 
   const confirmApprove = async () => {
     try {
@@ -29,13 +50,13 @@ export default function GateActionButtons({
       // Validate biển số xe: 5-20 ký tự, chữ/số/gạch/space/dấu chấm
       const validPlate = /^[A-Z0-9\-\s\.]{5,20}$/.test(normalizedPlate);
       if (!validPlate) {
-        alert('Vui lòng nhập biển số xe hợp lệ (tối thiểu 5 ký tự).');
+        alert(t('pages.gate.validation.invalidPlate'));
         return;
       }
       
       // Validate tên tài xế: 2-100 ký tự
       if (normalizedDriver.length < 2) {
-        alert('Vui lòng nhập tên tài xế (tối thiểu 2 ký tự).');
+        alert(t('pages.gate.validation.invalidDriver'));
         return;
       }
       
@@ -47,14 +68,15 @@ export default function GateActionButtons({
       
       // Hiển thị thông báo thành công
       const newStatus = requestType === 'EXPORT' ? 'GATE_OUT' : 'GATE_IN';
-      alert(`Đã chuyển trạng thái: ${newStatus}.\nTài xế: ${normalizedDriver}\nBiển số: ${normalizedPlate}`);
+      const newStatusLabel = statusLabel(newStatus);
+      alert(`${t('pages.gate.statusLabel')}: ${newStatusLabel}.\n${t('pages.gate.tableHeaders.driverName')}: ${normalizedDriver}\n${t('pages.gate.tableHeaders.licensePlate')}: ${normalizedPlate}`);
       
       setIsApproveModalOpen(false);
       setPlateNo('');
       setDriverName('');
       onActionSuccess();
     } catch (error: any) {
-      alert(`Lỗi khi approve: ${error.response?.data?.message || error.message}`);
+      alert(`${t('pages.gate.messages.approveErrorPrefix')}: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +88,7 @@ export default function GateActionButtons({
 
   const handleReject = async () => {
     if (!rejectReason.trim() || rejectReason.length < 5) {
-      alert('Lý do từ chối phải có ít nhất 5 ký tự');
+      alert(t('pages.gate.validation.rejectReasonMin'));
       return;
     }
 
@@ -76,12 +98,12 @@ export default function GateActionButtons({
         reason: rejectReason
       });
       
-      alert('Đơn hàng bị từ chối');
+      alert(t('pages.gate.messages.rejected'));
       setIsRejectModalOpen(false);
       setRejectReason('');
       onActionSuccess();
     } catch (error: any) {
-      alert(`Lỗi khi từ chối: ${error.response?.data?.message || error.message}`);
+      alert(`${t('pages.gate.messages.rejectErrorPrefix')}: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +151,7 @@ export default function GateActionButtons({
         {currentStatus === 'SCHEDULED' && 'Đã lên lịch'}
         {currentStatus === 'IN_YARD' && 'Đã ở bãi - Chờ xe rời kho'}
         {currentStatus === 'IN_CAR' && 'Đã lên xe - Chờ xe rời kho'}
+        {statusLabel(currentStatus)}
       </span>
     );
   }
@@ -141,7 +164,7 @@ export default function GateActionButtons({
           disabled={isLoading}
           className="action-btn action-btn-primary"
         >
-          {isLoading ? 'Đang xử lý...' : 'Cho phép'}
+          {isLoading ? t('common.processing') : t('pages.gate.actions.approve')}
         </button>
         
         <button
@@ -149,7 +172,7 @@ export default function GateActionButtons({
           disabled={isLoading}
           className="action-btn action-btn-danger"
         >
-          Từ chối
+          {t('pages.gate.actions.reject')}
         </button>
       </div>
 
@@ -181,7 +204,7 @@ export default function GateActionButtons({
               marginBottom: 'var(--space-4)',
               color: 'var(--color-gray-900)'
             }}>
-              Nhập thông tin tài xế và biển số xe
+              {t('pages.gate.modals.approve.title')}
             </h3>
 
             <div style={{ marginBottom: 'var(--space-3)' }}>
@@ -192,13 +215,13 @@ export default function GateActionButtons({
                 color: 'var(--color-gray-700)',
                 marginBottom: 'var(--space-2)'
               }}>
-                Tên tài xế *
+                {t('pages.gate.tableHeaders.driverName')} *
               </label>
               <input
                 type="text"
                 value={driverName}
                 onChange={(e) => setDriverName(e.target.value)}
-                placeholder="VD: Nguyễn Văn A"
+                placeholder={t('pages.gate.placeholders.driverName')}
                 style={{
                   width: '100%',
                   padding: 'var(--space-3)',
@@ -218,13 +241,13 @@ export default function GateActionButtons({
                 color: 'var(--color-gray-700)',
                 marginBottom: 'var(--space-2)'
               }}>
-                Biển số xe *
+                {t('pages.gate.tableHeaders.licensePlate')} *
               </label>
               <input
                 type="text"
                 value={plateNo}
                 onChange={(e) => setPlateNo(e.target.value.toUpperCase())}
-                placeholder="VD: 51C-123.45"
+                placeholder={t('pages.gate.placeholders.plateNo')}
                 style={{
                   width: '100%',
                   padding: 'var(--space-3)',
@@ -241,14 +264,14 @@ export default function GateActionButtons({
                 disabled={isLoading}
                 className="action-btn action-btn-secondary"
               >
-                Hủy
+                {t('pages.gate.actions.cancel')}
               </button>
               <button
                 onClick={confirmApprove}
                 disabled={isLoading}
                 className="action-btn action-btn-primary"
               >
-                {isLoading ? 'Đang xử lý...' : 'Xác nhận cho phép'}
+                {isLoading ? t('common.processing') : t('pages.gate.actions.confirmApprove')}
               </button>
             </div>
           </div>
@@ -283,13 +306,13 @@ export default function GateActionButtons({
               marginBottom: 'var(--space-4)',
               color: 'var(--color-gray-900)'
             }}>
-              Lý do từ chối
+              {t('pages.gate.modals.reject.title')}
             </h3>
             
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Nhập lý do từ chối (tối thiểu 5 ký tự)..."
+              placeholder={t('pages.gate.placeholders.rejectReason')}
               style={{
                 width: '100%',
                 padding: 'var(--space-3)',
@@ -317,7 +340,7 @@ export default function GateActionButtons({
                 disabled={isLoading}
                 className="action-btn action-btn-secondary"
               >
-                Hủy
+                {t('pages.gate.actions.cancel')}
               </button>
               
               <button
@@ -325,7 +348,7 @@ export default function GateActionButtons({
                 disabled={isLoading}
                 className="action-btn action-btn-danger"
               >
-                {isLoading ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+                {isLoading ? t('common.processing') : t('pages.gate.actions.confirmReject')}
               </button>
             </div>
           </div>

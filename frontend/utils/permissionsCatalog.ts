@@ -12,7 +12,8 @@ export type PermissionKey =
   | 'finance.invoices'
   | 'finance.create_invoice'
   | 'reports.view'
-  | 'account.view';
+  | 'account.view'
+  | 'driver.dashboard';
 
 export interface PermissionItem {
   key: PermissionKey;
@@ -36,6 +37,7 @@ export const PERMISSION_CATALOG: PermissionItem[] = [
   { key: 'finance.invoices', label: 'Tài chính - Hóa đơn', group: 'Tài chính' },
   { key: 'finance.create_invoice', label: 'Tài chính - Tạo hóa đơn', group: 'Tài chính' },
   { key: 'reports.view', label: 'Báo cáo', group: 'Báo cáo' },
+  { key: 'driver.dashboard', label: 'Bảng điều khiển tài xế', group: 'Vận hành' },
 ];
 
 export function hasPermission(perms: string[] | undefined | null, key: PermissionKey): boolean {

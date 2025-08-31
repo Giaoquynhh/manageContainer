@@ -1,29 +1,29 @@
 import React from 'react';
+import { useTranslation } from '../../../hooks/useTranslation';
+
+type GateSearchParams = {
+  status: string;
+  container_no: string;
+  type: string;
+  license_plate: string; // Thêm trường biển số xe
+  page: number;
+  limit: number;
+};
 
 interface GateSearchBarProps {
-  searchParams: {
-    status: string;
-    container_no: string;
-    type: string;
-    license_plate: string; // Thêm trường biển số xe
-    page: number;
-    limit: number;
-  };
-  onSearch: (params: Partial<typeof searchParams>) => void;
-  onStatusChange: (status: string) => void;
+  searchParams: GateSearchParams;
+  onSearch: (params: Partial<GateSearchParams>) => void;
   onContainerSearch: (container_no: string) => void;
-  onTypeChange: (type: string) => void;
   onLicensePlateChange: (license_plate: string) => void; // Thêm handler
 }
 
 export default function GateSearchBar({
   searchParams,
   onSearch,
-  onStatusChange,
   onContainerSearch,
-  onTypeChange,
   onLicensePlateChange
 }: GateSearchBarProps) {
+  const { t } = useTranslation();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchParams);
@@ -49,7 +49,7 @@ export default function GateSearchBar({
             <input
               type="text"
               className="search-input"
-              placeholder="Tìm kiếm theo mã container..."
+              placeholder={t('pages.gate.searchByContainer')}
               value={searchParams.container_no}
               onChange={(e) => onContainerSearch(e.target.value)}
             />
@@ -60,7 +60,7 @@ export default function GateSearchBar({
             <input
               type="text"
               className="search-input"
-              placeholder="Tìm kiếm theo biển số xe..."
+              placeholder={t('pages.gate.searchByLicensePlate')}
               value={searchParams.license_plate}
               onChange={(e) => onLicensePlateChange(e.target.value)}
             />
@@ -108,6 +108,7 @@ export default function GateSearchBar({
               <option value="EMPTY">EMPTY</option>
             </select>
           </div>
+          
 
           {/* Clear Filters */}
           <button
@@ -121,7 +122,7 @@ export default function GateSearchBar({
               <line x1="10" y1="11" x2="10" y2="17"></line>
               <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
-            Xóa bộ lọc
+            {t('pages.gate.clearFilters')}
           </button>
         </div>
       </form>

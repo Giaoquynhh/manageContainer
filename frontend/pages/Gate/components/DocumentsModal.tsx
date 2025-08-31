@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
 import DocumentViewer from './DocumentViewer';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface Document {
   id: string;
@@ -25,6 +26,7 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
   const [error, setError] = useState<string | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const { t, currentLanguage } = useTranslation();
 
   useEffect(() => {
     if (isOpen && requestId) {
@@ -40,7 +42,7 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
       // Lấy token từ localStorage
       const token = localStorage.getItem('token');
       if (!token) {
-        setError('Không có token xác thực');
+        setError(t('pages.gate.messages.noAuthToken'));
         return;
       }
       
@@ -52,7 +54,7 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
       setDocuments(response.data.data.documents);
     } catch (error: any) {
       console.error('Lỗi khi tải danh sách chứng từ:', error);
-      setError(error.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách chứng từ');
+      setError(error.response?.data?.message || t('pages.gate.messages.fetchDocumentsError'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +109,7 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content documents-modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
-            <h3>Chứng từ - Container {containerNo}</h3>
+            <h3>{t('pages.gate.tableHeaders.documents')} - {t('pages.gate.tableHeaders.container')} {containerNo}</h3>
             <button className="modal-close" onClick={onClose}>×</button>
           </div>
 
@@ -115,18 +117,18 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
             {loading ? (
               <div className="loading-spinner">
                 <div className="spinner"></div>
-                <p>Đang tải danh sách chứng từ...</p>
+                <p>{t('common.loading')}</p>
               </div>
             ) : error ? (
               <div className="error-message">
                 <p>❌ {error}</p>
                 <button onClick={fetchDocuments} className="retry-btn">
-                  Thử lại
+                  {t('common.retry')}
                 </button>
               </div>
             ) : documents.length === 0 ? (
               <div className="no-documents">
-                <p>📭 Không có chứng từ nào cho request này</p>
+                <p>📭 {t('pages.gate.messages.noDocumentsForRequest')}</p>
               </div>
             ) : (
               <div className="documents-list">
@@ -143,7 +145,7 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
                           <span className="document-size">{formatFileSize(doc.size)}</span>
                           <span className="document-version">v{doc.version}</span>
                           <span className="document-date">
-                            {new Date(doc.created_at).toLocaleDateString('vi-VN')}
+                            {new Date(doc.created_at).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US')}
                           </span>
                         </div>
                       </div>
@@ -152,9 +154,9 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
                       <button
                         className="view-btn"
                         onClick={() => handleViewDocument(doc)}
-                        title="Xem file"
+                        title={t('pages.gate.viewDetail')}
                       >
-                        👁️ Xem
+                        👁️ {t('pages.gate.viewDetail')}
                       </button>
                     </div>
                   </div>
@@ -165,7 +167,7 @@ export default function DocumentsModal({ isOpen, onClose, requestId, containerNo
 
           <div className="modal-footer">
             <button className="btn btn-secondary" onClick={onClose}>
-              Đóng
+              {t('common.close')}
             </button>
           </div>
         </div>

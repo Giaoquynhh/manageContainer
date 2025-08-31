@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
-import { canViewUsersPartners, isSaleAdmin, isAccountant, canUseGate, isSystemAdmin, isBusinessAdmin, isYardManager, isMaintenanceManager, isSecurity, isCustomerRole, isDriver } from '@utils/rbac';
+import { canViewUsersPartners, isSaleAdmin, isAccountant, canUseGate, isSystemAdmin, isBusinessAdmin, isYardManager, isMaintenanceManager, isSecurity, isCustomerRole, isDriver, canManageYard, canManageContainers, canManageForklift, canManageMaintenance, canManageFinance } from '@utils/rbac';
 import { hasPermission } from '@utils/permissionsCatalog';
 import { api } from '@services/api';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface User {
   email?: string;
@@ -17,12 +18,37 @@ export default function Header() {
   const router = useRouter();
   const [hasToken, setHasToken] = useState(false);
   const [me, setMe] = useState<User | null>(null);
-  const [navOpen, setNavOpen] = useState(true);
+  const [navOpen, setNavOpen] = useState(true); // Luôn giữ sidebar mở
   const [isLoading, setIsLoading] = useState(true);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const accountBtnRef = useRef<HTMLButtonElement | null>(null);
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{top:number; right:number}>({ top: 0, right: 12 });
+  
+  // Translation hook
+  const { t, currentLanguage, changeLanguage } = useTranslation();
+
+  // Language management functions
+  const toggleLanguage = () => {
+    const newLang = currentLanguage === 'vi' ? 'en' : 'vi';
+    changeLanguage(newLang);
+    
+    // Update data-lang attribute
+    const container = document.querySelector('.language-toggle-container');
+    if (container) {
+      container.setAttribute('data-lang', newLang);
+    }
+  };
+
+  const setLanguage = (lang: 'vi' | 'en') => {
+    changeLanguage(lang);
+    
+    // Update data-lang attribute
+    const container = document.querySelector('.language-toggle-container');
+    if (container) {
+      container.setAttribute('data-lang', lang);
+    }
+  };
 
   // Helper: load profile and permissions
   const loadMe = async (silent = true) => {
@@ -67,6 +93,16 @@ export default function Header() {
       } catch (error) {
         console.warn('Failed to restore nav state:', error);
       }
+
+             // Restore language preference
+       try {
+         const savedLanguage = localStorage.getItem('preferred-language');
+         if (savedLanguage && (savedLanguage === 'vi' || savedLanguage === 'en')) {
+           changeLanguage(savedLanguage as 'vi' | 'en');
+         }
+       } catch (error) {
+         console.warn('Failed to restore language preference:', error);
+       }
     }
   }, []);
 
@@ -161,8 +197,9 @@ export default function Header() {
     }
   };
 
+  // Sidebar luôn mở, không thể đóng
   const toggleNavigation = () => {
-    setNavOpen(prev => !prev);
+    // Không làm gì cả - sidebar luôn mở
   };
 
   const toggleAccountDropdown = () => {
@@ -213,13 +250,13 @@ export default function Header() {
   return (
     <header className="header">
       <div className={`container header-inner${isAuthPage ? ' auth-center' : ''}`}>
-        {/* Navigation Toggle Button */}
-        {showSidebar && (
+        {/* Navigation Toggle Button - Đã ẩn để sidebar luôn mở */}
+        {/* {showSidebar && (
           <button 
             className="nav-toggle" 
             onClick={toggleNavigation}
-            title={navOpen ? 'Đóng menu' : 'Mở menu'}
-            aria-label={navOpen ? 'Đóng menu điều hướng' : 'Mở menu điều hướng'}
+            title={navOpen ? t('header.closeMenu') : t('header.openMenu')}
+            aria-label={navOpen ? t('header.closeMenu') : t('header.openMenu')}
             aria-expanded={navOpen}
           >
             <span className="nav-toggle-icon">
@@ -237,7 +274,7 @@ export default function Header() {
               )}
             </span>
           </button>
-        )}
+        )} */}
 
         {/* Brand Section */}
         <div className="header-brand">
@@ -251,7 +288,7 @@ export default function Header() {
               priority
             />
           </Link>
-          <h1 className="header-title">Smartlog Container Manager</h1>
+                     <h1 className="header-title">{t('header.brand')}</h1>
         </div>
 
         {/* User Actions Section */}
@@ -270,6 +307,61 @@ export default function Header() {
               <div className="loading-spinner-small"></div>
             </div>
           )}
+
+          {/* Language Toggle Button */}
+          <div className="language-toggle-dropdown">
+            <div className="language-toggle-container" data-lang={currentLanguage}>
+              <button className="language-toggle-btn" onClick={toggleLanguage}>
+                <img 
+                  src={currentLanguage === 'vi' ? '/flags/vn.svg' : '/flags/gb.svg'} 
+                  alt={currentLanguage === 'vi' ? 'Việt Nam' : 'English'} 
+                  className="language-flag" 
+                />
+                                 <span className="language-name">
+                   {currentLanguage === 'vi' ? t('language.vietnamese') : t('language.english')}
+                 </span>
+                 <span className="language-code">
+                   {currentLanguage === 'vi' ? t('language.vi') : t('language.en')}
+                 </span>
+                <span className="toggle-switch-icon">⌄</span>
+              </button>
+            </div>
+            
+            <div className="dropdown-content">
+              <div className="dropdown-header">
+                                 <h3 className="dropdown-title">{t('language.selectLanguage')}</h3>
+                 <p className="dropdown-subtitle">{t('language.selectLanguageSubtitle')}</p>
+              </div>
+              
+              <div 
+                className={`language-option-item ${currentLanguage === 'vi' ? 'active' : ''}`} 
+                onClick={() => setLanguage('vi')}
+              >
+                <img src="/flags/vn.svg" alt="Việt Nam" className="option-flag" />
+                <div className="option-info">
+                                     <div className="option-name">{t('language.vietnamese')}</div>
+                   <div className="option-native">{t('language.vietnamese')}</div>
+                </div>
+                <div className="option-status">
+                  {currentLanguage === 'vi' ? '✓' : ''}
+                </div>
+              </div>
+              
+              <div 
+                className={`language-option-item ${currentLanguage === 'en' ? 'active' : ''}`} 
+                onClick={() => setLanguage('en')}
+              >
+                <img src="/flags/gb.svg" alt="English" className="option-flag" />
+                <div className="option-info">
+                                     <div className="option-name">{t('language.english')}</div>
+                   <div className="option-native">{t('language.english')}</div>
+                </div>
+                <div className="option-status">
+                  {currentLanguage === 'en' ? '✓' : ''}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="header-buttons">
@@ -291,14 +383,14 @@ export default function Header() {
                     toggleAccountDropdown();
                   }}
                   type="button"
-                  title="Quản lý tài khoản"
+                                     title={t('header.account')}
                   ref={accountBtnRef}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
-                  <span>Tài khoản</span>
+                  <span>{t('header.account')}</span>
                   <svg 
                     width="12" 
                     height="12" 
@@ -336,7 +428,7 @@ export default function Header() {
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
-                      <span>Thông tin tài khoản</span>
+                                             <span>{t('header.accountInfo')}</span>
                     </Link>
                     {canViewUsersPartners(me?.role) && (
                       <Link 
@@ -350,7 +442,7 @@ export default function Header() {
                           <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                           <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
-                        <span>Quản lý người dùng</span>
+                                                 <span>{t('header.userManagement')}</span>
                       </Link>
                     )}
                     <div className="dropdown-divider"></div>
@@ -364,7 +456,7 @@ export default function Header() {
                         <polyline points="16,17 21,12 16,7"></polyline>
                         <line x1="21" y1="12" x2="9" y2="12"></line>
                       </svg>
-                      <span>Đăng xuất</span>
+                                             <span>{t('header.logout')}</span>
                     </button>
                   </div>,
                   document.body
@@ -382,15 +474,15 @@ export default function Header() {
                   <polyline points="10,17 15,12 10,7"></polyline>
                   <line x1="15" y1="12" x2="3" y2="12"></line>
                 </svg>
-                <span>Đăng nhập</span>
+                                 <span>{t('header.login')}</span>
               </Link>
             )}
           </div>
         </div>
       </div>
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation - Luôn hiển thị khi có token */}
       {showSidebar && (
-        <nav className={`sidebar${navOpen ? '' : ' closed'}`} role="navigation" aria-label="Menu chính">
+                 <nav className="sidebar" role="navigation" aria-label={t('sidebar.mainMenu')}>
           <div className="sidebar-content">
             
             {/* Helper: permission-aware gating */}
@@ -409,7 +501,7 @@ export default function Header() {
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
-                <span>Người dùng/Đối tác</span>
+                                 <span>{t('sidebar.usersPartners')}</span>
               </Link>
             )}
 
@@ -425,7 +517,7 @@ export default function Header() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
-                <span>Phân quyền</span>
+                                 <span>{t('sidebar.permissions')}</span>
               </Link>
             )}
 
@@ -444,7 +536,7 @@ export default function Header() {
                   <line x1="16" y1="13" x2="8" y2="13"></line>
                   <line x1="16" y1="17" x2="8" y2="17"></line>
                 </svg>
-                <span>Yêu cầu (Depot)</span>
+                                 <span>{t('sidebar.requests')}</span>
               </Link>
             )}
             
@@ -462,7 +554,7 @@ export default function Header() {
                   <polyline points="14,2 14,8 20,8"></polyline>
                   <line x1="16" y1="13" x2="8" y2="13"></line>
                 </svg>
-                <span>Yêu cầu (Khách hàng)</span>
+                                 <span>{t('sidebar.customerRequests')}</span>
               </Link>
             )}
 
@@ -480,13 +572,13 @@ export default function Header() {
                   <circle cx="12" cy="16" r="1"></circle>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                <span>Cổng (Gate)</span>
+                                 <span>{t('sidebar.gate')}</span>
               </Link>
             )}
 
             {/* Yard Module */}
             {(() => {
-              const allow = isSaleAdmin(me?.role) || isYardManager(me?.role) || isSystemAdmin(me?.role);
+              const allow = canManageYard(me?.role);
               const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
                 ? hasPermission(me?.permissions, 'yard.view')
                 : allow;
@@ -498,13 +590,13 @@ export default function Header() {
                     <polyline points="3.27,6.96 12,12.01 20.73,6.96"></polyline>
                     <line x1="12" y1="22.08" x2="12" y2="12"></line>
                   </svg>
-                  <span>Bãi (Yard)</span>
+                                     <span>{t('sidebar.yard')}</span>
                 </Link>
             )}
 
             {/* Containers Module */}
             {(() => {
-              const allow = isSaleAdmin(me?.role) || isYardManager(me?.role) || isSystemAdmin(me?.role);
+              const allow = canManageContainers(me?.role);
               const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
                 ? hasPermission(me?.permissions, 'containers.manage')
                 : allow;
@@ -517,13 +609,13 @@ export default function Header() {
                     <path d="M7 4v4"></path>
                     <path d="M17 4v4"></path>
                   </svg>
-                  <span>Quản lý container</span>
+                                     <span>{t('sidebar.containerManagement')}</span>
                 </Link>
             )}
 
             {/* Forklift Module - Xe nâng */}
             {(() => {
-              const allow = isSaleAdmin(me?.role) || isYardManager(me?.role) || isSystemAdmin(me?.role);
+              const allow = canManageForklift(me?.role);
               const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
                 ? hasPermission(me?.permissions, 'forklift.view')
                 : allow;
@@ -538,17 +630,17 @@ export default function Header() {
                   <circle cx="6" cy="6" r="1"></circle>
                   <circle cx="18" cy="6" r="1"></circle>
                 </svg>
-                <span>Quản lý xe nâng</span>
+                                 <span>{t('sidebar.forkliftManagement')}</span>
               </Link>
             )}
 
             {/* Driver Dashboard Module - Bảng điều khiển */}
             {(() => {
-              const allow = isDriver(me?.role);
-              const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
-                ? hasPermission(me?.permissions, 'driver.dashboard')
-                : allow;
-              return ok;
+                              const allow = isDriver(me?.role);
+                const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
+                  ? hasPermission(me?.permissions, 'driver.dashboard')
+                  : allow;
+                return ok;
             })() && (
               <Link className="sidebar-link" href="/DriverDashboard">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -559,13 +651,13 @@ export default function Header() {
                   <line x1="15" y1="15" x2="15" y2="15.01"></line>
                   <line x1="9" y1="12" x2="15" y2="12"></line>
                 </svg>
-                <span>Bảng điều khiển</span>
+                                 <span>{t('sidebar.dashboard')}</span>
               </Link>
             )}
 
             {/* Maintenance - Repairs */}
             {(() => {
-              const allow = isSaleAdmin(me?.role) || isMaintenanceManager(me?.role) || isSystemAdmin(me?.role);
+              const allow = canManageMaintenance(me?.role);
               const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
                 ? hasPermission(me?.permissions, 'maintenance.repairs')
                 : allow;
@@ -575,13 +667,13 @@ export default function Header() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                   </svg>
-                  <span>Bảo trì - Phiếu sửa chữa</span>
+                                     <span>{t('sidebar.repairTickets')}</span>
                 </Link>
             )}
 
             {/* Maintenance - Inventory */}
             {(() => {
-              const allow = isSaleAdmin(me?.role) || isMaintenanceManager(me?.role) || isSystemAdmin(me?.role);
+              const allow = canManageMaintenance(me?.role);
               const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
                 ? hasPermission(me?.permissions, 'maintenance.inventory')
                 : allow;
@@ -596,13 +688,13 @@ export default function Header() {
                   <polyline points="3.27,6.96 12,12.01 20.73,6.96"></polyline>
                   <line x1="12" y1="22.08" x2="12" y2="12"></line>
                 </svg>
-                  <span>Bảo trì - Tồn kho</span>
+                                     <span>{t('sidebar.inventory')}</span>
                 </Link>
             )}
 
             {/* Finance - Invoices */}
             {(() => {
-              const allow = isSaleAdmin(me?.role) || isAccountant(me?.role) || isSystemAdmin(me?.role);
+              const allow = canManageFinance(me?.role);
               const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
                 ? hasPermission(me?.permissions, 'finance.invoices')
                 : allow;
@@ -616,12 +708,12 @@ export default function Header() {
                     <line x1="16" y1="17" x2="8" y2="17"></line>
                     <polyline points="10,9 9,9 8,9"></polyline>
                   </svg>
-                  <span>Tài chính - Hóa đơn</span>
+                                     <span>{t('sidebar.invoices')}</span>
                 </Link>
             )}
             {/* Finance - Create Invoice */}
             {(() => {
-              const allow = isSaleAdmin(me?.role) || isAccountant(me?.role) || isSystemAdmin(me?.role);
+              const allow = canManageFinance(me?.role);
               const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
                 ? hasPermission(me?.permissions, 'finance.create_invoice')
                 : allow;
@@ -634,7 +726,7 @@ export default function Header() {
                     <line x1="12" y1="18" x2="12" y2="12"></line>
                     <line x1="9" y1="15" x2="15" y2="15"></line>
                   </svg>
-                  <span>Tài chính - Tạo hóa đơn</span>
+                                     <span>{t('sidebar.createInvoice')}</span>
                 </Link>
             )}
 
@@ -654,7 +746,7 @@ export default function Header() {
                 <path d="M9 9h6"></path>
                 <path d="M9 13h6"></path>
               </svg>
-              <span>Báo cáo</span>
+              <span>{t('sidebar.reports')}</span>
             </Link>
             )}
 
@@ -671,7 +763,7 @@ export default function Header() {
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              <span>Tài khoản</span>
+              <span>{t('sidebar.account')}</span>
             </Link>
             )}
           </div>

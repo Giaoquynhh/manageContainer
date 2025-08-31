@@ -1,0 +1,296 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export Report",
+    "import": "Import Data",
+    "refresh": "Refresh",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "retry": "Retry",
+    "sortBy": "Sort by",
+    "na": "N/A",
+    "processing": "Processing..."
+  },
+  "header": {
+    "brand": "Smartlog Container Manager",
+    "account": "Account",
+    "accountInfo": "Account Information",
+    "userManagement": "User Management",
+    "logout": "Logout",
+    "login": "Login",
+    "toggleMenu": "Toggle Menu",
+    "closeMenu": "Close Menu",
+    "openMenu": "Open Menu"
+  },
+  "sidebar": {
+    "mainMenu": "Main Menu",
+    "usersPartners": "Users/Partners",
+    "permissions": "Permissions",
+    "requests": "Requests",
+    "customerRequests": "Customer Requests",
+    "gate": "Gate",
+    "yard": "Yard",
+    "containerManagement": "Container Management",
+    "forkliftManagement": "Forklift Management",
+    "dashboard": "Dashboard",
+    "repairTickets": "Repair Tickets",
+    "inventory": "Inventory",
+    "invoices": "Invoices",
+    "createInvoice": "Create Invoice",
+    "reports": "Reports",
+    "account": "Account"
+  },
+  "language": {
+    "selectLanguage": "Select Language",
+    "selectLanguageSubtitle": "Select your preferred language",
+    "vietnamese": "Vietnamese",
+    "english": "English",
+    "vi": "VI",
+    "en": "EN"
+  },
+  "pages": {
+    "requests": {
+      "title": "Service Request Management",
+      "depotTitle": "Service Request Management",
+      "customerTitle": "Service Request Management (Customer)",
+      "searchPlaceholder": "Search by container code...",
+      "searchByLicensePlate": "Search by license plate...",
+      "allTypes": "All Types",
+      "allStatuses": "All Statuses",
+      "noRequests": "No requests yet",
+      "noRequestsSubtitle": "No requests to process",
+      "searchButton": "Search",
+      "clearFilters": "Clear Filters",
+      "applyFilters": "Apply Filters",
+      "viewDetail": "View details",
+      "containerDetailTitle": "Container details",
+      "statusLabel": "Status",
+      "typeLabel": "Type",
+      "exportReport": "Export Report",
+      "filterOptions": {
+        "import": "Import",
+        "export": "Export",
+        "convert": "Convert",
+        "pending": "Pending",
+        "received": "Received",
+        "completed": "Completed",
+        "exported": "Exported",
+        "rejected": "Rejected",
+        "pendingAccept": "Pending Accept",
+        "checking": "Checking",
+        "checked": "Checked",
+        "inYard": "In Yard",
+        "leftYard": "Left Yard",
+        "scheduled": "Scheduled",
+        "approved": "Approved",
+        "inProgress": "In Progress",
+        "gateIn": "Gate In",
+        "gateOut": "Gate Out",
+        "gateRejected": "Rejected"
+      },
+      "actionLabels": {
+        "received": "Receive",
+        "rejected": "Reject",
+        "completed": "Complete",
+        "exported": "Export"
+      },
+      "supplementDocuments": "Supplement Documents",
+      "close": "Close",
+      "tableHeaders": {
+        "container": "Container",
+        "eta": "ETA",
+        "status": "Status",
+        "documents": "Documents",
+        "chat": "Chat",
+        "actions": "Actions"
+      }
+    },
+    "gate": {
+      "title": "Gate Dashboard",
+      "subtitle": "Vehicle in/out gate management",
+      "welcome": "Welcome to the Gate Management System",
+      "searchByContainer": "Search by container code...",
+      "searchByLicensePlate": "Search by license plate...",
+      "searchButton": "Search",
+      "clearFilters": "Clear Filters",
+      "statusLabel": "Status",
+      "typeLabel": "Type",
+      "allStatuses": "All Statuses",
+      "allTypes": "All Types",
+      "noData": "No Data",
+      "noRequestsToDisplay": "No requests to display",
+      "requestsList": "Requests List",
+      "viewDetail": "View details",
+      "viewDocuments": "View documents list",
+      "noDocuments": "None",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "cancel": "Cancel",
+        "confirmApprove": "Confirm approve",
+        "confirmReject": "Confirm reject"
+      },
+      "validation": {
+        "invalidPlate": "Please enter a valid license plate (at least 5 characters).",
+        "invalidDriver": "Please enter driver name (at least 2 characters).",
+        "rejectReasonMin": "Rejection reason must be at least 5 characters"
+      },
+      "messages": {
+        "approveErrorPrefix": "Error approving",
+        "rejectErrorPrefix": "Error rejecting",
+        "rejected": "Request has been rejected",
+        "noAuthToken": "No auth token",
+        "fetchDocumentsError": "An error occurred while loading documents",
+        "noDocumentsForRequest": "No documents for this request",
+        "exportError": "Could not export report. Please try again."
+      },
+      "modals": {
+        "approve": { "title": "Enter driver information and license plate" },
+        "reject": { "title": "Rejection reason" }
+      },
+      "placeholders": {
+        "driverName": "e.g., John Doe",
+        "plateNo": "e.g., 51C-123.45",
+        "rejectReason": "Enter reason for rejection (min 5 characters)..."
+      },
+      "typeOptions": {
+        "import": "Import",
+        "export": "Export",
+        "empty": "Empty"
+      },
+      "statusOptions": {
+        "scheduled": "Scheduled",
+        "forwarded": "Forwarded",
+        "gateIn": "Gate In",
+        "gateOut": "Gate Out",
+        "gateRejected": "Rejected",
+        "completed": "Completed"
+      },
+      "tableHeaders": {
+        "container": "Container",
+        "type": "Type",
+        "status": "Status",
+        "eta": "ETA",
+        "driverName": "Driver Name",
+        "licensePlate": "License Plate",
+        "documents": "Documents",
+        "actions": "Actions"
+      }
+    },
+    "yard": {
+      "title": "Yard Management",
+      "welcome": "Welcome to the Yard Management System",
+      "searchPlaceholder": "Search by container code...",
+      "searchButton": "Search",
+      "clearFilters": "Clear Filters",
+      "noData": "No Data",
+      "noDataSubtitle": "No data to display",
+      "yardMap": "Yard Map"
+    },
+    "containers": {
+      "title": "Container Management",
+      "welcome": "Welcome to the Container Management System",
+      "searchPlaceholder": "Search by container code...",
+      "searchButton": "Search",
+      "clearFilters": "Clear Filters",
+      "noData": "No Data",
+      "noDataSubtitle": "No containers to display"
+    },
+    "forklift": {
+      "title": "Forklift Management",
+      "welcome": "Welcome to the Forklift Management System",
+      "searchPlaceholder": "Search by license plate...",
+      "searchButton": "Search",
+      "clearFilters": "Clear Filters",
+      "noData": "No Data",
+      "noDataSubtitle": "No forklifts to display"
+    },
+    "maintenance": {
+      "repairs": {
+        "title": "Repair Tickets",
+        "welcome": "Welcome to the Repair Ticket Management System",
+        "searchPlaceholder": "Search by ticket code...",
+        "searchButton": "Search",
+        "clearFilters": "Clear Filters",
+        "noData": "No Data",
+        "noDataSubtitle": "No repair tickets to display"
+      },
+      "inventory": {
+        "title": "Inventory",
+        "welcome": "Welcome to the Inventory Management System",
+        "searchPlaceholder": "Search by product code...",
+        "searchButton": "Search",
+        "clearFilters": "Clear Filters",
+        "noData": "No Data",
+        "noDataSubtitle": "No products in inventory"
+      }
+    },
+    "finance": {
+      "invoices": {
+        "title": "Invoices",
+        "welcome": "Welcome to the Invoice Management System",
+        "searchPlaceholder": "Search by invoice code...",
+        "searchButton": "Search",
+        "clearFilters": "Clear Filters",
+        "noData": "No Data",
+        "noDataSubtitle": "No invoices to display"
+      },
+      "createInvoice": {
+        "title": "Create Invoice",
+        "welcome": "Welcome to the Invoice Creation System",
+        "searchPlaceholder": "Search by invoice code...",
+        "searchButton": "Search",
+        "clearFilters": "Clear Filters",
+        "noData": "No Data",
+        "noDataSubtitle": "No invoices to display"
+      }
+    },
+    "reports": {
+      "title": "Reports",
+      "welcome": "Welcome to the Reporting System",
+      "searchPlaceholder": "Search by report name...",
+      "searchButton": "Search",
+      "clearFilters": "Clear Filters",
+      "noData": "No Data",
+      "noDataSubtitle": "No reports to display"
+    },
+    "account": {
+      "title": "Account",
+      "welcome": "Welcome to the Account Management Page",
+      "searchPlaceholder": "Search by email...",
+      "searchButton": "Search",
+      "clearFilters": "Clear Filters",
+      "noData": "No Data",
+      "noDataSubtitle": "No accounts to display"
+    }
+  },
+  "user": {
+    "role": "Role",
+    "email": "Email",
+    "permissions": "Permissions",
+    "profile": "Profile",
+    "settings": "Settings",
+    "security": "Security"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "processing": "Processing"
+  }
+}

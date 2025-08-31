@@ -25,6 +25,158 @@ export default function UsersPartners(){
 
 	const [message, setMessage] = useState('');
 	const [lastInviteToken, setLastInviteToken] = useState<string>('');
+	const [language, setLanguage] = useState<'vi' | 'en'>('vi');
+
+	// Language detection from localStorage or browser
+	useEffect(() => {
+		const savedLang = localStorage.getItem('preferred-language') || navigator.language.startsWith('en') ? 'en' : 'vi';
+		setLanguage(savedLang);
+	}, []);
+
+	// Listen for language changes from header
+	useEffect(() => {
+		const handleLanguageChange = (event: CustomEvent) => {
+			if (event.detail && event.detail.language && (event.detail.language === 'vi' || event.detail.language === 'en')) {
+				setLanguage(event.detail.language);
+				localStorage.setItem('preferred-language', event.detail.language);
+			}
+		};
+
+		window.addEventListener('languageChanged', handleLanguageChange as EventListener);
+		return () => {
+			window.removeEventListener('languageChanged', handleLanguageChange as EventListener);
+		};
+	}, []);
+
+	// Translations
+	const t = {
+		vi: {
+			title: 'Danh sách tài khoản đang quản lý',
+			accessDenied: 'Quyền truy cập',
+			accessDeniedMessage: 'Bạn không có quyền truy cập trang này. Hãy dùng menu để vào trang phù hợp.',
+			filterAll: 'Tất cả',
+			filterInternal: 'Nhân sự nội bộ',
+			filterCustomer: 'User khách hàng',
+			filterTitle: 'Lọc theo loại nhân sự',
+			createEmployee: 'Tạo nhân sự',
+			createCustomerUser: 'Tạo user khách',
+			// Table headers
+			email: 'Email',
+			fullName: 'Họ tên',
+			role: 'Vai trò',
+			status: 'Trạng thái',
+			actions: 'Hành động',
+			// Status badges
+			active: 'ACTIVE',
+			invited: 'INVITED',
+			disabled: 'DISABLED',
+			locked: 'LOCKED',
+			// Action buttons
+			disable: 'Vô hiệu hóa',
+			enable: 'Bật lại',
+			lock: 'Khóa',
+			unlock: 'Mở khóa',
+			resendInvite: 'Gửi lại lời mời',
+			delete: 'Xóa',
+			// Button tooltips
+			disableTooltip: 'Chặn không cho đăng nhập',
+			enableTooltip: 'Mở lại quyền đăng nhập',
+			lockTooltip: 'Khóa tạm thời',
+			unlockTooltip: 'Cho phép đăng nhập trở lại',
+			resendTooltip: 'Gửi lại thư mời kích hoạt (tạo token mới)',
+			deleteTooltip: 'Xóa vĩnh viễn tài khoản đã vô hiệu hóa',
+			// Modal titles
+			createEmployeeTitle: 'Tạo nhân sự nội bộ',
+			createCustomerTitle: 'Tạo user khách',
+			// Form placeholders
+			fullNamePlaceholder: 'Họ tên',
+			emailPlaceholder: 'Email',
+			tenantIdPlaceholder: 'tenant_id (ID khách hàng)',
+			// Form labels
+			driverLabel: 'Driver (Tài xế)',
+			// Form buttons
+			close: 'Đóng',
+			create: 'Tạo',
+			// Messages
+			pleaseEnterName: 'Vui lòng nhập họ tên',
+			pleaseEnterValidEmail: 'Vui lòng nhập email hợp lệ',
+			pleaseEnterTenantId: 'Vui lòng nhập tenant_id',
+			employeeCreated: 'Tạo nhân sự nội bộ thành công',
+			customerCreated: 'Tạo user khách hàng thành công',
+			userActionSuccess: 'Đã {action} user',
+			createEmployeeError: 'Lỗi tạo nhân sự',
+			createCustomerError: 'Lỗi tạo user khách',
+			userActionError: 'Lỗi {action}',
+			// Info text
+			tenantIdInfo: 'Lấy tenant_id từ danh sách Customers hoặc tạo khách mới bên module Customers.',
+			// Token section
+			inviteToken: 'Token mời:',
+			openRegisterToActivate: 'Mở /Register để kích hoạt'
+		},
+		en: {
+			title: 'List of Managed Accounts',
+			accessDenied: 'Access Denied',
+			accessDeniedMessage: 'You do not have permission to access this page. Please use the menu to go to the appropriate page.',
+			filterAll: 'All',
+			filterInternal: 'Internal Staff',
+			filterCustomer: 'Customer Users',
+			filterTitle: 'Filter by staff type',
+			createEmployee: 'Create Staff',
+			createCustomerUser: 'Create Customer User',
+			// Table headers
+			email: 'Email',
+			fullName: 'Full Name',
+			role: 'Role',
+			status: 'Status',
+			actions: 'Actions',
+			// Status badges
+			active: 'ACTIVE',
+			invited: 'INVITED',
+			disabled: 'DISABLED',
+			locked: 'LOCKED',
+			// Action buttons
+			disable: 'Disable',
+			enable: 'Enable',
+			lock: 'Lock',
+			unlock: 'Unlock',
+			resendInvite: 'Resend Invitation',
+			delete: 'Delete',
+			// Button tooltips
+			disableTooltip: 'Block login access',
+			enableTooltip: 'Restore login access',
+			lockTooltip: 'Temporarily lock',
+			unlockTooltip: 'Allow login again',
+			resendTooltip: 'Resend activation invitation (create new token)',
+			deleteTooltip: 'Permanently delete disabled account',
+			// Modal titles
+			createEmployeeTitle: 'Create Internal Staff',
+			createCustomerTitle: 'Create Customer User',
+			// Form placeholders
+			fullNamePlaceholder: 'Full Name',
+			emailPlaceholder: 'Email',
+			tenantIdPlaceholder: 'tenant_id (Customer ID)',
+			// Form labels
+			driverLabel: 'Driver',
+			// Form buttons
+			close: 'Close',
+			create: 'Create',
+			// Messages
+			pleaseEnterName: 'Please enter full name',
+			pleaseEnterValidEmail: 'Please enter a valid email',
+			pleaseEnterTenantId: 'Please enter tenant_id',
+			employeeCreated: 'Internal staff created successfully',
+			customerCreated: 'Customer user created successfully',
+			userActionSuccess: 'User {action} successfully',
+			createEmployeeError: 'Error creating staff',
+			createCustomerError: 'Error creating customer user',
+			userActionError: 'Error {action}',
+			// Info text
+			tenantIdInfo: 'Get tenant_id from Customers list or create new customer in Customers module.',
+			// Token section
+			inviteToken: 'Invite Token:',
+			openRegisterToActivate: 'Open /Register to activate'
+		}
+	};
 
 	useEffect(()=>{
 		if (typeof window !== 'undefined'){
@@ -45,44 +197,44 @@ export default function UsersPartners(){
 		setMessage('');
 		// Validation trước khi gửi
 		if (!empFullName.trim()) {
-			setMessage('Vui lòng nhập họ tên');
+			setMessage(t[language].pleaseEnterName);
 			return;
 		}
 		if (!empEmail.trim() || !empEmail.includes('@')) {
-			setMessage('Vui lòng nhập email hợp lệ');
+			setMessage(t[language].pleaseEnterValidEmail);
 			return;
 		}
 		try{
 			await api.post('/users', { full_name: empFullName.trim(), email: empEmail.trim().toLowerCase(), role: empRole });
-			setMessage('Tạo nhân sự nội bộ thành công');
+			setMessage(t[language].employeeCreated);
 			setEmpFullName(''); setEmpEmail('');
 			setShowEmpForm(false);
 			mutate(['/users?role=&page=1&limit=50']);
-		}catch(e:any){ setMessage(e?.response?.data?.message || 'Lỗi tạo nhân sự'); }
+		}catch(e:any){ setMessage(e?.response?.data?.message || t[language].createEmployeeError); }
 	};
 
 	const createCustomerUser = async () => {
 		setMessage('');
 		// Validation trước khi gửi
 		if (!cusFullName.trim()) {
-			setMessage('Vui lòng nhập họ tên');
+			setMessage(t[language].pleaseEnterName);
 			return;
 		}
 		if (!cusEmail.trim() || !cusEmail.includes('@')) {
-			setMessage('Vui lòng nhập email hợp lệ');
+			setMessage(t[language].pleaseEnterValidEmail);
 			return;
 		}
 		if (!tenantId.trim()) {
-			setMessage('Vui lòng nhập tenant_id');
+			setMessage(t[language].pleaseEnterTenantId);
 			return;
 		}
 		try{
 			await api.post('/users', { full_name: cusFullName.trim(), email: cusEmail.trim().toLowerCase(), role: cusRole, tenant_id: tenantId.trim() });
-			setMessage('Tạo user khách hàng thành công');
+			setMessage(t[language].customerCreated);
 			setCusFullName(''); setCusEmail(''); setTenantId('');
 			setShowCusForm(false);
 			mutate(['/users?role=&page=1&limit=50']);
-		}catch(e:any){ setMessage(e?.response?.data?.message || 'Lỗi tạo user khách'); }
+		}catch(e:any){ setMessage(e?.response?.data?.message || t[language].createCustomerError); }
 	};
 
 	const userAction = async (id: string, action: 'disable'|'enable'|'lock'|'unlock'|'invite'|'delete') => {
@@ -97,8 +249,8 @@ export default function UsersPartners(){
 				await api.patch(`/users/${id}/${action}`);
 			}
 			mutate(['/users?role=&page=1&limit=50']);
-			setMessage(`Đã ${action} user`);
-		}catch(e:any){ setMessage(e?.response?.data?.message || `Lỗi ${action}`); }
+			setMessage(t[language].userActionSuccess.replace('{action}', action));
+		}catch(e:any){ setMessage(e?.response?.data?.message || t[language].userActionError.replace('{action}', action)); }
 	};
 
 	if (!canViewUsersPartners(role)) {
@@ -106,8 +258,8 @@ export default function UsersPartners(){
 			<>
 				<Header />
 				<main className="container">
-					<Card title="Quyền truy cập">
-						Bạn không có quyền truy cập trang này. Hãy dùng menu để vào trang phù hợp.
+					<Card title={t[language].accessDenied}>
+						{t[language].accessDeniedMessage}
 					</Card>
 				</main>
 			</>
@@ -123,14 +275,14 @@ export default function UsersPartners(){
                     <div style={{gridColumn: 'span 3'}}>
                         <Card title={undefined as any}>
                             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
-                                <h3 style={{margin:0, fontSize:18, fontWeight:700, color:'#0b2b6d'}}>Danh sách tài khoản đang quản lý</h3>
+                                <h3 style={{margin:0, fontSize:18, fontWeight:700, color:'#0b2b6d'}}>{t[language].title}</h3>
                                 <div style={{display:'flex', gap:8}}>
                                     {/* Bộ lọc loại nhân sự */}
                                     <div style={{display:'flex', alignItems:'center', gap:8, marginRight:8}}>
                                         <select 
                                             value={filterType}
                                             onChange={e=>setFilterType(e.target.value as 'all'|'internal'|'customer')}
-                                            title="Lọc theo loại nhân sự"
+                                            title={t[language].filterTitle}
                                             style={{
                                                 padding: '8px 12px',
                                                 border: '1px solid #d1d5db',
@@ -138,33 +290,33 @@ export default function UsersPartners(){
                                                 background: 'white'
                                             }}
                                         >
-                                            <option value="all">Tất cả</option>
-                                            <option value="internal">Nhân sự nội bộ</option>
-                                            <option value="customer">User khách hàng</option>
+                                            <option value="all">{t[language].filterAll}</option>
+                                            <option value="internal">{t[language].filterInternal}</option>
+                                            <option value="customer">{t[language].filterCustomer}</option>
                                         </select>
                                     </div>
                                     {showInternalForm(role) && (
                                         <div style={{position:'relative'}}>
-                                            <button className="btn" onClick={()=>{ setShowEmpForm(v=>!v); setShowCusForm(false); }} style={{background:'#059669', color:'#fff'}}>Tạo nhân sự</button>
+                                            <button className="btn" onClick={()=>{ setShowEmpForm(v=>!v); setShowCusForm(false); }} style={{background:'#059669', color:'#fff'}}>{t[language].createEmployee}</button>
                                             <Modal 
-                                                title="Tạo nhân sự nội bộ" 
+                                                title={t[language].createEmployeeTitle} 
                                                 visible={showEmpForm} 
                                                 onCancel={()=>setShowEmpForm(false)} 
                                                 size="sm"
                                             >
                                                 <div className="grid" style={{gap:12}}>
-                                                    <input type="text" placeholder="Họ tên" value={empFullName} onChange={e=>setEmpFullName(e.target.value)} />
-                                                    <input type="email" placeholder="Email" value={empEmail} onChange={e=>setEmpEmail(e.target.value)} />
+                                                    <input type="text" placeholder={t[language].fullNamePlaceholder} value={empFullName} onChange={e=>setEmpFullName(e.target.value)} />
+                                                    <input type="email" placeholder={t[language].emailPlaceholder} value={empEmail} onChange={e=>setEmpEmail(e.target.value)} />
                                                     <select value={empRole} onChange={e=>setEmpRole(e.target.value)}>
                                                         <option value="SystemAdmin">SystemAdmin</option>
                                                         <option value="BusinessAdmin">BusinessAdmin</option>
                                                         <option value="HRManager">HRManager</option>
                                                         <option value="SaleAdmin">SaleAdmin</option>
-                                                        <option value="Driver">Driver (Tài xế)</option>
+                                                        <option value="Driver">{t[language].driverLabel}</option>
                                                     </select>
                                                     <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
-                                                        <button className="btn btn-outline" onClick={()=>setShowEmpForm(false)}>Đóng</button>
-                                                        <button className="btn" onClick={createEmployee} style={{background:'#059669', color:'#fff'}}>Tạo nhân sự</button>
+                                                        <button className="btn btn-outline" onClick={()=>setShowEmpForm(false)}>{t[language].close}</button>
+                                                        <button className="btn" onClick={createEmployee} style={{background:'#059669', color:'#fff'}}>{t[language].create}</button>
                                                     </div>
                                                 </div>
                                             </Modal>
@@ -172,25 +324,25 @@ export default function UsersPartners(){
                                     )}
                                     {showCustomerForm(role) && (
                                         <div style={{position:'relative'}}>
-                                            <button className="btn" onClick={()=>{ setShowCusForm(v=>!v); setShowEmpForm(false); }} style={{background:'#0891b2', color:'#fff'}}>Tạo user khách</button>
+                                            <button className="btn" onClick={()=>{ setShowCusForm(v=>!v); setShowEmpForm(false); }} style={{background:'#0891b2', color:'#fff'}}>{t[language].createCustomerUser}</button>
                                             <Modal 
-                                                title="Tạo user khách" 
+                                                title={t[language].createCustomerTitle} 
                                                 visible={showCusForm} 
                                                 onCancel={()=>setShowCusForm(false)} 
                                                 size="sm"
                                             >
                                                 <div className="grid" style={{gap:12}}>
-                                                    <input type="text" placeholder="Họ tên" value={cusFullName} onChange={e=>setCusFullName(e.target.value)} />
-                                                    <input type="email" placeholder="Email" value={cusEmail} onChange={e=>setCusEmail(e.target.value)} />
+                                                    <input type="text" placeholder={t[language].fullNamePlaceholder} value={cusFullName} onChange={e=>setCusFullName(e.target.value)} />
+                                                    <input type="email" placeholder={t[language].emailPlaceholder} value={cusEmail} onChange={e=>setCusEmail(e.target.value)} />
                                                     <select value={cusRole} onChange={e=>setCusRole(e.target.value)}>
                                                         <option value="CustomerAdmin">CustomerAdmin</option>
                                                         <option value="CustomerUser">CustomerUser</option>
                                                     </select>
-                                                    <input type="text" placeholder="tenant_id (ID khách hàng)" value={tenantId} onChange={e=>setTenantId(e.target.value)} />
-                                                    <div className="muted">Lấy tenant_id từ danh sách Customers hoặc tạo khách mới bên module Customers.</div>
+                                                    <input type="text" placeholder={t[language].tenantIdPlaceholder} value={tenantId} onChange={e=>setTenantId(e.target.value)} />
+                                                    <div className="muted">{t[language].tenantIdInfo}</div>
                                                     <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
-                                                        <button className="btn btn-outline" onClick={()=>setShowCusForm(false)}>Đóng</button>
-                                                        <button className="btn" onClick={createCustomerUser} style={{background:'#0891b2', color:'#fff'}}>Tạo user khách</button>
+                                                        <button className="btn btn-outline" onClick={()=>setShowCusForm(false)}>{t[language].close}</button>
+                                                        <button className="btn" onClick={createCustomerUser} style={{background:'#0891b2', color:'#fff'}}>{t[language].create}</button>
                                                     </div>
                                                 </div>
                                             </Modal>
@@ -202,11 +354,11 @@ export default function UsersPartners(){
                                 <table className="table">
                                     <thead style={{background: '#f8fafc'}}>
                                         <tr>
-                                            <th>Email</th>
-                                            <th>Họ tên</th>
-                                            <th>Vai trò</th>
-                                            <th>Trạng thái</th>
-                                            <th>Hành động</th>
+                                            <th>{t[language].email}</th>
+                                            <th>{t[language].fullName}</th>
+                                            <th>{t[language].role}</th>
+                                            <th>{t[language].status}</th>
+                                            <th>{t[language].actions}</th>
                                         </tr>
                                     </thead>
 									<tbody>
@@ -253,10 +405,10 @@ export default function UsersPartners(){
                                                             fontSize: '12px',
                                                             padding: '4px 8px'
                                                         }}
-                                                        title={u.status === 'DISABLED' ? 'Mở lại quyền đăng nhập' : 'Chặn không cho đăng nhập'} 
+                                                        title={u.status === 'DISABLED' ? t[language].enableTooltip : t[language].disableTooltip} 
                                                         onClick={() => userAction(u.id || u._id, u.status === 'DISABLED' ? 'enable' : 'disable')}
                                                     >
-                                                        {u.status === 'DISABLED' ? 'Bật lại' : 'Vô hiệu hóa'}
+                                                        {u.status === 'DISABLED' ? t[language].enable : t[language].disable}
                                                     </button>
                                                     <button 
                                                         className="btn btn-sm" 
@@ -266,10 +418,10 @@ export default function UsersPartners(){
                                                             fontSize: '12px',
                                                             padding: '4px 8px'
                                                         }}
-                                                        title={u.status === 'LOCKED' ? 'Cho phép đăng nhập trở lại' : 'Khóa tạm thời'} 
+                                                        title={u.status === 'LOCKED' ? t[language].unlockTooltip : t[language].lockTooltip} 
                                                         onClick={() => userAction(u.id || u._id, u.status === 'LOCKED' ? 'unlock' : 'lock')}
                                                     >
-                                                        {u.status === 'LOCKED' ? 'Mở khóa' : 'Khóa'}
+                                                        {u.status === 'LOCKED' ? t[language].unlock : t[language].lock}
                                                     </button>
                                                     <button 
                                                         className="btn btn-sm" 
@@ -279,10 +431,10 @@ export default function UsersPartners(){
                                                             fontSize: '12px',
                                                             padding: '4px 8px'
                                                         }}
-                                                        title="Gửi lại thư mời kích hoạt (tạo token mới)" 
+                                                        title={t[language].resendTooltip} 
                                                         onClick={() => userAction(u.id || u._id, 'invite')}
                                                     >
-                                                        Gửi lại lời mời
+                                                        {t[language].resendInvite}
                                                     </button>
 													{u.status === 'DISABLED' && (
                                                         <button 
@@ -293,10 +445,10 @@ export default function UsersPartners(){
                                                                 fontSize: '12px',
                                                                 padding: '4px 8px'
                                                             }} 
-                                                            title="Xóa vĩnh viễn tài khoản đã vô hiệu hóa" 
+                                                            title={t[language].deleteTooltip} 
                                                             onClick={() => userAction(u.id || u._id, 'delete')}
                                                         >
-                                                            Xóa
+                                                            {t[language].delete}
                                                         </button>
 													)}
 											</td>
@@ -328,10 +480,10 @@ export default function UsersPartners(){
                                     border: '1px solid #fde68a',
                                     fontSize: '14px'
                                 }}>
-                                    <strong>Token mời:</strong> <code>{lastInviteToken}</code>
+                                    <strong>{t[language].inviteToken}</strong> <code>{lastInviteToken}</code>
                                     <br />
                                     <a href={`/Register?token=${lastInviteToken}`} style={{color: '#0891b2', textDecoration: 'underline'}}>
-                                        Mở /Register để kích hoạt
+                                        {t[language].openRegisterToActivate}
                                     </a>
                                 </div>
                             )}
@@ -341,11 +493,11 @@ export default function UsersPartners(){
                     {/* Cột bên phải - Form tạo user */}
                     <div style={{display: 'none', gap: 16}}>
 						{showInternalForm(role) && (
-                            <Card title="Tạo nhân sự nội bộ">
+                            <Card title={t[language].createEmployeeTitle}>
                                 <div className="grid" style={{gap: 12}}>
                                     <input 
                                         type="text" 
-                                        placeholder="Họ tên" 
+                                        placeholder={t[language].fullNamePlaceholder} 
                                         value={empFullName} 
                                         onChange={e => setEmpFullName(e.target.value)}
                                         style={{
@@ -357,7 +509,7 @@ export default function UsersPartners(){
                                     />
                                     <input 
                                         type="email" 
-                                        placeholder="Email" 
+                                        placeholder={t[language].emailPlaceholder} 
                                         value={empEmail} 
                                         onChange={e => setEmpEmail(e.target.value)}
                                         style={{
@@ -382,7 +534,7 @@ export default function UsersPartners(){
 										<option value="BusinessAdmin">BusinessAdmin</option>
 										<option value="HRManager">HRManager</option>
 										<option value="SaleAdmin">SaleAdmin</option>
-										<option value="Driver">Driver (Tài xế)</option>
+										<option value="Driver">{t[language].driverLabel}</option>
 									</select>
                                     <button 
                                         className="btn" 
@@ -398,18 +550,18 @@ export default function UsersPartners(){
                                             fontWeight: '500'
                                         }}
                                     >
-                                        Tạo nhân sự
+                                        {t[language].createEmployee}
                                     </button>
 								</div>
 							</Card>
 						)}
 
 						{showCustomerForm(role) && (
-                            <Card title="Tạo user khách">
+                            <Card title={t[language].createCustomerTitle}>
                                 <div className="grid" style={{gap: 12}}>
                                     <input 
                                         type="text" 
-                                        placeholder="Họ tên" 
+                                        placeholder={t[language].fullNamePlaceholder} 
                                         value={cusFullName} 
                                         onChange={e => setCusFullName(e.target.value)}
                                         style={{
@@ -421,7 +573,7 @@ export default function UsersPartners(){
                                     />
                                     <input 
                                         type="email" 
-                                        placeholder="Email" 
+                                        placeholder={t[language].emailPlaceholder} 
                                         value={cusEmail} 
                                         onChange={e => setCusEmail(e.target.value)}
                                         style={{
@@ -447,7 +599,7 @@ export default function UsersPartners(){
 									</select>
                                     <input 
                                         type="text" 
-                                        placeholder="tenant_id (ID khách hàng)" 
+                                        placeholder={t[language].tenantIdPlaceholder} 
                                         value={tenantId} 
                                         onChange={e => setTenantId(e.target.value)}
                                         style={{
@@ -465,7 +617,7 @@ export default function UsersPartners(){
                                         borderRadius: '4px',
                                         border: '1px solid #e5e7eb'
                                     }}>
-                                        Lấy tenant_id từ danh sách Customers hoặc tạo khách mới bên module Customers.
+                                        {t[language].tenantIdInfo}
                                     </div>
                                     <button 
                                         className="btn" 
@@ -481,7 +633,7 @@ export default function UsersPartners(){
                                             fontWeight: '500'
                                         }}
                                     >
-                                        Tạo user khách
+                                        {t[language].createCustomerUser}
                                     </button>
 								</div>
 							</Card>

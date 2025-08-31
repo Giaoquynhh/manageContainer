@@ -4,6 +4,7 @@ import useSWR, { mutate } from 'swr';
 import { yardApi } from '@services/yard';
 import { useMemo, useState } from 'react';
 import { YardMap, StackDetailsModal } from '@components/yard';
+import { useTranslation } from '../../hooks/useTranslation';
 
 // Dùng stack map mới
 const fetcher = async () => yardApi.stackMap();
@@ -19,6 +20,7 @@ export default function YardPage() {
   const [searchContainer, setSearchContainer] = useState('');
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState('');
+  const { t } = useTranslation();
   
   // UI mới: chỉ hiển thị bản đồ bãi từ stack map
 
@@ -77,15 +79,15 @@ export default function YardPage() {
       <main className="container">
         <div className="page-header">
           <div className="page-header-content">
-            <h1 className="page-title">Quản lý Bãi Container</h1>
-            <p className="page-subtitle">Sơ đồ bãi và tìm kiếm thông tin container</p>
+            <h1 className="page-title">{t('pages.yard.title')}</h1>
+            <p className="page-subtitle">{t('pages.yard.welcome')}</p>
           </div>
         </div>
 
         <div className="yard-layout">
           {/* Left Column - Yard Map */}
           <div className="yard-left">
-            <Card title="Sơ đồ bãi">
+            <Card title={t('pages.yard.yardMap')}>
               {/* Toolbar: thống kê nhanh + hành động */}
               <div className="yard-toolbar">
                 <div className="yard-stats">
@@ -95,9 +97,9 @@ export default function YardPage() {
                   <span className="badge badge-hold" title="Tổng HOLD trong bãi">H:{stats.totalHold}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn" onClick={() => mutate('yard_map')}>🔄 Refresh</button>
+                  <button className="btn" onClick={() => mutate('yard_map')}>🔄 {t('common.refresh')}</button>
                   {selectedSlotId && (
-                    <button className="btn btn-secondary" onClick={() => { setSelectedSlotId(''); }}>Bỏ chọn</button>
+                    <button className="btn btn-secondary" onClick={() => { setSelectedSlotId(''); }}>{t('common.cancel')}</button>
                   )}
                 </div>
               </div>

@@ -9,7 +9,7 @@ export function homeFor(role: AppRole): string {
 }
 
 export function canViewUsersPartners(role?: string): boolean {
-	return ['SystemAdmin','BusinessAdmin','HRManager','SaleAdmin','CustomerAdmin'].includes(String(role));
+	return ['SystemAdmin','BusinessAdmin','HRManager'].includes(String(role));
 }
 
 export function showInternalForm(role?: string): boolean {
@@ -17,7 +17,7 @@ export function showInternalForm(role?: string): boolean {
 }
 
 export function showCustomerForm(role?: string): boolean {
-	return ['SystemAdmin','BusinessAdmin','SaleAdmin','CustomerAdmin'].includes(String(role));
+	return ['SystemAdmin','BusinessAdmin','CustomerAdmin'].includes(String(role));
 }
 
 export function isCustomerRole(role?: string): boolean {
@@ -35,6 +35,27 @@ export function isAccountant(role?: string): boolean {
 export function canUseGate(role?: string): boolean {
 	// FE chỉ kiểm tra role; backend sẽ xác thực Gate Mode theo thiết bị
 	return ['SaleAdmin','SystemAdmin'].includes(String(role));
+}
+
+// SaleAdmin specific permissions
+export function canManageYard(role?: string): boolean {
+	return ['SystemAdmin','YardManager'].includes(String(role));
+}
+
+export function canManageContainers(role?: string): boolean {
+	return ['SystemAdmin','YardManager'].includes(String(role));
+}
+
+export function canManageForklift(role?: string): boolean {
+	return ['SystemAdmin','YardManager'].includes(String(role));
+}
+
+export function canManageMaintenance(role?: string): boolean {
+	return ['SystemAdmin','MaintenanceManager'].includes(String(role));
+}
+
+export function canManageFinance(role?: string): boolean {
+	return ['SystemAdmin','Accountant'].includes(String(role));
 }
 
 // Extra helpers for sidebar mapping

@@ -42,31 +42,31 @@ router.patch(
   gateController.rejectGate.bind(gateController)
 );
 
-// Tìm kiếm requests ở Gate (YardManager, SaleAdmin)
+// Tìm kiếm requests ở Gate (tất cả role có thể thấy trang Gate)
 router.get(
   '/requests/search',
-  requireRoles('YardManager', 'SaleAdmin'),
+  requireRoles('SystemAdmin', 'BusinessAdmin', 'YardManager', 'SaleAdmin', 'MaintenanceManager'),
   gateController.searchRequests.bind(gateController)
 );
 
-// Lấy chi tiết request để xử lý ở Gate (YardManager, SaleAdmin)
+// Lấy chi tiết request để xử lý ở Gate (tất cả role có thể thấy trang Gate)
 router.get(
   '/requests/:id',
-  requireRoles('YardManager', 'SaleAdmin'),
+  requireRoles('SystemAdmin', 'BusinessAdmin', 'YardManager', 'SaleAdmin', 'MaintenanceManager'),
   gateController.getRequestDetails.bind(gateController)
 );
 
-// Lấy danh sách chứng từ của request (YardManager, SaleAdmin)
+// Lấy danh sách chứng từ của request (tất cả role có thể thấy trang Gate)
 router.get(
   '/requests/:id/documents',
-  requireRoles('YardManager', 'SaleAdmin'),
+  requireRoles('SystemAdmin', 'BusinessAdmin', 'YardManager', 'SaleAdmin', 'MaintenanceManager'),
   gateController.getRequestDocuments.bind(gateController)
 );
 
-// Xem file chứng từ (YardManager, SaleAdmin)
+// Xem file chứng từ (tất cả role có thể thấy trang Gate)
 router.get(
   '/requests/:requestId/documents/:documentId/view',
-  requireRoles('YardManager', 'SaleAdmin'),
+  requireRoles('SystemAdmin', 'BusinessAdmin', 'YardManager', 'SaleAdmin', 'MaintenanceManager'),
   gateController.viewDocument.bind(gateController)
 );
 

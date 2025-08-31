@@ -361,15 +361,14 @@ export default function DepotChatWindow({
 		return (
 			<div 
 				className="depot-chat-window"
-				onMouseDown={onMouseDown}
 			>
-				<div className="chat-header">
+				<div className="chat-header" onMouseDown={onMouseDown}>
 					<div className="chat-title">
 						💬 Chat - {containerNo}
 					</div>
 					<div className="chat-actions">
-						<button onClick={onMinimize} className="chat-btn chat-minimize">−</button>
-						<button onClick={onClose} className="chat-btn chat-close">×</button>
+						<button onMouseDown={(e) => e.stopPropagation()} onClick={onMinimize} className="chat-btn chat-minimize">−</button>
+						<button onMouseDown={(e) => e.stopPropagation()} onClick={onClose} className="chat-btn chat-close">×</button>
 					</div>
 				</div>
 				<div className="chat-body">
@@ -390,15 +389,14 @@ export default function DepotChatWindow({
 	return (
 		<div 
 			className="depot-chat-window"
-			onMouseDown={onMouseDown}
 		>
-			<div className="chat-header">
+			<div className="chat-header" onMouseDown={onMouseDown}>
 				<div className="chat-title">
 					💬 Chat - {containerNo}
 				</div>
 				<div className="chat-actions">
-					<button onClick={onMinimize} className="chat-btn chat-minimize">−</button>
-					<button onClick={onClose} className="chat-btn chat-close">×</button>
+					<button onMouseDown={(e) => e.stopPropagation()} onClick={onMinimize} className="chat-btn chat-minimize">−</button>
+					<button onMouseDown={(e) => e.stopPropagation()} onClick={onClose} className="chat-btn chat-close">×</button>
 				</div>
 			</div>
 			
