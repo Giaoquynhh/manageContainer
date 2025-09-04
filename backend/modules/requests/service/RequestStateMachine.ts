@@ -1,5 +1,6 @@
 import { audit } from '../../../shared/middlewares/audit';
 import chatService from '../../chat/service/ChatService';
+import { AutoForkliftTaskService } from '../../forklift/service/AutoForkliftTaskService';
 
 export interface StateTransition {
   from: string;
@@ -350,6 +351,20 @@ export class RequestStateMachine {
       }
     } catch (error) {
       console.error('Không thể gửi system message:', error);
+    }
+
+    // Tự động tạo forklift task cho EXPORT requests khi chuyển sang GATE_IN
+    if (newState === 'GATE_IN' && additionalData?.requestType === 'EXPORT' && additionalData?.containerNo) {
+      try {
+        await AutoForkliftTaskService.createForkliftTaskForExport(
+          additionalData.containerNo, 
+          actor._id
+        );
+        console.log(`✅ Auto-created forklift task for EXPORT container ${additionalData.containerNo}`);
+      } catch (error) {
+        console.error(`❌ Error auto-creating forklift task for container ${additionalData.containerNo}:`, error);
+        // Không throw error để không ảnh hưởng đến việc chuyển trạng thái
+      }
     }
   }
 

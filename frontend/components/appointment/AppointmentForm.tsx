@@ -38,8 +38,21 @@ export default function AppointmentForm({
   onSuccess,
   mode = 'create'
 }: AppointmentFormProps) {
+  // Tạo thời gian mặc định (hiện tại + 1 giờ)
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    // Sử dụng local time thay vì UTC để tránh vấn đề timezone
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState<AppointmentFormData>({
-    appointment_time: '',
+    appointment_time: getDefaultDateTime(),
     location_type: 'gate',
     location_id: '',
     gate_ref: '',
@@ -234,7 +247,7 @@ export default function AppointmentForm({
             type="date"
             id="appointment_date"
             className={`appointment-form-input ${errors.appointment_time ? 'error' : ''}`}
-            value={formData.appointment_time ? formData.appointment_time.split('T')[0] : ''}
+            value={formData.appointment_time ? formData.appointment_time.split('T')[0] : new Date().toISOString().split('T')[0]}
             onChange={(e) => {
               const time = formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : '09:00';
               handleInputChange('appointment_time', `${e.target.value}T${time}`);

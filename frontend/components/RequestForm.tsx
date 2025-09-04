@@ -9,13 +9,24 @@ interface RequestFormProps {
 
 export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
   const { t } = useTranslation();
+  
+  // Tạo thời gian mặc định (hiện tại)
+  const getDefaultDateTime = () => {
+    const now = new Date();
+    const date = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const time = now.toTimeString().slice(0, 5); // Format: HH:MM
+    return { date, time };
+  };
+  
+  const defaultDateTime = getDefaultDateTime();
+  
   const [form, setForm] = useState({ 
     type: 'IMPORT', 
     container_no: '', 
-    etaDate: '', 
-    etaTime: ''
+    etaDate: defaultDateTime.date, 
+    etaTime: defaultDateTime.time
   });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -31,7 +42,7 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
         setLoading(false);
         return;
       }
-      if (!selectedFile) {
+      if (selectedFiles.length === 0) {
         setMessage(t('pages.requests.form.validation.documentRequired'));
         setLoading(false);
         return;
@@ -49,12 +60,13 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
       const formData = new FormData();
       formData.append('type', form.type);
       
-      // Chỉ gửi container_no và document cho loại IMPORT
+      // Chỉ gửi container_no và documents cho loại IMPORT
       if (form.type === 'IMPORT') {
         formData.append('container_no', form.container_no);
-        if (selectedFile) {
-          formData.append('document', selectedFile);
-        }
+        // Upload tất cả files
+        selectedFiles.forEach((file, index) => {
+          formData.append(`documents`, file);
+        });
       }
       
       // ETA luôn được gửi cho cả 2 loại
@@ -81,34 +93,49 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Kiểm tra định dạng file - kiểm tra cả MIME type và extension
-      const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-      const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
-      
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+    
+    const validFiles: File[] = [];
+    let hasError = false;
+
+    files.forEach(file => {
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       const hasValidMimeType = allowedMimeTypes.includes(file.type);
       const hasValidExtension = fileExtension && allowedExtensions.includes(`.${fileExtension}`);
       
       if (!hasValidMimeType && !hasValidExtension) {
         setMessage(t('pages.requests.form.validation.invalidFileType'));
+        hasError = true;
         return;
       }
       
       // Kiểm tra kích thước file (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         setMessage(t('pages.requests.form.validation.fileTooLarge'));
+        hasError = true;
         return;
       }
       
-      setSelectedFile(file);
+      validFiles.push(file);
+    });
+
+    if (!hasError) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
       setMessage('');
     }
   };
 
-  const removeFile = () => {
-    setSelectedFile(null);
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setMessage('');
+  };
+
+  const removeAllFiles = () => {
+    setSelectedFiles([]);
     setMessage('');
   };
 
@@ -150,28 +177,51 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={handleFileChange}
                 className="file-input"
+                multiple
               />
               <label htmlFor="document" className="file-upload-label">
                 <span className="file-upload-icon">📎</span>
                 <span className="file-upload-text">
-                  {selectedFile ? selectedFile.name : t('pages.requests.form.selectDocumentFile')}
+                  {selectedFiles.length > 0 
+                    ? `Đã chọn ${selectedFiles.length} file(s)` 
+                    : t('pages.requests.form.selectDocumentFile')
+                  }
                 </span>
               </label>
             </div>
-            {selectedFile && (
-              <div className="file-preview">
-                <span className="file-name">{selectedFile.name}</span>
-                <button 
-                  type="button" 
-                  onClick={removeFile}
-                  className="file-remove"
-                >
-                  ✕
-                </button>
+            
+            {selectedFiles.length > 0 && (
+              <div className="files-preview">
+                <div className="files-header">
+                  <span className="files-count">Files đã chọn ({selectedFiles.length})</span>
+                  <button 
+                    type="button" 
+                    onClick={removeAllFiles}
+                    className="remove-all-btn"
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
+                <div className="files-list">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="file-preview">
+                      <span className="file-name">{file.name}</span>
+                      <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      <button 
+                        type="button" 
+                        onClick={() => removeFile(index)}
+                        className="file-remove"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+            
             <small className="file-hint">
-              {t('pages.requests.form.fileFormat')}
+              {t('pages.requests.form.fileFormat')} - Có thể chọn nhiều file cùng lúc
             </small>
           </div>
         </>

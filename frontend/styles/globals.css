@@ -1940,6 +1940,68 @@ button, input, select {
   display: block;
 }
 
+/* Multiple files preview styles */
+.files-preview{
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  background: #f9fafb;
+}
+
+.files-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.files-count{
+  font-size: 13px;
+  color: var(--navy);
+  font-weight: 500;
+}
+
+.remove-all-btn{
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.remove-all-btn:hover{
+  background: #fee2e2;
+}
+
+.files-list{
+  padding: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.files-list .file-preview{
+  margin-bottom: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.files-list .file-preview:last-child{
+  margin-bottom: 0;
+}
+
+.file-size{
+  font-size: 11px;
+  color: #6b7280;
+  margin-left: 8px;
+}
+
 /* Document badges */
 .document-badge {
   display: inline-flex;
