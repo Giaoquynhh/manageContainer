@@ -8,15 +8,18 @@ import RequestStateMachine from './RequestStateMachine';
 import appointmentService from './AppointmentService';
 
 export class RequestService {
-	async createByCustomer(actor: any, payload: { type: string; container_no?: string; eta?: Date }, file?: Express.Multer.File) {
-		// Kiểm tra logic business: IMPORT cần container_no và file, EXPORT chỉ cần ETA
+	async createByCustomer(actor: any, payload: { type: string; container_no?: string; eta?: Date }, files?: Express.Multer.File[]) {
+		// Kiểm tra logic business: IMPORT cần container_no và files, EXPORT chỉ cần ETA
 		if (payload.type === 'IMPORT') {
 			if (!payload.container_no) {
 				throw new Error('Mã định danh container là bắt buộc cho yêu cầu nhập');
 			}
-			if (!file) {
+			if (!files || files.length === 0) {
 				throw new Error('Chứng từ là bắt buộc cho yêu cầu nhập');
 			}
+
+			// Kiểm tra container number đã tồn tại trong hệ thống chưa
+			await this.validateContainerNumberNotExists(payload.container_no);
 		}
 
 		const data = {
@@ -30,32 +33,35 @@ export class RequestService {
 		};
 		const req = await repo.create(data);
 		
-		// Xử lý upload file chỉ khi có file (IMPORT)
-		if (file) {
+		// Xử lý upload files chỉ khi có files (IMPORT)
+		if (files && files.length > 0) {
 			const uploadDir = path.join(process.cwd(), 'backend', 'uploads');
 			if (!fs.existsSync(uploadDir)) {
 				fs.mkdirSync(uploadDir, { recursive: true });
 			}
 			
-			// Tạo tên file unique
-			const timestamp = Date.now();
-			const fileExtension = path.extname(file.originalname);
-			const fileName = `${timestamp}_${req.id}${fileExtension}`;
-			const filePath = path.join(uploadDir, fileName);
-			
-			// Lưu file
-			fs.writeFileSync(filePath, file.buffer);
-			
-			// Tạo document record
-			await repo.createDoc({
-				request_id: req.id,
-				type: 'INITIAL_DOC',
-				name: file.originalname,
-				size: file.size,
-				version: 1,
-				uploader_id: actor._id,
-				storage_key: fileName
-			});
+			// Upload từng file
+			for (const file of files) {
+				// Tạo tên file unique
+				const timestamp = Date.now();
+				const fileExtension = path.extname(file.originalname);
+				const fileName = `${timestamp}_${req.id}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+				const filePath = path.join(uploadDir, fileName);
+				
+				// Lưu file
+				fs.writeFileSync(filePath, file.buffer);
+				
+				// Tạo document record
+				await repo.createDoc({
+					request_id: req.id,
+					type: 'INITIAL_DOC',
+					name: file.originalname,
+					size: file.size,
+					version: 1,
+					uploader_id: actor._id,
+					storage_key: fileName
+				});
+			}
 		}
 		
 		await audit(actor._id, 'REQUEST.CREATED', 'ServiceRequest', req.id);
@@ -71,6 +77,11 @@ export class RequestService {
 	}
 
 	async createBySaleAdmin(actor: any, payload: any) {
+		// Kiểm tra container number đã tồn tại trong hệ thống chưa (chỉ cho IMPORT)
+		if (payload.type === 'IMPORT' && payload.container_no) {
+			await this.validateContainerNumberNotExists(payload.container_no);
+		}
+
 		const req = await repo.create({ ...payload, created_by: actor._id, status: 'SCHEDULED', history: [{ at: new Date().toISOString(), by: actor._id, action: 'SCHEDULED' }] });
 		await audit(actor._id, 'REQUEST.SCHEDULED', 'ServiceRequest', req.id);
 		return req;
@@ -236,6 +247,57 @@ export class RequestService {
 		await audit(actor._id, 'REQUEST.CONTAINER_ASSIGNED', 'ServiceRequest', id, { container_no: containerNo });
 		
 		return updated;
+	}
+
+	// Kiểm tra container number chưa tồn tại trong hệ thống
+	async validateContainerNumberNotExists(containerNo: string): Promise<void> {
+		// Các trạng thái được coi là "active" (chưa hoàn thành)
+		const activeStatuses = [
+			'PENDING',
+			'PICK_CONTAINER', 
+			'SCHEDULED',
+			'SCHEDULED_INFO_ADDED',
+			'FORWARDED',
+			'SENT_TO_GATE',
+			'GATE_IN',
+			'CHECKING',
+			'PENDING_ACCEPT',
+			'ACCEPT',
+			'CHECKED',
+			'POSITIONED',
+			'FORKLIFTING',
+			'IN_YARD',
+			'IN_CAR'
+		];
+
+		// 1. Kiểm tra container có trong ServiceRequest active không
+		const existingRequest = await prisma.serviceRequest.findFirst({
+			where: {
+				container_no: containerNo,
+				type: 'IMPORT',
+				status: { in: activeStatuses },
+				// Không bao gồm các request đã bị xóa
+				depot_deleted_at: null,
+				customer_deleted_at: null
+			}
+		});
+
+		if (existingRequest) {
+			throw new Error(`Container ${containerNo} đã tồn tại trong hệ thống với trạng thái ${existingRequest.status}. Chỉ có thể tạo request mới khi container này không còn trong hệ thống.`);
+		}
+
+		// 2. Kiểm tra container có trong Yard không (YardPlacement)
+		const existingYardPlacement = await prisma.yardPlacement.findFirst({
+			where: {
+				container_no: containerNo,
+				status: { in: ['HOLD', 'OCCUPIED'] }, // Container đang được giữ chỗ hoặc đã chiếm chỗ
+				removed_at: null // Chưa bị xóa khỏi yard
+			}
+		});
+
+		if (existingYardPlacement) {
+			throw new Error(`Container ${containerNo} đã có trong bãi (Yard) với trạng thái ${existingYardPlacement.status}. Chỉ có thể tạo request mới khi container này không còn trong bãi.`);
+		}
 	}
 
 	// Lấy danh sách container available cho EXPORT request

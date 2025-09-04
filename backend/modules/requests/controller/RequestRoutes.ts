@@ -36,8 +36,8 @@ const upload = multer({
 
 const router = Router();
 
-// Customer create/list - với file upload
-router.post('/', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin'), upload.single('document'), (req, res) => ((req as any).user?.role === 'SaleAdmin' ? controller.createBySale(req as any, res) : controller.create(req as any, res)));
+// Customer create/list - với file upload (hỗ trợ nhiều files)
+router.post('/', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin'), upload.array('documents', 10), (req, res) => ((req as any).user?.role === 'SaleAdmin' ? controller.createBySale(req as any, res) : controller.create(req as any, res)));
 router.get('/', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','Accountant','SystemAdmin'), (req, res) => controller.list(req as any, res));
 
 // Get single request by ID

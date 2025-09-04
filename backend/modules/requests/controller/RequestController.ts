@@ -9,31 +9,33 @@ export class RequestController {
 		try {
 			// Xử lý form data với file upload
 			const formData = req.body;
-			const file = (req as any).file;
+			const files = (req as any).files as Express.Multer.File[];
 			
 			// Validate form data
 			const { error, value } = createRequestSchema.validate(formData);
 			if (error) return res.status(400).json({ message: error.message });
 			
-			// Validate file nếu có
-			if (file) {
+			// Validate files nếu có
+			if (files && files.length > 0) {
 				const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
 				const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
 				
-				const fileExtension = path.extname(file.originalname).toLowerCase();
-				const hasValidMimeType = allowedMimeTypes.includes(file.mimetype);
-				const hasValidExtension = allowedExtensions.includes(fileExtension);
-				
-				if (!hasValidMimeType && !hasValidExtension) {
-					return res.status(400).json({ message: 'Chỉ chấp nhận file PDF hoặc ảnh (JPG, PNG)' });
-				}
-				
-				if (file.size > 10 * 1024 * 1024) {
-					return res.status(400).json({ message: 'File quá lớn. Kích thước tối đa là 10MB' });
+				for (const file of files) {
+					const fileExtension = path.extname(file.originalname).toLowerCase();
+					const hasValidMimeType = allowedMimeTypes.includes(file.mimetype);
+					const hasValidExtension = allowedExtensions.includes(fileExtension);
+					
+					if (!hasValidMimeType && !hasValidExtension) {
+						return res.status(400).json({ message: 'Chỉ chấp nhận file PDF hoặc ảnh (JPG, PNG)' });
+					}
+					
+					if (file.size > 10 * 1024 * 1024) {
+						return res.status(400).json({ message: 'File quá lớn. Kích thước tối đa là 10MB' });
+					}
 				}
 			}
 			
-			const result = await service.createByCustomer(req.user!, value, file);
+			const result = await service.createByCustomer(req.user!, value, files);
 			return res.status(201).json(result);
 		} catch (e: any) { 
 			return res.status(400).json({ message: e.message }); 
