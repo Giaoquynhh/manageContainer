@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '@services/api';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useToast } from '../../../hooks/useToastHook';
 
 interface GateActionButtonsProps {
   requestId: string;
@@ -16,6 +17,7 @@ export default function GateActionButtons({
   onActionSuccess 
 }: GateActionButtonsProps) {
   const { t } = useTranslation();
+  const { showSuccess, showError } = useToast();
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,13 +52,19 @@ export default function GateActionButtons({
       // Validate biển số xe: 5-20 ký tự, chữ/số/gạch/space/dấu chấm
       const validPlate = /^[A-Z0-9\-\s\.]{5,20}$/.test(normalizedPlate);
       if (!validPlate) {
-        alert(t('pages.gate.validation.invalidPlate'));
+        showError(
+          t('pages.gate.validation.invalidPlate'),
+          'Biển số xe phải có 5-20 ký tự và chỉ chứa chữ, số, gạch ngang, khoảng trắng và dấu chấm'
+        );
         return;
       }
       
       // Validate tên tài xế: 2-100 ký tự
       if (normalizedDriver.length < 2) {
-        alert(t('pages.gate.validation.invalidDriver'));
+        showError(
+          t('pages.gate.validation.invalidDriver'),
+          'Tên tài xế phải có ít nhất 2 ký tự'
+        );
         return;
       }
       
@@ -69,14 +77,22 @@ export default function GateActionButtons({
       // Hiển thị thông báo thành công
       const newStatus = requestType === 'EXPORT' ? 'GATE_OUT' : 'GATE_IN';
       const newStatusLabel = statusLabel(newStatus);
-      alert(`${t('pages.gate.statusLabel')}: ${newStatusLabel}.\n${t('pages.gate.tableHeaders.driverName')}: ${normalizedDriver}\n${t('pages.gate.tableHeaders.licensePlate')}: ${normalizedPlate}`);
+      
+      showSuccess(
+        `✅ ${newStatusLabel}`,
+        `${t('pages.gate.tableHeaders.driverName')}: ${normalizedDriver}\n${t('pages.gate.tableHeaders.licensePlate')}: ${normalizedPlate}`,
+        6000
+      );
       
       setIsApproveModalOpen(false);
       setPlateNo('');
       setDriverName('');
       onActionSuccess();
     } catch (error: any) {
-      alert(`${t('pages.gate.messages.approveErrorPrefix')}: ${error.response?.data?.message || error.message}`);
+      showError(
+        t('pages.gate.messages.approveErrorPrefix'),
+        error.response?.data?.message || error.message
+      );
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +104,10 @@ export default function GateActionButtons({
 
   const handleReject = async () => {
     if (!rejectReason.trim() || rejectReason.length < 5) {
-      alert(t('pages.gate.validation.rejectReasonMin'));
+      showError(
+        t('pages.gate.validation.rejectReasonMin'),
+        'Lý do từ chối phải có ít nhất 5 ký tự'
+      );
       return;
     }
 
@@ -98,12 +117,19 @@ export default function GateActionButtons({
         reason: rejectReason
       });
       
-      alert(t('pages.gate.messages.rejected'));
+      showSuccess(
+        '❌ Đã từ chối',
+        t('pages.gate.messages.rejected'),
+        5000
+      );
       setIsRejectModalOpen(false);
       setRejectReason('');
       onActionSuccess();
     } catch (error: any) {
-      alert(`${t('pages.gate.messages.rejectErrorPrefix')}: ${error.response?.data?.message || error.message}`);
+      showError(
+        t('pages.gate.messages.rejectErrorPrefix'),
+        error.response?.data?.message || error.message
+      );
     } finally {
       setIsLoading(false);
     }
@@ -113,10 +139,17 @@ export default function GateActionButtons({
     try {
       setIsLoading(true);
       await api.patch(`/gate/requests/${requestId}/gate-out`);
-      alert('Đã chuyển trạng thái: GATE_OUT - Xe rời kho.');
+      showSuccess(
+        '🚚 Xe rời kho',
+        'Đã chuyển trạng thái: GATE_OUT - Xe rời kho.',
+        5000
+      );
       onActionSuccess();
     } catch (error: any) {
-      alert(`Lỗi khi GATE_OUT: ${error.response?.data?.message || error.message}`);
+      showError(
+        'Lỗi khi GATE_OUT',
+        error.response?.data?.message || error.message
+      );
     } finally {
       setIsLoading(false);
     }

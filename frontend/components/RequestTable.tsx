@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@services/api';
-import { yardApi } from '../services/yard';
 import ChatWindowStandalone from './chat/ChatWindowStandalone';
 import InvoiceViewer from './InvoiceViewer';
 import { useTranslation } from '../hooks/useTranslation';
@@ -45,8 +44,6 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
   const [selectedDocument, setSelectedDocument] = React.useState<any>(null);
   const [showImageModal, setShowImageModal] = React.useState(false);
   const [activeChatRequests, setActiveChatRequests] = React.useState<Set<string>>(new Set());
-  const [containerLocations, setContainerLocations] = useState<Record<string, string>>({});
-  const [loadingLocations, setLoadingLocations] = useState<Set<string>>(new Set());
   const [showInvoiceViewer, setShowInvoiceViewer] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string>('');
   const { t, currentLanguage } = useTranslation();
@@ -68,13 +65,20 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
       COMPLETED: { label: t('pages.requests.filterOptions.completed'), className: 'status-completed' },
       EXPORTED: { label: t('pages.requests.filterOptions.exported'), className: 'status-exported' },
       REJECTED: { label: t('pages.requests.filterOptions.rejected'), className: 'status-rejected' },
+      SCHEDULED: { label: t('pages.requests.filterOptions.scheduled'), className: 'status-scheduled' },
+      FORWARDED: { label: t('pages.gate.statusOptions.forwarded'), className: 'status-forwarded' },
       POSITIONED: { label: t('pages.requests.filterOptions.positioned'), className: 'status-positioned' },
       FORKLIFTING: { label: t('pages.requests.filterOptions.forklifting'), className: 'status-forklifting' },
       IN_YARD: { label: t('pages.requests.filterOptions.inYard'), className: 'status-in-yard' },
       IN_CAR: { label: t('pages.requests.filterOptions.inCar'), className: 'status-in-car' },
       LEFT_YARD: { label: t('pages.requests.filterOptions.leftYard'), className: 'status-left-yard' },
       PENDING_ACCEPT: { label: t('pages.requests.filterOptions.pendingAccept'), className: 'status-pending-accept' },
-      ACCEPT: { label: t('pages.requests.filterOptions.approved'), className: 'status-accept' }
+      ACCEPT: { label: t('pages.requests.filterOptions.approved'), className: 'status-accept' },
+      GATE_IN: { label: t('pages.gate.statusOptions.gateIn'), className: 'status-gate-in' },
+      GATE_OUT: { label: t('pages.gate.statusOptions.gateOut'), className: 'status-gate-out' },
+      GATE_REJECTED: { label: t('pages.gate.statusOptions.gateRejected'), className: 'status-gate-rejected' },
+      CHECKING: { label: t('pages.requests.filterOptions.checking'), className: 'status-checking' },
+      CHECKED: { label: t('pages.requests.filterOptions.checked'), className: 'status-checked' }
     };
 
     const config = statusConfig[status] || { label: status, className: 'status-default' };
@@ -168,64 +172,6 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
     return ext === 'pdf';
   };
 
-  // Function để lấy vị trí container từ API yard (tương tự như depot)
-  const getContainerLocation = async (containerNo: string) => {
-    if (!containerNo) return null;
-    
-    // Kiểm tra cache
-    if (containerLocations[containerNo]) {
-      return containerLocations[containerNo];
-    }
-    
-    // Kiểm tra đang loading
-    if (loadingLocations.has(containerNo)) {
-      return null;
-    }
-    
-    try {
-      setLoadingLocations(prev => new Set(prev).add(containerNo));
-      
-      // Gọi API yard để lấy vị trí container
-      const locationData = await yardApi.locate(containerNo);
-      
-      if (locationData && locationData.slot) {
-        const yardName = locationData.slot.block?.yard?.name || 'Depot';
-        const blockCode = locationData.slot.block?.code || '';
-        const slotCode = locationData.slot.code || '';
-        const location = `${yardName} / ${blockCode} / ${slotCode}`;
-        
-        // Cache kết quả
-        setContainerLocations(prev => ({
-          ...prev,
-          [containerNo]: location
-        }));
-        
-        return location;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error fetching container location:', error);
-      return null;
-    } finally {
-      setLoadingLocations(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(containerNo);
-        return newSet;
-      });
-    }
-  };
-
-  // Load vị trí cho tất cả container khi component mount
-  useEffect(() => {
-    if (data && data.length > 0) {
-      data.forEach(item => {
-        if (item.container_no && item.type === 'EXPORT') {
-          getContainerLocation(item.container_no);
-        }
-      });
-    }
-  }, [data]);
 
   if (loading) {
     return (
@@ -285,22 +231,7 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                   )}
                 </td>
                 <td>
-                  <div className="status-with-location">
-                    {getStatusBadge(item.status)}
-                    {item.type === 'EXPORT' && item.container_no && (
-                      <div className="location-info">
-                        <span className="location-badge">
-                          {loadingLocations.has(item.container_no) ? (
-                            <span className="loading-location">⏳ {t('common.loading')}</span>
-                          ) : (
-                            <>
-                              📍 {containerLocations[item.container_no] || t('pages.requests.location.unknown')}
-                            </>
-                          )}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  {getStatusBadge(item.status)}
                 </td>
                 <td>
                   {hasDocuments(item) ? (
@@ -377,11 +308,11 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                           className="btn btn-sm btn-info"
                           onClick={() => {
                             // TODO: Open upload modal
-                            alert('Tính năng upload đang được phát triển!');
+                            alert(t('pages.requests.messages.uploadFeatureInDevelopment'));
                           }}
-                          title="Gửi thông tin chi tiết"
+                          title={t('pages.requests.actions.sendDetails')}
                         >
-                          📎 Gửi thông tin
+                          📎 {t('pages.requests.actions.sendDetails')}
                         </button>
                       )}
 
@@ -393,12 +324,12 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                             							if (item.actions?.handleOpenSupplementPopup) {
 								item.actions.handleOpenSupplementPopup(item.id);
 							} else {
-								alert('Tính năng bổ sung thông tin đang được phát triển!');
+								alert(t('pages.requests.messages.supplementFeatureInDevelopment'));
 							}
                           }}
-                          title="Bổ sung thông tin"
+                          title={t('pages.requests.actions.supplementInfo')}
                         >
-                          📋 Bổ sung thông tin
+                          📋 {t('pages.requests.actions.supplementInfo')}
                         </button>
                       )}
 
@@ -460,45 +391,45 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                                if (item.actions?.handleViewInvoice) {
                                  item.actions.handleViewInvoice(item.id);
                                } else {
-                                 alert('Tính năng xem hóa đơn đang được phát triển!');
+                                 alert(t('pages.requests.messages.viewInvoiceFeatureInDevelopment'));
                                }
                              }}
-                             title="Xem hóa đơn sửa chữa"
+                             title={t('pages.requests.actions.viewRepairInvoiceTitle')}
                            >
-                             {item.actions.loadingId === item.id + 'VIEW_INVOICE' ? '⏳' : '📄'} Xem hóa đơn
+                             {item.actions.loadingId === item.id + 'VIEW_INVOICE' ? '⏳' : '📄'} {t('pages.requests.actions.viewRepairInvoice')}
                            </button>
                           <button
                             className="btn btn-sm btn-success"
                             disabled={item.actions.loadingId === item.id + 'ACCEPT'}
                             onClick={() => {
-                              if (window.confirm('Bạn có chắc chắn muốn chấp nhận hóa đơn sửa chữa này?')) {
+                              if (window.confirm(t('pages.requests.messages.confirmAcceptRepairInvoice'))) {
                                 if (item.actions?.handleAccept) {
                                   item.actions.handleAccept(item.id);
                                 } else {
-                                  alert('Tính năng chấp nhận đang được phát triển!');
+                                  alert(t('pages.requests.messages.acceptFeatureInDevelopment'));
                                 }
                               }
                             }}
-                            title="Chấp nhận hóa đơn sửa chữa"
+                            title={t('pages.requests.actions.acceptRepairInvoice')}
                           >
-                            {item.actions.loadingId === item.id + 'ACCEPT' ? '⏳' : '✅'} Chấp nhận
+                            {item.actions.loadingId === item.id + 'ACCEPT' ? '⏳' : '✅'} {t('pages.requests.actions.accept')}
                           </button>
                           <button
                             className="btn btn-sm btn-danger"
                             disabled={item.actions.loadingId === item.id + 'REJECT'}
                             onClick={() => {
-                              const reason = window.prompt('Nhập lý do từ chối:');
+                              const reason = window.prompt(t('pages.requests.prompts.enterRejectionReason'));
                               if (reason) {
                                 if (item.actions?.handleRejectByCustomer) {
                                   item.actions.handleRejectByCustomer(item.id, reason);
                                 } else {
-                                  alert('Tính năng từ chối đang được phát triển!');
+                                  alert(t('pages.requests.messages.rejectFeatureInDevelopment'));
                                 }
                               }
                             }}
-                            title="Từ chối hóa đơn sửa chữa"
+                            title={t('pages.requests.actions.rejectRepairInvoice')}
                           >
-                            {item.actions.loadingId === item.id + 'REJECT' ? '⏳' : '❌'} Từ chối
+                            {item.actions.loadingId === item.id + 'REJECT' ? '⏳' : '❌'} {t('pages.requests.actions.reject')}
                           </button>
                         </>
                       )}
@@ -509,13 +440,13 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                           className="btn btn-sm btn-outline"
                           disabled={item.actions.loadingId === item.id + 'DELETE'}
                           onClick={() => {
-                            if (window.confirm('Xóa khỏi danh sách của bạn?\nRequest vẫn hiển thị trạng thái Từ chối bên Kho.')) {
+                            if (window.confirm(t('pages.requests.messages.confirmSoftDeleteCustomer'))) {
                               item.actions!.softDeleteRequest!(item.id, 'customer');
                             }
                           }}
-                          title="Xóa khỏi danh sách"
+                          title={t('pages.requests.actions.removeFromList')}
                         >
-                          {item.actions.loadingId === item.id + 'DELETE' ? '⏳' : '🗑️'} Xóa
+                          {item.actions.loadingId === item.id + 'DELETE' ? '⏳' : '🗑️'} {t('common.remove')}
                         </button>
                       )}
 
@@ -525,17 +456,17 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
                           <button
                             className="btn btn-sm btn-info"
                             onClick={() => handleViewInvoice(item.id)}
-                            title="Xem hóa đơn"
+                            title={t('pages.requests.actions.viewInvoice')}
                           >
-                            📄 Xem hóa đơn
+                            📄 {t('pages.requests.actions.viewInvoice')}
                           </button>
                           {!item.is_paid && (
                             <button
                               className="btn btn-sm btn-success"
                               onClick={() => handlePayment(item.id)}
-                              title="Thanh toán hóa đơn"
+                              title={t('pages.requests.actions.payInvoice')}
                             >
-                              💰 Thanh toán
+                              💰 {t('pages.requests.actions.payment')}
                             </button>
                           )}
                         </>

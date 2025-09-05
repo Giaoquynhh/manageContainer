@@ -87,6 +87,9 @@ export default function DepotRequestTable({
 			PENDING_ACCEPT: { label: safeT('pages.requests.filterOptions.pendingAccept', 'Pending confirmation'), className: 'status-pending-accept' },
 			CHECKING: { label: safeT('pages.requests.filterOptions.checking', 'Checking'), className: 'status-checking' },
 			CHECKED: { label: safeT('pages.requests.filterOptions.checked', 'Checked'), className: 'status-checked' },
+			GATE_IN: { label: safeT('pages.gate.statusOptions.gateIn', 'Gate In'), className: 'status-gate-in' },
+			GATE_OUT: { label: safeT('pages.gate.statusOptions.gateOut', 'Gate Out'), className: 'status-gate-out' },
+			GATE_REJECTED: { label: safeT('pages.gate.statusOptions.gateRejected', 'Gate Rejected'), className: 'status-gate-rejected' },
 			POSITIONED: { label: safeT('pages.requests.filterOptions.positioned', 'Positioned in yard'), className: 'status-positioned' },
 			FORKLIFTING: { label: safeT('pages.requests.filterOptions.forklifting', 'Forklifting'), className: 'status-forklifting' }
 		};
@@ -206,7 +209,7 @@ export default function DepotRequestTable({
 									<div className="eta-empty">-</div>
 								)}
 							</td>
-							<td>
+							<td data-column="status">
 								{getStatusBadge(item.status)}
 							</td>
 							<td>

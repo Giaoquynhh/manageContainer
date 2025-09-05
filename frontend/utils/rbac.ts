@@ -10,7 +10,7 @@ export function homeFor(role: AppRole): string {
 }
 
 export function canViewUsersPartners(role?: string): boolean {
-	return ['SystemAdmin','BusinessAdmin','HRManager','CustomerAdmin'].includes(String(role));
+	return ['SystemAdmin','BusinessAdmin','HRManager','CustomerAdmin','admin'].includes(String(role));
 }
 
 export function showInternalForm(role?: string): boolean {
@@ -19,6 +19,10 @@ export function showInternalForm(role?: string): boolean {
 
 export function showCustomerForm(role?: string): boolean {
 	return ['SystemAdmin','BusinessAdmin','CustomerAdmin'].includes(String(role));
+}
+
+export function showPartnerForm(role?: string): boolean {
+	return ['SystemAdmin','BusinessAdmin','admin','CustomerAdmin'].includes(String(role));
 }
 
 export function isCustomerRole(role?: string): boolean {

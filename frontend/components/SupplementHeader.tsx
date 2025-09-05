@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface SupplementHeaderProps {
   isMinimized: boolean;
@@ -11,25 +12,27 @@ export default function SupplementHeader({
   onMinimize, 
   onClose 
 }: SupplementHeaderProps) {
+  const { t } = useTranslation();
+  
   return (
     <div className="supplement-header">
       <div className="supplement-header-content">
         <div className="supplement-title">
           <span className="supplement-icon">📋</span>
-          <span className="supplement-text">Bổ sung thông tin</span>
+          <span className="supplement-text">{t('pages.requests.supplementTitle')}</span>
         </div>
         <div className="supplement-controls">
           <button
             className="supplement-control-btn"
             onClick={onMinimize}
-            title={isMinimized ? "Mở rộng" : "Thu nhỏ"}
+            title={isMinimized ? t('pages.requests.supplementExpand') : t('pages.requests.supplementMinimize')}
           >
             {isMinimized ? "🔽" : "🔼"}
           </button>
           <button
             className="supplement-control-btn"
             onClick={onClose}
-            title="Đóng"
+            title={t('pages.requests.supplementClose')}
           >
             ✕
           </button>

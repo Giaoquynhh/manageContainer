@@ -1,0 +1,409 @@
+/* Register Page - Modern Glassmorphism Design */
+
+.register-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(147, 51, 234, 0.1) 25%, 
+    rgba(236, 72, 153, 0.1) 50%, 
+    rgba(14, 165, 233, 0.1) 75%, 
+    rgba(34, 197, 94, 0.1) 100%);
+  background-attachment: fixed;
+  position: relative;
+  padding: 2rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.register-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.register-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.register-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.register-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.register-icon {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.register-title h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+.register-description {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+  font-weight: 400;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.input-group {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  font-size: 1rem;
+  color: #64748b;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #64748b;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+.validation-icon {
+  position: absolute;
+  right: 3.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  font-size: 1rem;
+  pointer-events: none;
+  animation: fadeInScale 0.3s ease;
+}
+
+.validation-icon.success {
+  color: #10b981;
+}
+
+.validation-icon.error {
+  color: #ef4444;
+}
+
+
+.register-input {
+  width: 100%;
+  height: 4rem;
+  padding: 0 1rem;
+  border: 2px solid rgba(226, 232, 240, 0.8);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  font-size: 1rem;
+  font-weight: 500;
+  color: #000000;
+  transition: all 0.3s ease;
+  outline: none;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Padding cho input có nút bên phải */
+.input-group:has(.password-toggle) .register-input {
+  padding-right: 3.5rem;
+}
+
+/* Padding cho input có validation icon */
+.input-group:has(.validation-icon) .register-input {
+  padding-right: 6rem;
+}
+
+/* Icon chìm xuống khi focus */
+.register-input:focus ~ .input-icon {
+  transform: translateY(-50%) scale(0.8);
+  color: #3b82f6;
+}
+
+.register-input:focus ~ .validation-icon {
+  transform: translateY(-50%) scale(0.8);
+}
+
+
+.register-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.register-input:focus {
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 0 0 4px rgba(59, 130, 246, 0.1),
+    0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+
+.token-input {
+  background: rgba(248, 250, 252, 0.9);
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.token-input:focus {
+  border-color: #e2e8f0;
+  box-shadow: none;
+  transform: none;
+}
+
+.input-success {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+}
+
+.input-success:focus {
+  box-shadow: 
+    0 0 0 4px rgba(16, 185, 129, 0.1),
+    0 4px 12px rgba(16, 185, 129, 0.15) !important;
+}
+
+.input-error {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+}
+
+.input-error:focus {
+  box-shadow: 
+    0 0 0 4px rgba(239, 68, 68, 0.1),
+    0 4px 12px rgba(239, 68, 68, 0.15) !important;
+}
+
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.register-button {
+  width: 100%;
+  height: 3.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 1rem;
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  box-shadow: 
+    0 10px 25px rgba(59, 130, 246, 0.3),
+    0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.register-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.register-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 15px 35px rgba(59, 130, 246, 0.4),
+    0 8px 20px rgba(139, 92, 246, 0.3);
+}
+
+.register-button:hover::before {
+  left: 100%;
+}
+
+.register-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.register-button span {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.register-message {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  animation: slideInUp 0.3s ease;
+  margin-top: 1rem;
+}
+
+.register-message.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.register-message.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .register-page {
+    padding: 1rem;
+  }
+  
+  .register-card {
+    padding: 2rem 1.5rem;
+    border-radius: 1.5rem;
+  }
+  
+  .register-title h1 {
+    font-size: 1.5rem;
+  }
+  
+  .register-description {
+    font-size: 0.8rem;
+  }
+  
+  .register-input {
+    height: 3.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .register-button {
+    height: 3rem;
+    font-size: 1rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .register-card {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .register-title h1 {
+    color: #f1f5f9;
+  }
+  
+  .register-description {
+    color: #94a3b8;
+  }
+  
+  .register-input {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(71, 85, 105, 0.5);
+    color: #f1f5f9;
+  }
+  
+  .register-input::placeholder {
+    color: #64748b;
+  }
+  
+  .token-input {
+    background: rgba(51, 65, 85, 0.6);
+    color: #94a3b8;
+  }
+}

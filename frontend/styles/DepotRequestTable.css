@@ -27,10 +27,20 @@
   font-size: 14px;
 }
 
+.table-modern th[data-column="status"] {
+  min-width: 100px;
+  white-space: nowrap;
+}
+
 .table-modern td {
   padding: 14px 20px; /* nới padding ô dữ liệu */
   border-bottom: 1px solid #f3f4f6;
   vertical-align: top;
+}
+
+.table-modern td[data-column="status"] {
+  min-width: 100px;
+  white-space: nowrap;
 }
 
 .table-modern tbody tr:hover {
@@ -186,12 +196,16 @@
 /* Status Badge */
 .status-badge {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   text-align: center;
-  min-width: 80px;
+  min-width: 70px;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-pending {
@@ -227,6 +241,51 @@
 .status-scheduled {
   background: #e0e7ff;
   color: #3730a3;
+}
+
+.status-forwarded {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-forklifting {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.status-in-yard {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-in-car {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.status-left-yard {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.status-pending-accept {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-checking {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-checked {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-positioned {
+  background: #f0fdf4;
+  color: #166534;
 }
 
 .status-default {

@@ -3,6 +3,7 @@ import { api } from '@services/api';
 import GateRequestTable from './GateRequestTable';
 import GateSearchBar from './GateSearchBar';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useToast } from '../../../hooks/useToastHook';
 
 
 interface GateRequest {
@@ -22,6 +23,7 @@ export default function GateDashboard() {
   const [loading, setLoading] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(true); // Thêm state cho sidebar
   const { t } = useTranslation();
+  const { ToastContainer } = useToast();
 
 
   const [searchParams, setSearchParams] = useState({
@@ -226,6 +228,9 @@ export default function GateDashboard() {
             </button>
           </div>
         )}
+
+        {/* Toast Container */}
+        <ToastContainer />
     </main>
   );
 }

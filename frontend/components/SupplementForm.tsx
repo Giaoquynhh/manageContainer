@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { api } from '@services/api';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface SupplementFormProps {
   requestId: string;
@@ -12,6 +13,7 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -19,13 +21,13 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
       // Validate file type
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
       if (!allowedTypes.includes(selectedFile.type)) {
-        toast.error('Chỉ chấp nhận file PDF, JPG, PNG!');
+        toast.error(t('pages.requests.supplementFileTypeError'));
         return;
       }
 
       // Validate file size (10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
-        toast.error('File quá lớn! Tối đa 10MB.');
+        toast.error(t('pages.requests.supplementFileSizeError'));
         return;
       }
 
@@ -53,13 +55,13 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
       // Validate file type
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
       if (!allowedTypes.includes(droppedFile.type)) {
-        toast.error('Chỉ chấp nhận file PDF, JPG, PNG!');
+        toast.error(t('pages.requests.supplementFileTypeError'));
         return;
       }
 
       // Validate file size (10MB)
       if (droppedFile.size > 10 * 1024 * 1024) {
-        toast.error('File quá lớn! Tối đa 10MB.');
+        toast.error(t('pages.requests.supplementFileSizeError'));
         return;
       }
 
@@ -71,7 +73,7 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
     e.preventDefault();
     
     if (!file) {
-      toast.warning('Vui lòng chọn file!');
+      toast.warning(t('pages.requests.supplementNoFileWarning'));
       return;
     }
 
@@ -88,8 +90,8 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
       });
 
       // Hiển thị thông báo thành công với thông tin về việc tự động chuyển tiếp
-      toast.success('Upload tài liệu bổ sung thành công!', {
-        description: 'Yêu cầu đã được tự động chuyển tiếp sang trạng thái FORWARDED.',
+      toast.success(t('pages.requests.supplementUploadSuccess'), {
+        description: t('pages.requests.supplementUploadSuccessDescription'),
         duration: 5000,
       });
       
@@ -106,7 +108,7 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
        console.error('Upload error:', error);
        console.error('Error response:', error.response);
        console.error('Error message:', error.response?.data?.message);
-       toast.error(error.response?.data?.message || 'Upload thất bại!');
+       toast.error(error.response?.data?.message || t('pages.requests.supplementUploadError'));
      } finally {
       setIsUploading(false);
     }
@@ -122,7 +124,7 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
         <form onSubmit={handleSubmit}>
           <div className="supplement-upload-area">
             <div className="supplement-instructions">
-              <p>Upload tài liệu bổ sung (PDF, JPG, PNG, tối đa 10MB)</p>
+              <p>{t('pages.requests.supplementUploadInstructions')}</p>
             </div>
 
             <div
@@ -168,10 +170,10 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
                 <div className="drop-zone-content">
                   <div className="drop-zone-icon">📁</div>
                   <div className="drop-zone-text">
-                    Kéo thả file vào đây hoặc chọn file
+                    {t('pages.requests.supplementDragDropText')}
                   </div>
                   <div className="drop-zone-hint">
-                    PDF, JPG, PNG (tối đa 10MB)
+                    {t('pages.requests.supplementFileFormatHint')}
                   </div>
                 </div>
               )}
@@ -183,7 +185,7 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
                 className="supplement-upload-btn"
                 disabled={!file || isUploading}
               >
-                {isUploading ? '⏳ Đang upload...' : '📤 Upload'}
+                {isUploading ? `⏳ ${t('pages.requests.supplementUploading')}` : `📤 ${t('pages.requests.supplementUploadButton')}`}
               </button>
             </div>
           </div>

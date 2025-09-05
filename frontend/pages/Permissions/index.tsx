@@ -563,11 +563,6 @@ export default function PermissionsPage(){
          }
         
         /* Enhanced Action Buttons */
-        .action-buttons {
-          display: flex;
-          gap: 8px;
-          margin-top: 12px;
-        }
                          .btn-save {
           background: #059669;
           color: white;
@@ -886,7 +881,6 @@ export default function PermissionsPage(){
                         </div>
                       </td>
                       <td>
-                                                 <div className="action-buttons">
                                                        <button 
                               className="btn-save"
                               disabled={isSelf || (sel === current && sameStringSet(checkedPerms, currPerms)) || loadingRow === id}
@@ -919,10 +913,10 @@ export default function PermissionsPage(){
                                 showNotification('info', language === 'vi' ? `🔄 Đã hủy thay đổi cho ${u.email}` : `🔄 Cancelled changes for ${u.email}`);
                               }}
                               title={language === 'vi' ? "Hủy thay đổi" : "Cancel changes"}
+                              style={{marginTop: '8px'}}
                             >
                               {t[language].cancel}
                             </button>
-                         </div>
                       </td>
                     </tr>
                   );
@@ -1099,7 +1093,6 @@ export default function PermissionsPage(){
                     </div>
                   </div>
                   
-                  <div className="action-buttons">
                                          <button 
                        className="btn-save"
                        disabled={isSelf || (sel === current && sameStringSet(checkedPerms, currPerms)) || loadingRow === id}
@@ -1126,10 +1119,10 @@ export default function PermissionsPage(){
                            return newState;
                          });
                        }}
+                       style={{marginTop: '8px'}}
                      >
                        {t[language].cancel}
                      </button>
-                  </div>
                 </div>
               );
             })}

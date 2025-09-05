@@ -41,12 +41,35 @@
 /* Status badges */
 .status-badge {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   text-align: center;
-  min-width: 80px;
+  min-width: 70px;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Gate status badges */
+.status-gate-in {
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
+  border: 1px solid var(--color-gray-200);
+}
+
+.status-gate-out {
+  background: var(--color-blue-100);
+  color: var(--color-blue-800);
+  border: 1px solid var(--color-blue-200);
+}
+
+.status-gate-rejected {
+  background: var(--color-red-100);
+  color: var(--color-red-800);
+  border: 1px solid var(--color-red-200);
 }
 
 .status-pending {
@@ -121,6 +144,11 @@
 .status-forklifting {
   background-color: var(--color-orange-100);
   color: var(--color-orange-800);
+}
+
+.status-forwarded {
+  background-color: var(--color-yellow-100);
+  color: var(--color-yellow-800);
 }
 
 /* Gate statuses */
@@ -563,10 +591,10 @@
 }
 
 .depot-requests .status-badge {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  max-width: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
 }
 
 .depot-requests .table-modern .document-badge {

@@ -167,7 +167,7 @@ export default function YardConfigurationModal({
 
             <div className="form-group">
               <label className="form-label">
-                📦 Số lượng ô trong mỗi depot
+                📦 Số lượng chỗ trong mỗi depot
               </label>
               <input
                 type="number"
@@ -176,16 +176,16 @@ export default function YardConfigurationModal({
                 value={config.slotsPerDepot}
                 onChange={(e) => handleInputChange('slotsPerDepot', parseInt(e.target.value) || 1)}
                 className="form-input"
-                placeholder="Nhập số lượng ô"
+                placeholder="Nhập số lượng chỗ"
               />
               <div className="form-help">
-                Mỗi depot sẽ có {config.slotsPerDepot} ô (B1-1, B1-2, ..., B1-{config.slotsPerDepot})
+                Mỗi depot sẽ có {config.slotsPerDepot} chỗ (B1-1, B1-2, ..., B1-{config.slotsPerDepot})
               </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">
-                🏢 Số lượng tầng trong mỗi ô
+                🏢 Số lượng tầng trong mỗi chỗ
               </label>
               <input
                 type="number"
@@ -197,7 +197,7 @@ export default function YardConfigurationModal({
                 placeholder="Nhập số lượng tầng"
               />
               <div className="form-help">
-                Mỗi ô sẽ có {config.tiersPerSlot} tầng (T1, T2, ..., T{config.tiersPerSlot})
+                Mỗi chỗ sẽ có {config.tiersPerSlot} tầng (T1, T2, ..., T{config.tiersPerSlot})
               </div>
             </div>
           </div>
@@ -217,7 +217,7 @@ export default function YardConfigurationModal({
                 <div className="stat-icon">📦</div>
                 <div className="stat-content">
                   <div className="stat-value">{preview.totalSlots}</div>
-                  <div className="stat-label">Tổng số ô</div>
+                  <div className="stat-label">Tổng số chỗ</div>
                 </div>
               </div>
               <div className="preview-stat">
