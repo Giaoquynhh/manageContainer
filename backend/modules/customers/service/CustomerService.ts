@@ -53,6 +53,65 @@ export class CustomerService {
 		await audit(actorId, 'CUSTOMER.DISABLED', 'CUSTOMER', id);
 		return true;
 	}
+
+	async listPartners(query: any) {
+		const page = Math.max(1, Number(query.page) || 1);
+		const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+		const skip = (page - 1) * limit;
+
+		// Lấy danh sách customers với số lượng tài khoản
+		const [customers, total] = await Promise.all([
+			prisma.customer.findMany({
+				where: { status: 'ACTIVE' },
+				select: {
+					id: true,
+					name: true,
+					tax_code: true,
+					createdAt: true
+				},
+				orderBy: { createdAt: 'desc' },
+				skip,
+				take: limit
+			}),
+			prisma.customer.count({ where: { status: 'ACTIVE' } })
+		]);
+
+		// Đếm số lượng tài khoản cho mỗi customer và chỉ giữ lại những công ty có tài khoản
+		const partnersWithAccountCount = [];
+		
+		for (const customer of customers) {
+			const accountCount = await prisma.user.count({
+				where: {
+					tenant_id: customer.id,
+					role: { in: ['CustomerAdmin', 'CustomerUser'] }
+				}
+			});
+
+			// Chỉ thêm vào danh sách nếu có ít nhất 1 tài khoản
+			if (accountCount > 0) {
+				partnersWithAccountCount.push({
+					id: customer.id,
+					company_name: customer.name,
+					company_code: customer.tax_code,
+					account_count: accountCount,
+					created_at: customer.createdAt
+				});
+			} else {
+				// Tự động xóa customer nếu không có tài khoản nào
+				console.log(`Auto-deleting customer ${customer.name} (${customer.id}) - no accounts found`);
+				await prisma.customer.delete({
+					where: { id: customer.id }
+				});
+			}
+		}
+
+		return {
+			data: partnersWithAccountCount,
+			total: partnersWithAccountCount.length,
+			page,
+			totalPages: Math.ceil(partnersWithAccountCount.length / limit)
+		};
+	}
 }
 
 export default new CustomerService();

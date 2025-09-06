@@ -13,7 +13,7 @@ Tính năng này cho phép admin upload chứng từ cho yêu cầu xuất (EXPO
 
 ### 2. Quy trình upload
 ```
-Admin → Click "Thêm chứng từ" → Chọn file → Upload → Tự động chuyển trạng thái
+Admin → Click "Upload documents" → Chọn nhiều files → Upload → Tự động chuyển trạng thái
 ```
 
 ### 3. Chi tiết từng bước
@@ -22,12 +22,13 @@ Admin → Click "Thêm chứng từ" → Chọn file → Upload → Tự động
 - Kiểm tra request status = `PICK_CONTAINER`
 - Kiểm tra request type = `EXPORT`
 - Kiểm tra actor role có quyền upload
-- Kiểm tra file type và size (PDF, JPG, PNG, tối đa 10MB)
+- Kiểm tra file type và size (PDF, JPG, PNG, tối đa 10MB mỗi file)
+- Kiểm tra số lượng files (tối đa 10 files cùng lúc)
 
 #### **Bước 2: File Processing**
-- Lưu file vào thư mục `uploads/`
-- Tạo tên file unique: `{timestamp}_{request_id}_{type}{extension}`
-- Lưu thông tin document vào database
+- Lưu tất cả files vào thư mục `uploads/`
+- Tạo tên file unique cho mỗi file: `{timestamp}_{request_id}_{type}_{index}{extension}`
+- Lưu thông tin tất cả documents vào database
 
 #### **Bước 3: Auto Status Change**
 - Sử dụng `RequestStateMachine.canTransition()` để kiểm tra
@@ -39,12 +40,16 @@ Admin → Click "Thêm chứng từ" → Chọn file → Upload → Tự động
 
 ### 1. Routes (`RequestRoutes.ts`)
 ```typescript
-// Documents
+// Documents - Single file upload
 router.post('/:id/docs', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser','SystemAdmin','BusinessAdmin'), upload.single('file'), (req, res) => controller.uploadDoc(req as any, res));
+
+// Documents - Multiple files upload
+router.post('/:id/docs/multiple', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser','SystemAdmin','BusinessAdmin'), upload.array('files', 10), (req, res) => controller.uploadMultipleDocs(req as any, res));
 ```
 
 ### 2. Controller (`RequestController.ts`)
 ```typescript
+// Single file upload
 async uploadDoc(req: AuthRequest, res: Response) {
     const { error, value } = uploadDocSchema.validate(req.body);
     if (error) return res.status(400).json({ message: error.message });
@@ -54,10 +59,26 @@ async uploadDoc(req: AuthRequest, res: Response) {
         return res.status(400).json({ message: e.message }); 
     }
 }
+
+// Multiple files upload
+async uploadMultipleDocs(req: AuthRequest, res: Response) {
+    const { error, value } = uploadDocSchema.validate(req.body);
+    if (error) return res.status(400).json({ message: error.message });
+    try { 
+        const files = (req as any).files || [];
+        if (files.length === 0) {
+            return res.status(400).json({ message: 'Không có file nào được upload' });
+        }
+        return res.status(201).json(await service.uploadMultipleDocuments(req.user!, req.params.id, value.type, files)); 
+    } catch (e: any) { 
+        return res.status(400).json({ message: e.message }); 
+    }
+}
 ```
 
 ### 3. Service (`RequestService.ts`)
 ```typescript
+// Single file upload
 async uploadDocument(actor: any, request_id: string, type: 'EIR'|'LOLO'|'INVOICE'|'SUPPLEMENT'|'EXPORT_DOC', file: Express.Multer.File) {
     // Validation cho EXPORT_DOC
     if (type === 'EXPORT_DOC') {
@@ -74,26 +95,27 @@ async uploadDocument(actor: any, request_id: string, type: 'EIR'|'LOLO'|'INVOICE
     
     // Auto status change logic
     if (type === 'EXPORT_DOC') {
-        const canTransition = RequestStateMachine.canTransition(req.status, 'SCHEDULED', actor.role);
-        if (canTransition) {
-            await RequestStateMachine.executeTransition(
-                actor, request_id, req.status, 'SCHEDULED',
-                'Tự động chuyển trạng thái sau khi upload chứng từ xuất'
-            );
-            
-            const updatedRequest = await repo.update(request_id, {
-                status: 'SCHEDULED',
-                history: [...req.history, {
-                    at: new Date().toISOString(),
-                    by: actor._id,
-                    action: 'SCHEDULED',
-                    reason: 'Tự động chuyển trạng thái sau khi upload chứng từ xuất',
-                    document_id: doc.id,
-                    document_type: 'EXPORT_DOC'
-                }]
-            });
+        // ... existing logic
+    }
+}
+
+// Multiple files upload
+async uploadMultipleDocuments(actor: any, request_id: string, type: 'EIR'|'LOLO'|'INVOICE'|'SUPPLEMENT'|'EXPORT_DOC', files: Express.Multer.File[]) {
+    // Validation cho EXPORT_DOC
+    if (type === 'EXPORT_DOC') {
+        if (req.status !== 'PICK_CONTAINER') {
+            throw new Error('Chỉ upload chứng từ xuất khi yêu cầu đang ở trạng thái chọn container');
+        }
+        if (req.type !== 'EXPORT') {
+            throw new Error('Chỉ upload chứng từ xuất cho yêu cầu loại EXPORT');
+        }
+        if (!['SaleAdmin', 'SystemAdmin', 'BusinessAdmin'].includes(actor.role)) {
+            throw new Error('Chỉ admin được upload chứng từ xuất');
         }
     }
+    
+    // Process multiple files
+    return await RequestDocumentService.uploadMultipleDocuments(actor, request_id, type, files);
 }
 ```
 
@@ -229,20 +251,22 @@ manageContainer/
 ## Testing
 
 ### 1. Test Cases
-- ✅ Upload PDF cho EXPORT request với status PICK_CONTAINER
-- ✅ Upload JPG cho EXPORT request với status PICK_CONTAINER  
-- ✅ Upload PNG cho EXPORT request với status PICK_CONTAINER
+- ✅ Upload multiple PDF files cho EXPORT request với status PICK_CONTAINER
+- ✅ Upload multiple JPG files cho EXPORT request với status PICK_CONTAINER  
+- ✅ Upload multiple PNG files cho EXPORT request với status PICK_CONTAINER
+- ✅ Upload mixed files (PDF + JPG + PNG) cho EXPORT request với status PICK_CONTAINER
+- ❌ Upload quá 10 files cùng lúc
 - ❌ Upload file không hợp lệ (txt, docx)
 - ❌ Upload cho IMPORT request
 - ❌ Upload cho request với status khác PICK_CONTAINER
 - ❌ Upload với role không có quyền
 
 ### 2. Expected Results
-- File được lưu vào thư mục uploads/
-- Document record được tạo trong database
+- Tất cả files được lưu vào thư mục uploads/
+- Document records được tạo trong database cho mỗi file
 - Request status tự động chuyển từ PICK_CONTAINER sang SCHEDULED
 - History được cập nhật với action SCHEDULED
-- Frontend hiển thị thông báo thành công và refresh data
+- Frontend hiển thị thông báo thành công với số lượng files và refresh data
 
 ## Security Considerations
 

@@ -1,5 +1,61 @@
 # Container Management System
 
+## 🚀 Tính năng mới: Gate Time Auto Fill System
+
+### **Hệ thống tự động điền thời gian Gate**
+
+Hệ thống đã được cập nhật với logic tự động điền thời gian vào và ra cổng, loại bỏ việc người dùng phải nhập thời gian thủ công.
+
+#### **Tính năng chính:**
+- ✅ **Tự động điền time_in**: Khi request chuyển từ `FORWARDED` → `GATE_IN`
+- ✅ **Tự động điền time_out**: Khi request chuyển từ `IN_YARD/IN_CAR` → `GATE_OUT`
+- ✅ **Giao diện đơn giản**: Chỉ cần nhập tên tài xế và biển số xe
+- ✅ **Thời gian chính xác**: Lấy từ server, không phụ thuộc client
+- ✅ **Responsive design**: Hoạt động tốt trên mọi thiết bị
+
+#### **Workflow mới:**
+```
+FORWARDED → [User nhập tài xế/biển số] → GATE_IN (time_in tự động)
+GATE_IN → [Forklift operations] → IN_YARD/IN_CAR
+IN_YARD/IN_CAR → [User click GATE_OUT] → GATE_OUT (time_out tự động)
+```
+
+#### **Tài liệu chi tiết:**
+- [GATE_TIME_SYSTEM_OVERVIEW.md](./docs/GATE_TIME_SYSTEM_OVERVIEW.md) - Tổng quan hệ thống
+- [Backend: AUTO_TIME_FILL_LOGIC.md](./backend/docs/AUTO_TIME_FILL_LOGIC.md) - Logic backend
+- [Frontend: GATE_TIME_DISPLAY_LOGIC.md](./frontend/docs/GATE_TIME_DISPLAY_LOGIC.md) - Logic frontend
+
+#### **Files Modified:**
+- `backend/modules/gate/service/GateService.ts` - Auto fill logic
+- `backend/prisma/schema.prisma` - Database schema
+- `frontend/pages/Gate/components/GateActionButtons.tsx` - UI updates
+- `frontend/styles/gate.css` - Styling improvements
+
+## 🚀 Tính năng mới: Container Duplicate Validation
+
+### **Ngăn chặn tạo request import trùng lặp**
+
+Hệ thống đã được cập nhật với logic validation để ngăn chặn tạo request import với container number đã tồn tại trong hệ thống.
+
+#### **Logic Validation Nâng Cao:**
+- ✅ **Kiểm tra ServiceRequest**: Container với status chưa hoàn thành (PENDING, SCHEDULED, etc.)
+- ✅ **Kiểm tra RepairTicket**: Container đang trong quy trình sửa chữa (CHECKED)
+- ✅ **Kiểm tra YardPlacement**: Container đã được đặt vào yard (OCCUPIED)
+- ✅ **Đồng bộ với UI**: Sử dụng cùng query logic như Yard/ContainersPage
+- ✅ **Cho phép tạo mới**: Chỉ khi container thực sự không có trong depot
+
+#### **Error Messages:**
+```
+Container ISO 1234 đã tồn tại trong hệ thống với trạng thái PENDING. 
+Chỉ có thể tạo request mới khi container không còn trong hệ thống.
+```
+
+#### **Files Modified:**
+- `backend/modules/requests/service/RequestBaseService.ts` - Enhanced validation logic
+- `backend/docs/ENHANCED_CONTAINER_VALIDATION.md` - Enhanced documentation
+- `backend/test-enhanced-container-validation.js` - Enhanced test script
+- `frontend/docs/CONTAINER_DUPLICATE_VALIDATION_FRONTEND.md` - Frontend docs
+
 ## 🚀 Tính năng mới: Phân biệt IMPORT/EXPORT với trạng thái IN_CAR và GATE_OUT
 
 ### **Workflow mới với trạng thái IN_CAR và GATE_OUT**

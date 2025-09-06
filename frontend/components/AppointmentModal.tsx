@@ -23,8 +23,23 @@ interface Location {
 }
 
 export default function AppointmentModal({ requestId, visible, onClose, onSuccess }: AppointmentModalProps) {
+    // Tạo giá trị mặc định cho thời gian hiện tại + 1 giờ
+    const getDefaultAppointmentTime = () => {
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+        
+        // Sử dụng thời gian local thay vì UTC
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     const [formData, setFormData] = useState<AppointmentData>({
-        appointment_time: '',
+        appointment_time: getDefaultAppointmentTime(),
         location_type: 'gate',
         location_id: '',
         gate_ref: '',
@@ -111,7 +126,7 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
             
             // Reset form
             setFormData({
-                appointment_time: '',
+                appointment_time: getDefaultAppointmentTime(),
                 location_type: 'gate',
                 location_id: '',
                 gate_ref: '',
@@ -169,7 +184,13 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                         </label>
                         <input
                             type="date"
-                            value={formData.appointment_time ? formData.appointment_time.split('T')[0] : ''}
+                            value={formData.appointment_time ? formData.appointment_time.split('T')[0] : (() => {
+                                const now = new Date();
+                                const year = now.getFullYear();
+                                const month = String(now.getMonth() + 1).padStart(2, '0');
+                                const day = String(now.getDate()).padStart(2, '0');
+                                return `${year}-${month}-${day}`;
+                            })()}
                             onChange={(e) => {
                                 const time = formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : '09:00';
                                 handleInputChange('appointment_time', `${e.target.value}T${time}`);
@@ -177,7 +198,13 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                             className={`w-full px-3 py-2 border rounded-md ${
                                 errors.appointment_time ? 'border-red-500' : 'border-gray-300'
                             }`}
-                            min={new Date().toISOString().split('T')[0]}
+                            min={(() => {
+                                const now = new Date();
+                                const year = now.getFullYear();
+                                const month = String(now.getMonth() + 1).padStart(2, '0');
+                                const day = String(now.getDate()).padStart(2, '0');
+                                return `${year}-${month}-${day}`;
+                            })()}
                         />
                     </div>
 
@@ -188,9 +215,20 @@ export default function AppointmentModal({ requestId, visible, onClose, onSucces
                         </label>
                         <input
                             type="time"
-                            value={formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : '09:00'}
+                            value={formData.appointment_time ? formData.appointment_time.split('T')[1] || '09:00' : (() => {
+                                const now = new Date();
+                                const hours = String(now.getHours()).padStart(2, '0');
+                                const minutes = String(now.getMinutes()).padStart(2, '0');
+                                return `${hours}:${minutes}`;
+                            })()}
                             onChange={(e) => {
-                                const date = formData.appointment_time ? formData.appointment_time.split('T')[0] : new Date().toISOString().split('T')[0];
+                                const date = formData.appointment_time ? formData.appointment_time.split('T')[0] : (() => {
+                                    const now = new Date();
+                                    const year = now.getFullYear();
+                                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                                    const day = String(now.getDate()).padStart(2, '0');
+                                    return `${year}-${month}-${day}`;
+                                })();
                                 handleInputChange('appointment_time', `${date}T${e.target.value}`);
                             }}
                             className={`w-full px-3 py-2 border rounded-md ${

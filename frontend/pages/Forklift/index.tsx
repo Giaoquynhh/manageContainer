@@ -15,7 +15,6 @@ interface ForkliftTask {
   assigned_driver_id?: string;
   created_by: string;
   cancel_reason?: string;
-  cost?: number;
   createdAt: string;
   updatedAt: string;
   driver?: {
@@ -94,85 +93,8 @@ export default function Forklift() {
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [costModalOpen, setCostModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<ForkliftTask | null>(null);
 
-  // CSS styles for modal
-  const modalStyles = {
-    modal: {
-      display: costModalOpen ? 'flex' : 'none',
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 1000,
-      justifyContent: 'center',
-      alignItems: 'center'
-    },
-    modalContent: {
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      padding: '20px',
-      minWidth: '400px',
-      maxWidth: '500px',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-    },
-    modalHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '20px',
-      paddingBottom: '10px',
-      borderBottom: '1px solid #e5e7eb'
-    },
-    modalTitle: {
-      margin: 0,
-      fontSize: '18px',
-      fontWeight: '600',
-      color: '#111827'
-    },
-    modalClose: {
-      background: 'none',
-      border: 'none',
-      fontSize: '24px',
-      cursor: 'pointer',
-      color: '#6b7280',
-      padding: '0',
-      width: '30px',
-      height: '30px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    },
-    modalBody: {
-      marginBottom: '20px'
-    },
-    formGroup: {
-      marginBottom: '15px'
-    },
-    formLabel: {
-      display: 'block',
-      marginBottom: '5px',
-      fontWeight: '500',
-      color: '#374151'
-    },
-    formInput: {
-      width: '100%',
-      padding: '8px 12px',
-      border: '1px solid #d1d5db',
-      borderRadius: '4px',
-      fontSize: '14px'
-    },
-    modalFooter: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      gap: '10px',
-      paddingTop: '15px',
-      borderTop: '1px solid #e5e7eb'
-    }
-  };
 
   useEffect(() => {
     // Lấy thông tin user role
@@ -232,7 +154,6 @@ export default function Forklift() {
     }
     loadForkliftTasks(); // Refresh the list
   };
-
   const handleUpdateCost = async (taskId: string, cost: number) => {
     try {
       await api.patch(`/forklift/jobs/${taskId}/cost`, { cost });
@@ -447,16 +368,6 @@ export default function Forklift() {
                         }}>
 {t('pages.forklift.tableHeaders.forklift')}
                         </th>
-                                                                     <th style={{
-                          padding: '16px 12px',
-                          textAlign: 'center' as const,
-                          fontWeight: '700',
-                          color: '#374151',
-                          fontSize: '12px'
-                        }}>
-{t('pages.forklift.tableHeaders.cost')}
-                        </th>
-
                                                                      <th style={{
                           padding: '16px 12px',
                           textAlign: 'center' as const,
@@ -728,64 +639,6 @@ export default function Forklift() {
                              )}
                            </div>
                          </td>
-                                                 <td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-                           <div style={{
-                             display: 'flex',
-                             alignItems: 'center',
-                             justifyContent: 'center'
-                           }}>
-                             {task.cost ? (
-                               <div style={{
-                                 display: 'flex',
-                                 flexDirection: 'column',
-                                 alignItems: 'center',
-                                 gap: '4px',
-                                 padding: '8px',
-                                 backgroundColor: '#f0fdf4',
-                                 borderRadius: '6px',
-                                 border: '1px solid #bbf7d0'
-                               }}>
-                                 <span style={{ 
-                                   color: '#059669', 
-                                   fontWeight: '700',
-                                   fontSize: '16px',
-                                   fontFamily: 'monospace'
-                                 }}>
-                                   {task.cost.toLocaleString('vi-VN')}
-                                 </span>
-                                 <span style={{
-                                   fontSize: '10px',
-                                   color: '#16a34a',
-                                   backgroundColor: '#dcfce7',
-                                   padding: '2px 6px',
-                                   borderRadius: '3px',
-                                   fontWeight: '600'
-                                 }}>
-{t('pages.forklift.cost.hasCost')}
-                                 </span>
-                               </div>
-                             ) : (
-                               <div style={{
-                                 display: 'flex',
-                                 alignItems: 'center',
-                                 justifyContent: 'center',
-                                 padding: '8px',
-                                 backgroundColor: '#f8fafc',
-                                 borderRadius: '6px',
-                                 border: '1px solid #e2e8f0'
-                               }}>
-                                 <span style={{ 
-                                   color: '#94a3b8', 
-                                   fontSize: '13px',
-                                   fontStyle: 'italic',
-                                   fontWeight: '500'
-                                 }}>
-{t('pages.forklift.cost.noCost')}
-                                 </span>
-                               </div>
-                             )}
-                           </div>
-                        </td>
 
                                                  <td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
                            <div style={{
@@ -935,24 +788,6 @@ export default function Forklift() {
 {t('pages.forklift.actions.reassignDriver')}
                                </button>
                             )}
-                             {(task.status === 'PENDING' || task.status === 'ASSIGNED' || task.status === 'IN_PROGRESS' || task.status === 'PENDING_APPROVAL') && (
-                               <button
-                                 className="btn btn-sm btn-warning"
-                                 style={{
-                                   width: '100%',
-                                   margin: '0',
-                                   padding: '6px 8px',
-                                   fontSize: '11px',
-                                   fontWeight: '600'
-                                 }}
-                                 onClick={() => {
-                                   setSelectedTask(task);
-                                   setCostModalOpen(true);
-                                 }}
-                               >
-{t('pages.forklift.actions.editCost')}
-                                </button>
-                             )}
                           </div>
                         </td>
                       </tr>
@@ -986,7 +821,6 @@ export default function Forklift() {
           currentDriverId={selectedTask.assigned_driver_id}
         />
       )}
-
       {/* Update Cost Modal */}
       {selectedTask && (
         <div style={modalStyles.modal}>

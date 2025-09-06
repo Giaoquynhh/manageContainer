@@ -32,7 +32,7 @@ interface RequestTableProps {
       handleOpenSupplementPopup?: (id: string) => void;
       handleViewInvoice?: (id: string) => void;
       handleAccept?: (id: string) => void;
-      handleAcceptWithModal?: (id: string) => void;
+      handleAcceptScheduled?: (id: string) => void;
       handleRejectByCustomer?: (id: string, reason: string) => void;
       handleRejectWithModal?: (id: string) => void;
       onDeleteWithModal?: (id: string) => void;
@@ -321,19 +321,35 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
 
                       {/* Bổ sung thông tin button for SCHEDULED requests (Customer only) */}
                       {item.status === 'SCHEDULED' && userRole && ['CustomerAdmin', 'CustomerUser'].includes(userRole) && (
-                        <button
-                          className="btn btn-sm btn-primary"
-                          onClick={() => {
-                            							if (item.actions?.handleOpenSupplementPopup) {
-								item.actions.handleOpenSupplementPopup(item.id);
-							} else {
-								alert(t('pages.requests.messages.supplementFeatureInDevelopment'));
-							}
-                          }}
-                          title={t('pages.requests.actions.supplementInfo')}
-                        >
-                          📋 {t('pages.requests.actions.supplementInfo')}
-                        </button>
+                        <>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => {
+                              							if (item.actions?.handleOpenSupplementPopup) {
+									item.actions.handleOpenSupplementPopup(item.id);
+								} else {
+									alert(t('pages.requests.messages.supplementFeatureInDevelopment'));
+								}
+                            }}
+                            title={t('pages.requests.actions.supplementInfo')}
+                          >
+                            📋 {t('pages.requests.actions.supplementInfo')}
+                          </button>
+                          <button
+                            className="btn btn-sm btn-success"
+                            disabled={item.actions.loadingId === item.id + 'ACCEPT_SCHEDULED'}
+                            onClick={() => {
+                              if (item.actions?.handleAcceptScheduled) {
+                                item.actions.handleAcceptScheduled(item.id);
+                              } else {
+                                alert(t('pages.requests.messages.acceptScheduledFeatureInDevelopment'));
+                              }
+                            }}
+                            title={t('pages.requests.actions.acceptScheduled')}
+                          >
+                            {item.actions.loadingId === item.id + 'ACCEPT_SCHEDULED' ? '⏳' : '✅'} {t('pages.requests.actions.accept')}
+                          </button>
+                        </>
                       )}
 
                       {/* Status change buttons for Depot */}

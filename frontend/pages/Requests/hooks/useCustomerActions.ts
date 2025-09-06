@@ -25,6 +25,7 @@ export interface CustomerActions {
 	setLoadingId: (id: string) => void;
 	handleViewInvoice: (id: string, containerNo?: string) => Promise<void>;
 	handleAccept: (id: string) => Promise<void>;
+	handleAcceptScheduled: (id: string) => Promise<void>;
 	handleRejectByCustomer: (id: string, reason: string) => Promise<void>;
 	// Accept modal actions
 	handleAcceptWithModal: (requestId: string) => void;
@@ -180,6 +181,21 @@ export function useCustomerActions(): [CustomerActionsState, CustomerActions] {
 			setMsg({ text: 'Đã chấp nhận hóa đơn sửa chữa thành công', ok: true });
 		} catch (e: any) {
 			setMsg({ text: `Không thể chấp nhận: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
+		} finally {
+			setLoadingId('');
+		}
+	};
+
+	// Chấp nhận request SCHEDULED (chuyển từ SCHEDULED sang FORWARDED)
+	const handleAcceptScheduled = async (id: string) => {
+		setMsg(null);
+		setLoadingId(id + 'ACCEPT_SCHEDULED');
+		try {
+			await api.patch(`/requests/${id}/accept-scheduled`);
+			mutate('/requests?page=1&limit=20');
+			setMsg({ text: 'Đã chấp nhận yêu cầu và chuyển sang trạng thái Forwarded thành công', ok: true });
+		} catch (e: any) {
+			setMsg({ text: `Không thể chấp nhận yêu cầu: ${e?.response?.data?.message || 'Lỗi'}`, ok: false });
 		} finally {
 			setLoadingId('');
 		}

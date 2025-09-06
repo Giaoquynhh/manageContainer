@@ -2,13 +2,13 @@
 
 ## Tổng quan
 
-Frontend implementation cho tính năng upload chứng từ xuất (EXPORT_DOC) bao gồm UI components, hooks, và API integration để xử lý việc upload file và hiển thị trạng thái.
+Frontend implementation cho tính năng upload chứng từ xuất (EXPORT_DOC) bao gồm UI components, hooks, và API integration để xử lý việc upload nhiều files cùng lúc và hiển thị trạng thái.
 
 ## Components
 
 ### 1. DepotRequestTable.tsx
 
-Component chính hiển thị bảng yêu cầu với nút "Thêm chứng từ" cho các yêu cầu EXPORT có trạng thái PICK_CONTAINER.
+Component chính hiển thị bảng yêu cầu với nút "Upload documents" cho các yêu cầu EXPORT có trạng thái PICK_CONTAINER, hỗ trợ upload nhiều files cùng lúc.
 
 #### Props Interface
 ```typescript
@@ -24,7 +24,8 @@ interface DepotRequestTableProps {
     onSoftDelete?: (requestId: string) => void;
     onViewInvoice?: (requestId: string) => void;
     onSendCustomerConfirmation?: (requestId: string) => void;
-    onAddDocument?: (requestId: string, containerNo: string) => void; // ✅ New prop
+    onAddDocument?: (requestId: string, containerNo: string) => void; // ✅ New prop for single file
+    onUploadDocument?: (requestId: string) => void; // ✅ New prop for multiple files
     loadingId?: string;
     activeChatRequests: Set<string>;
     onToggleChat?: (requestId: string) => void;
@@ -34,8 +35,8 @@ interface DepotRequestTableProps {
 
 #### Conditional Rendering Logic
 ```typescript
-// Hiển thị nút "Thêm chứng từ" cho yêu cầu EXPORT với trạng thái PICK_CONTAINER
-{item.type === 'EXPORT' && item.status === 'PICK_CONTAINER' && onAddDocument ? (
+// Hiển thị nút "Upload documents" cho yêu cầu EXPORT với trạng thái PICK_CONTAINER
+{item.type === 'EXPORT' && item.status === 'PICK_CONTAINER' && onUploadDocument ? (
     <button
         className="btn btn-sm btn-primary"
         onClick={() => onAddDocument(item.id, item.container_no || '')}
@@ -188,37 +189,55 @@ const handleAddDocument = async (requestId: string, containerNo: string) => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.pdf,.jpg,.jpeg,.png';
+        fileInput.multiple = true; // Cho phép chọn nhiều files
         fileInput.style.display = 'none';
         
         fileInput.onchange = async (event) => {
-            const file = (event.target as HTMLInputElement).files?.[0];
-            if (!file) return;
+            const files = (event.target as HTMLInputElement).files;
+            if (!files || files.length === 0) return;
             
-            // Kiểm tra loại file
-            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-            if (!allowedTypes.includes(file.type)) {
-                setMsg({ text: 'Chỉ chấp nhận file PDF hoặc ảnh (JPG, PNG)', ok: false });
+            // Kiểm tra số lượng files (tối đa 10 files)
+            if (files.length > 10) {
+                setMsg({ text: 'Chỉ được upload tối đa 10 files cùng lúc', ok: false });
                 setLoadingId('');
                 return;
             }
             
-            // Tạo FormData để upload
+            // Kiểm tra loại file cho từng file
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!allowedTypes.includes(file.type)) {
+                    setMsg({ text: `File "${file.name}" không hợp lệ. Chỉ chấp nhận PDF hoặc ảnh (JPG, PNG)`, ok: false });
+                    setLoadingId('');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    setMsg({ text: `File "${file.name}" quá lớn. Kích thước tối đa là 10MB`, ok: false });
+                    setLoadingId('');
+                    return;
+                }
+            }
+            
+            // Tạo FormData để upload multiple files
             const formData = new FormData();
-            formData.append('file', file);
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
             formData.append('type', 'EXPORT_DOC');
             
-            // Gọi API upload chứng từ
-            const response = await api.post(`/requests/${requestId}/docs`, formData, {
+            // Gọi API upload multiple documents
+            const response = await api.post(`/requests/${requestId}/docs/multiple`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
             
-            console.log('✅ Document upload successful:', response.data);
+            console.log('✅ Multiple documents upload successful:', response.data);
             
             // Hiển thị thông báo thành công
             setMsg({ 
-                text: `✅ Đã upload chứng từ thành công cho container ${containerNo}! Trạng thái đã tự động chuyển từ PICK_CONTAINER sang SCHEDULED.`, 
+                text: `✅ Đã upload thành công ${files.length} chứng từ xuất! Trạng thái đã tự động chuyển từ PICK_CONTAINER sang SCHEDULED.`, 
                 ok: true 
             });
             

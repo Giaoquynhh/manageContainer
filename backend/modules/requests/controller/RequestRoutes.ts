@@ -36,8 +36,8 @@ const upload = multer({
 
 const router = Router();
 
-// Customer create/list - với file upload
-router.post('/', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin'), upload.single('document'), (req, res) => ((req as any).user?.role === 'SaleAdmin' ? controller.createBySale(req as any, res) : controller.create(req as any, res)));
+// Customer create/list - với file upload (hỗ trợ multiple files)
+router.post('/', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin'), upload.array('documents', 10), (req, res) => ((req as any).user?.role === 'SaleAdmin' ? controller.createBySale(req as any, res) : controller.create(req as any, res)));
 router.get('/', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','Accountant','SystemAdmin'), (req, res) => controller.list(req as any, res));
 
 // Get single request by ID
@@ -47,6 +47,9 @@ router.get('/:id', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','Acco
 
 // Status changes (SaleAdmin/SystemAdmin)
 router.patch('/:id/status', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.updateStatus(req as any, res));
+
+// Customer accept scheduled request (CustomerAdmin/CustomerUser)
+router.patch('/:id/accept-scheduled', requireRoles('CustomerAdmin','CustomerUser'), (req, res) => controller.acceptScheduledRequest(req as any, res));
 
 // Update container number (SaleAdmin/SystemAdmin)
 router.patch('/:id/container', requireRoles('SaleAdmin','SystemAdmin'), (req, res) => controller.updateContainerNo(req as any, res));
@@ -63,8 +66,11 @@ router.delete('/:id', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','S
 // Restore theo scope
 router.post('/:id/restore', requireRoles('CustomerAdmin','CustomerUser','SaleAdmin','SystemAdmin','Accountant'), (req, res) => controller.restoreRequest(req as any, res));
 
-// Documents
+// Documents - Single file upload
 router.post('/:id/docs', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser','SystemAdmin','BusinessAdmin'), upload.single('file'), (req, res) => controller.uploadDoc(req as any, res));
+
+// Documents - Multiple files upload
+router.post('/:id/docs/multiple', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser','SystemAdmin','BusinessAdmin'), upload.array('files', 10), (req, res) => controller.uploadMultipleDocs(req as any, res));
 router.get('/:id/docs', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser','SystemAdmin','BusinessAdmin'), (req, res) => controller.listDocs(req as any, res));
 router.delete('/:id/docs/:docId', requireRoles('SaleAdmin','Accountant','SystemAdmin','BusinessAdmin'), (req, res) => controller.deleteDoc(req as any, res));
 

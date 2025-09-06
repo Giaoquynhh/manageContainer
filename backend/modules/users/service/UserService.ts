@@ -4,6 +4,7 @@ import repo from '../repository/UserRepository';
 import { audit } from '../../../shared/middlewares/audit';
 import { AppRole } from '../../../shared/middlewares/auth';
 import emailService from '../../../shared/services/EmailService';
+import { prisma } from '../../../shared/config/database';
 
 const INTERNAL_ROLES: AppRole[] = ['SystemAdmin','BusinessAdmin','HRManager','SaleAdmin','Driver'];
 const CUSTOMER_ROLES: AppRole[] = ['CustomerAdmin','CustomerUser'];
@@ -89,7 +90,7 @@ export class UserService {
 		return user;
 	}
 
-	async createCustomerUser(actor: any, payload: { full_name: string; email: string; role: AppRole; tenant_id?: string; }) {
+	async createCustomerUser(actor: any, payload: { full_name: string; email: string; role: AppRole; tenant_id?: string; company_name?: string; }) {
 		this.ensureRoleAllowedByCreator(actor.role as AppRole, payload.role);
 		await this.ensureEmailUnique(payload.email);
 		
@@ -103,6 +104,27 @@ export class UserService {
 			}
 			tenant_id = payload.tenant_id;
 		}
+		
+		// Nếu có tenant_id nhưng chưa có customer, tạo customer trước
+		if (tenant_id && payload.company_name) {
+			const existingCustomer = await prisma.customer.findUnique({
+				where: { id: tenant_id }
+			});
+			
+			if (!existingCustomer) {
+				// Tạo customer mới với id = tenant_id
+				await prisma.customer.create({
+					data: {
+						id: tenant_id,
+						name: payload.company_name,
+						tax_code: tenant_id, // Sử dụng tenant_id làm tax_code tạm thời
+						status: 'ACTIVE'
+					}
+				});
+				console.log(`Created customer with id: ${tenant_id}, name: ${payload.company_name}`);
+			}
+		}
+		
 		const invite = this.buildInvite();
 		const user = await repo.create({
 			full_name: payload.full_name,
@@ -260,8 +282,30 @@ export class UserService {
 			throw new Error('Không có quyền xóa user khác tenant');
 		}
 		
+		// Lưu tenant_id trước khi xóa user
+		const tenantId = user.tenant_id;
+		
 		await repo.deleteById(id);
 		await audit(String(actor._id as any), 'USER.DELETED', 'USER', id);
+		
+		// Nếu user có tenant_id, kiểm tra xem còn user nào khác không
+		if (tenantId) {
+			const remainingUsers = await prisma.user.count({
+				where: {
+					tenant_id: tenantId,
+					role: { in: ['CustomerAdmin', 'CustomerUser'] }
+				}
+			});
+			
+			// Nếu không còn user nào, tự động xóa customer
+			if (remainingUsers === 0) {
+				await prisma.customer.delete({
+					where: { id: tenantId }
+				});
+				console.log(`Auto-deleted customer ${tenantId} - no remaining users`);
+			}
+		}
+		
 		return true;
 	}
 

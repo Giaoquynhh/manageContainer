@@ -1,69 +1,83 @@
-import useSWR, { mutate } from 'swr';
+import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
 import Card from '@components/Card';
 import { useTranslation } from '../../hooks/useTranslation';
-import Modal from '@components/Modal';
-import { useEffect, useState } from 'react';
-import { canViewUsersPartners, showInternalForm, showPartnerForm, isCustomerRole, canLockUnlockUsers, canDeleteUsers, canLockSpecificUser } from '@utils/rbac';
 import Header from '@components/Header';
+import { canViewUsersPartners, showInternalForm } from '@utils/rbac';
 
-const fetcher = (url: string) => api.get(url).then(r => r.data);
+// Import components
+import { TabNavigation } from './components/TabNavigation';
+import { UserTable } from './components/UserTable';
+import { PartnersTable } from './components/PartnersTable';
+import { CreateEmployeeModal } from './components/CreateEmployeeModal';
+import { CreatePartnerModal } from './components/CreatePartnerModal';
+import { CompanyUsersModal } from './components/CompanyUsersModal';
 
-export default function UsersPartners(){
+// Import hooks and utilities
+import { useUsersPartners } from './hooks/useUsersPartners';
+import { getRoleDisplayName } from './utils/roleUtils';
+import { translations } from './translations';
+import { ActiveTab, Language } from './types';
+
+export default function UsersPartners() {
 	const [role, setRole] = useState<string>('');
-	const [activeTab, setActiveTab] = useState<'users'|'partners'>('users');
-	const [showEmpForm, setShowEmpForm] = useState(false);
-	const [showPartnerForm, setShowPartnerForm] = useState(false);
-	// Create forms state
-	const [empFullName, setEmpFullName] = useState('');
-	const [empEmail, setEmpEmail] = useState('');
-	const [empRole, setEmpRole] = useState('HRManager');
-
-
-	// Partner form state
-	const [partnerFullName, setPartnerFullName] = useState('');
-	const [partnerEmail, setPartnerEmail] = useState('');
-	const [partnerRole, setPartnerRole] = useState('CustomerUser');
-	const [partnerTenantId, setPartnerTenantId] = useState('');
-	const [partnerCompanyName, setPartnerCompanyName] = useState('');
-
-	// Store company names for display (since backend doesn't store it)
-	const [userCompanyMap, setUserCompanyMap] = useState<{[key: string]: string}>({});
-
-	const [message, setMessage] = useState('');
-	const [lastInviteToken, setLastInviteToken] = useState<string>('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('users');
 
 	// Use global translation hook to keep language in sync with Header
 	const { currentLanguage } = useTranslation();
-	const language = (currentLanguage as 'vi' | 'en');
+  const language = (currentLanguage as Language);
 
-	// Function to get role display name
-	const getRoleDisplayName = (role: string) => {
-		const roleMap = {
-			vi: {
-				SystemAdmin: t.vi.systemAdminLabel,
-				BusinessAdmin: t.vi.businessAdminLabel,
-				HRManager: t.vi.hrManagerLabel,
-				SaleAdmin: t.vi.saleAdminLabel,
-				Driver: t.vi.driverLabel,
-				CustomerAdmin: t.vi.customerAdminLabel,
-				CustomerUser: t.vi.customerUserLabel,
-				PartnerAdmin: t.vi.partnerAdminLabel,
-			},
-			en: {
-				SystemAdmin: t.en.systemAdminLabel,
-				BusinessAdmin: t.en.businessAdminLabel,
-				HRManager: t.en.hrManagerLabel,
-				SaleAdmin: t.en.saleAdminLabel,
-				Driver: t.en.driverLabel,
-				CustomerAdmin: t.en.customerAdminLabel,
-				CustomerUser: t.en.customerUserLabel,
-				PartnerAdmin: t.en.partnerAdminLabel,
-			}
-		};
-		return roleMap[language][role as keyof typeof roleMap.vi] || role;
-	};
-
+  // Use custom hook for all UsersPartners logic
+  const {
+    // State
+    showEmpForm,
+    setShowEmpForm,
+    showPartnerForm,
+    setShowPartnerForm,
+    showCompanyUsersModal,
+    setShowCompanyUsersModal,
+    selectedCompany,
+    setSelectedCompany,
+    companyUsers,
+    setCompanyUsers,
+    modalInviteToken,
+    setModalInviteToken,
+    showCompanySearch,
+    setShowCompanySearch,
+    availableCompanies,
+    message,
+    lastInviteToken,
+    // Form states
+    empFullName,
+    setEmpFullName,
+    empEmail,
+    setEmpEmail,
+    empRole,
+    setEmpRole,
+    partnerFullName,
+    setPartnerFullName,
+    partnerEmail,
+    setPartnerEmail,
+    partnerRole,
+    setPartnerRole,
+    partnerTenantId,
+    setPartnerTenantId,
+    partnerCompanyName,
+    setPartnerCompanyName,
+    // Data
+    users,
+    partners,
+    filteredUsers,
+    // Functions
+    loadAvailableCompanies,
+    selectCompany,
+    showCompanyUsers,
+    modalUserAction,
+    userAction,
+    createEmployee,
+    createPartner
+  } = useUsersPartners(role, currentUser);
 	// Function to get status display name
 	const getStatusDisplayName = (status: string) => {
 		const statusMap = {
@@ -237,125 +251,39 @@ export default function UsersPartners(){
 		if (typeof window !== 'undefined'){
 			api.get('/auth/me').then(r=>{
 				const userRole = r.data?.role || r.data?.roles?.[0] || '';
+        const userData = r.data;
 				setRole(userRole);
+        setCurrentUser(userData);
 				console.log('Current user role:', userRole);
-			}).catch(()=>{});
+        console.log('Current user data:', userData);
+      }).catch(() => {});
 		}
 	}, []);
 
-	const { data: users } = useSWR(canViewUsersPartners(role) ? ['/users?role=&page=1&limit=50'] : null, ([u]) => fetcher(u));
+  // Đóng dropdown khi click bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCompanySearch) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('[data-company-search]')) {
+          setShowCompanySearch(false);
+        }
+      }
+    };
 
-	// Lọc người dùng theo tab
-	const filteredUsers = (users?.data || []).filter((u: any) => {
-		if (activeTab === 'users') {
-			// Tab Users: Internal staff only
-			return !['CustomerAdmin', 'PartnerAdmin', 'CustomerUser'].includes(u.role);
-		} else {
-			// Tab Partners: CustomerAdmin + PartnerAdmin + CustomerUser
-			return ['CustomerAdmin', 'PartnerAdmin', 'CustomerUser'].includes(u.role);
-		}
-	});
-
-	const createEmployee = async () => {
-		setMessage('');
-		// Validation trước khi gửi
-		if (!empFullName.trim()) {
-			setMessage(t[language].pleaseEnterName);
-			return;
-		}
-		if (!empEmail.trim() || !empEmail.includes('@')) {
-			setMessage(t[language].pleaseEnterValidEmail);
-			return;
-		}
-		try{
-			await api.post('/users', { full_name: empFullName.trim(), email: empEmail.trim().toLowerCase(), role: empRole });
-			// Đóng modal ngay lập tức
-			setShowEmpForm(false);
-			// Reset form
-			setEmpFullName(''); setEmpEmail('');
-			// Hiển thị thông báo thành công
-			setMessage(t[language].employeeCreated);
-			// Refresh danh sách
-			mutate(['/users?role=&page=1&limit=50']);
-		}catch(e:any){ setMessage(e?.response?.data?.message || t[language].createEmployeeError); }
-	};
-
-
-	const createPartner = async () => {
-		setMessage('');
-		// Validation trước khi gửi
-		if (!partnerFullName.trim()) {
-			setMessage(t[language].pleaseEnterName);
-			return;
-		}
-		if (!partnerEmail.trim() || !partnerEmail.includes('@')) {
-			setMessage(t[language].pleaseEnterValidEmail);
-			return;
-		}
-		// CustomerAdmin không cần nhập tenant_id vì backend sẽ tự động dùng tenant_id của họ
-		if (role !== 'CustomerAdmin' && !partnerTenantId.trim()) {
-			setMessage(t[language].pleaseEnterTenantId);
-			return;
-		}
-		if (!partnerCompanyName.trim()) {
-			setMessage(t[language].pleaseEnterCompanyName);
-			return;
-		}
-		try{
-			const payload: any = { 
-				full_name: partnerFullName.trim(), 
-				email: partnerEmail.trim().toLowerCase(), 
-				role: partnerRole
-			};
-			// Chỉ thêm tenant_id nếu không phải CustomerAdmin
-			if (role !== 'CustomerAdmin') {
-				payload.tenant_id = partnerTenantId.trim();
-			}
-			const response = await api.post('/users', payload);
-			// Lưu tên công ty vào state để hiển thị
-			if (response.data?.id || response.data?._id) {
-				const userId = response.data.id || response.data._id;
-				setUserCompanyMap(prev => ({
-					...prev,
-					[userId]: partnerCompanyName.trim()
-				}));
-			}
-			// Đóng modal ngay lập tức
-			setShowPartnerForm(false);
-			// Reset form
-			setPartnerFullName(''); setPartnerEmail(''); setPartnerTenantId(''); setPartnerCompanyName('');
-			// Hiển thị thông báo thành công
-			setMessage(t[language].partnerCreated);
-			// Refresh danh sách
-			mutate(['/users?role=&page=1&limit=50']);
-		}catch(e:any){ setMessage(e?.response?.data?.message || t[language].createPartnerError); }
-	};
-
-	const userAction = async (id: string, action: 'disable'|'enable'|'lock'|'unlock'|'invite'|'delete') => {
-		setMessage(''); setLastInviteToken('');
-		try{
-			if (action === 'invite') {
-				const res = await api.post(`/users/${id}/send-invite`);
-				setLastInviteToken(res.data?.invite_token || '');
-				setMessage(t[language].emailSent);
-			} else if (action === 'delete') {
-				await api.delete(`/users/${id}`);
-				setMessage(t[language].userActionSuccess.replace('{action}', action));
-			} else {
-				await api.patch(`/users/${id}/${action}`);
-				setMessage(t[language].userActionSuccess.replace('{action}', action));
-			}
-			mutate(['/users?role=&page=1&limit=50']);
-		}catch(e:any){ setMessage(e?.response?.data?.message || t[language].userActionError.replace('{action}', action)); }
-	};
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCompanySearch]);
 
 	if (!canViewUsersPartners(role)) {
 		return (
 			<>
 				<Header />
 				<main className="container">
-					<Card title={t[language].accessDenied}>
-						{t[language].accessDeniedMessage}
+          <Card title={translations[language].accessDenied}>
+            {translations[language].accessDeniedMessage}
 					</Card>
 				</main>
 			</>
@@ -367,253 +295,183 @@ export default function UsersPartners(){
 			<Header />
             <main className="container">
                 <div className="grid grid-cols-3" style={{gap: 20}}>
-                    {/* Bảng Users - chiếm 2 cột */}
                     <div style={{gridColumn: 'span 3'}}>
                         <Card title={undefined as any}>
                             {/* Tab Navigation */}
-                            <div style={{display:'flex', gap:0, marginBottom:20, borderBottom:'1px solid #e5e7eb'}}>
-                                <button 
-                                    onClick={() => setActiveTab('users')}
-                                    style={{
-                                        padding: '12px 24px',
-                                        border: 'none',
-                                        background: activeTab === 'users' ? '#0b2b6d' : 'transparent',
-                                        color: activeTab === 'users' ? 'white' : '#6b7280',
-                                        borderBottom: activeTab === 'users' ? '2px solid #0b2b6d' : '2px solid transparent',
-                                        cursor: 'pointer',
-                                        fontSize: '16px',
-                                        fontWeight: '500',
-                                        borderRadius: '6px 6px 0 0'
-                                    }}
-                                >
-                                    {t[language].usersTab}
-                                </button>
-                                <button 
-                                    onClick={() => {
-                                        console.log('Switching to partners tab, current role:', role);
-                                        setActiveTab('partners');
-                                    }}
-                                    style={{
-                                        padding: '12px 24px',
-                                        border: 'none',
-                                        background: activeTab === 'partners' ? '#0b2b6d' : 'transparent',
-                                        color: activeTab === 'partners' ? 'white' : '#6b7280',
-                                        borderBottom: activeTab === 'partners' ? '2px solid #0b2b6d' : '2px solid transparent',
-                                        cursor: 'pointer',
-                                        fontSize: '16px',
-                                        fontWeight: '500',
-                                        borderRadius: '6px 6px 0 0'
-                                    }}
-                                >
-                                    {t[language].partnersTab}
-                                </button>
-                            </div>
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                role={role}
+                language={language}
+                translations={translations}
+              />
                             
                             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
                                 <h3 style={{margin:0, fontSize:18, fontWeight:700, color:'#0b2b6d'}}>
-                                    {activeTab === 'users' ? 'Danh sách người dùng' : 'Danh sách đối tác'}
+                  {role === 'CustomerAdmin' 
+                    ? 'Danh sách người dùng công ty' 
+                    : (['SystemAdmin', 'BusinessAdmin', 'admin'].includes(role) 
+                        ? (activeTab === 'users' ? 'Danh sách người dùng' : 'Danh sách đối tác')
+                        : 'Danh sách người dùng')
+                  }
                                 </h3>
                                 <div style={{display:'flex', gap:8}}>
-                                    {showInternalForm(role) && activeTab === 'users' && (
+                  {/* Nút tạo user cho CustomerAdmin */}
+                  {role === 'CustomerAdmin' && (
                                         <div style={{position:'relative'}}>
-                                            <button className="btn" onClick={()=>{ setShowEmpForm(v=>!v); setShowPartnerForm(false); }} style={{background:'#059669', color:'#fff'}}>{t[language].createEmployee}</button>
-                                            <Modal 
-                                                title={t[language].createEmployeeTitle} 
-                                                visible={showEmpForm} 
-                                                onCancel={()=>setShowEmpForm(false)} 
-                                                size="sm"
-                                            >
-                                                <div className="grid" style={{gap:12}}>
-                                                    <input type="text" placeholder={t[language].fullNamePlaceholder} value={empFullName} onChange={e=>setEmpFullName(e.target.value)} />
-                                                    <input type="email" placeholder={t[language].emailPlaceholder} value={empEmail} onChange={e=>setEmpEmail(e.target.value)} />
-                                                    <select value={empRole} onChange={e=>setEmpRole(e.target.value)}>
-                                                        <option value="SystemAdmin">{getRoleDisplayName('SystemAdmin')}</option>
-                                                        <option value="BusinessAdmin">{getRoleDisplayName('BusinessAdmin')}</option>
-                                                        <option value="HRManager">{getRoleDisplayName('HRManager')}</option>
-                                                        <option value="SaleAdmin">{getRoleDisplayName('SaleAdmin')}</option>
-                                                        <option value="Driver">{getRoleDisplayName('Driver')}</option>
-                                                    </select>
-                                                    <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
-                                                        <button className="btn btn-outline" onClick={()=>setShowEmpForm(false)}>{t[language].close}</button>
-                                                        <button className="btn" onClick={createEmployee} style={{background:'#059669', color:'#fff'}}>{t[language].create}</button>
-                                                    </div>
-                                                </div>
-                                            </Modal>
+                      <button 
+                        className="btn" 
+                        onClick={() => { 
+                          setShowPartnerForm(v => !v); 
+                          setShowEmpForm(false); 
+                        }} 
+                        style={{background:'#7c3aed', color:'#fff'}}
+                      >
+                        Tạo người dùng
+                      </button>
+                      <CreatePartnerModal
+                        visible={showPartnerForm}
+                        onCancel={() => setShowPartnerForm(false)}
+                        language={language}
+                        translations={translations}
+                        partnerFullName={partnerFullName}
+                        setPartnerFullName={setPartnerFullName}
+                        partnerEmail={partnerEmail}
+                        setPartnerEmail={setPartnerEmail}
+                        partnerRole={partnerRole}
+                        setPartnerRole={setPartnerRole}
+                        partnerTenantId={partnerTenantId}
+                        setPartnerTenantId={setPartnerTenantId}
+                        partnerCompanyName={partnerCompanyName}
+                        setPartnerCompanyName={setPartnerCompanyName}
+                        showCompanySearch={showCompanySearch}
+                        setShowCompanySearch={setShowCompanySearch}
+                        availableCompanies={availableCompanies}
+                        onLoadAvailableCompanies={loadAvailableCompanies}
+                        onSelectCompany={selectCompany}
+                        onCreatePartner={createPartner}
+                        getRoleDisplayName={(role) => getRoleDisplayName(role, language)}
+                        role={role}
+                      />
                                         </div>
                                     )}
-                                    {/* Button tạo đối tác - chỉ hiển thị ở tab Partners */}
-                                    {activeTab === 'partners' && (role === 'SystemAdmin' || role === 'BusinessAdmin' || role === 'admin' || role === 'CustomerAdmin') && (
+                  
+                  {/* Button tạo nhân sự nội bộ */}
+                  {showInternalForm(role) && activeTab === 'users' && (
                                         <div style={{position:'relative'}}>
-                                            <button className="btn" onClick={()=>{ setShowPartnerForm(v=>!v); setShowEmpForm(false); }} style={{background:'#7c3aed', color:'#fff'}}>{t[language].createPartner}</button>
-                                            <Modal 
-                                                title={t[language].createPartnerTitle} 
-                                                visible={showPartnerForm} 
-                                                onCancel={()=>setShowPartnerForm(false)} 
-                                                size="sm"
-                                            >
-                                                <div className="grid" style={{gap:12}}>
-                                                    <input type="text" placeholder={t[language].fullNamePlaceholder} value={partnerFullName} onChange={e=>setPartnerFullName(e.target.value)} />
-                                                    <input type="email" placeholder={t[language].emailPlaceholder} value={partnerEmail} onChange={e=>setPartnerEmail(e.target.value)} />
-                                                    <input type="text" placeholder={t[language].companyNamePlaceholder} value={partnerCompanyName} onChange={e=>setPartnerCompanyName(e.target.value)} />
-                                                    <select value={partnerRole} onChange={e=>setPartnerRole(e.target.value)}>
-                                                        <option value="CustomerUser">{getRoleDisplayName('CustomerUser')}</option>
-                                                        <option value="CustomerAdmin">{getRoleDisplayName('CustomerAdmin')}</option>
-                                                        <option value="PartnerAdmin">{getRoleDisplayName('PartnerAdmin')}</option>
-                                                    </select>
-                                                    {role !== 'CustomerAdmin' && (
-                                                        <>
-                                                            <input type="text" placeholder={t[language].tenantIdPlaceholder} value={partnerTenantId} onChange={e=>setPartnerTenantId(e.target.value)} />
-                                                            <div className="muted">{t[language].tenantIdInfo}</div>
-                                                        </>
-                                                    )}
-                                                    {role === 'CustomerAdmin' && (
-                                                        <div className="muted" style={{
-                                                            padding: '8px 12px',
-                                                            background: '#f0f9ff',
-                                                            border: '1px solid #0ea5e9',
-                                                            borderRadius: '6px',
-                                                            color: '#0c4a6e',
-                                                            fontSize: '14px'
-                                                        }}>
-                                                            Mã công ty sẽ tự động được gán từ tài khoản của bạn. Tên công ty chỉ để tham khảo.
+                      <button 
+                        className="btn" 
+                        onClick={() => { 
+                          setShowEmpForm(v => !v); 
+                          setShowPartnerForm(false); 
+                        }} 
+                        style={{background:'#059669', color:'#fff'}}
+                      >
+                        {translations[language].createEmployee}
+                      </button>
+                      <CreateEmployeeModal
+                        visible={showEmpForm}
+                        onCancel={() => setShowEmpForm(false)}
+                        language={language}
+                        translations={translations}
+                        empFullName={empFullName}
+                        setEmpFullName={setEmpFullName}
+                        empEmail={empEmail}
+                        setEmpEmail={setEmpEmail}
+                        empRole={empRole}
+                        setEmpRole={setEmpRole}
+                        onCreateEmployee={createEmployee}
+                        getRoleDisplayName={(role) => getRoleDisplayName(role, language)}
+                      />
                                                         </div>
                                                     )}
-                                                    <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
-                                                        <button className="btn btn-outline" onClick={()=>setShowPartnerForm(false)}>{t[language].close}</button>
-                                                        <button className="btn" onClick={createPartner} style={{background:'#7c3aed', color:'#fff'}}>{t[language].create}</button>
-                                                    </div>
-                                                </div>
-                                            </Modal>
+                  
+                  {/* Button tạo đối tác */}
+                  {activeTab === 'partners' && role !== 'CustomerAdmin' && (role === 'SystemAdmin' || role === 'BusinessAdmin' || role === 'admin') && (
+                    <div style={{position:'relative'}}>
+                      <button 
+                        className="btn" 
+                        onClick={() => { 
+                          setShowPartnerForm(v => !v); 
+                          setShowEmpForm(false); 
+                        }} 
+                        style={{background:'#7c3aed', color:'#fff'}}
+                      >
+                        {translations[language].createPartner}
+                      </button>
+                      <CreatePartnerModal
+                        visible={showPartnerForm}
+                        onCancel={() => setShowPartnerForm(false)}
+                        language={language}
+                        translations={translations}
+                        partnerFullName={partnerFullName}
+                        setPartnerFullName={setPartnerFullName}
+                        partnerEmail={partnerEmail}
+                        setPartnerEmail={setPartnerEmail}
+                        partnerRole={partnerRole}
+                        setPartnerRole={setPartnerRole}
+                        partnerTenantId={partnerTenantId}
+                        setPartnerTenantId={setPartnerTenantId}
+                        partnerCompanyName={partnerCompanyName}
+                        setPartnerCompanyName={setPartnerCompanyName}
+                        showCompanySearch={showCompanySearch}
+                        setShowCompanySearch={setShowCompanySearch}
+                        availableCompanies={availableCompanies}
+                        onLoadAvailableCompanies={loadAvailableCompanies}
+                        onSelectCompany={selectCompany}
+                        onCreatePartner={createPartner}
+                        getRoleDisplayName={(role) => getRoleDisplayName(role, language)}
+                        role={role}
+                      />
                                         </div>
                                     )}
                                 </div>
                             </div>
+              
+              {/* Table */}
                             <div className="table-container">
                                 <table className="table">
                                                                          <thead style={{background: '#f8fafc'}}>
                                          <tr>
-                                             <th>{t[language].email}</th>
-                                             <th>{t[language].fullName}</th>
-                                             <th>{t[language].role}</th>
-                                             <th>{t[language].status}</th>
-                                             {activeTab === 'partners' && <th>{t[language].company}</th>}
-                                             <th>{t[language].actions}</th>
+                      {(role === 'CustomerAdmin' || !['SystemAdmin', 'BusinessAdmin', 'admin'].includes(role) || activeTab === 'users') ? (
+                        <>
+                          <th>{translations[language].email}</th>
+                          <th>{translations[language].fullName}</th>
+                          <th>{translations[language].role}</th>
+                          <th>{translations[language].status}</th>
+                          <th>{translations[language].actions}</th>
+                        </>
+                      ) : (
+                        <>
+                          <th>{translations[language].companyName}</th>
+                          <th>{translations[language].companyCode}</th>
+                          <th>{translations[language].accountCount}</th>
+                        </>
+                      )}
                                          </tr>
                                      </thead>
-									<tbody>
-										{filteredUsers.map((u: any)=>{
-											// Debug: Log user data to see available fields
-											console.log('User data:', u);
-											return (
-											<tr key={u.id || u._id}>
-                                                <td style={{fontWeight: 600, color: '#1e40af'}}>{u.email}</td>
-                                                <td>{u.full_name}</td>
-                                                <td>
-                                                    <span className="badge" style={{
-                                                        background: u.role === 'SystemAdmin' ? '#dc2626' : 
-                                                                   u.role === 'BusinessAdmin' ? '#7c3aed' :
-                                                                   u.role === 'HRManager' ? '#059669' :
-                                                                   u.role === 'SaleAdmin' ? '#ea580c' :
-                                                                   u.role === 'Driver' ? '#0891b2' :
-                                                                   u.role === 'CustomerAdmin' ? '#0891b2' :
-                                                                   u.role === 'PartnerAdmin' ? '#7c2d12' : '#6b7280',
-                                                        color: 'white',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '4px',
-                                                        fontSize: '12px'
-                                                    }}>
-                                                        {getRoleDisplayName(u.role)}
-                                                    </span>
-                                                </td>
-                                                                                                 <td>
-                                                     <span className="badge" style={{
-                                                         background: u.status === 'ACTIVE' ? '#059669' : 
-                                                                    u.status === 'INVITED' ? '#d97706' :
-                                                                    u.status === 'DISABLED' ? '#dc2626' :
-                                                                    u.status === 'LOCKED' ? '#7c2d12' : '#6b7280',
-                                                         color: 'white',
-                                                         padding: '4px 8px',
-                                                         borderRadius: '4px',
-                                                         fontSize: '12px'
-                                                     }}>
-                                                         {getStatusDisplayName(u.status)}
-                                                     </span>
-                                                 </td>
-                                                 {activeTab === 'partners' && (
-                                                     <td>
-                                                         <span style={{
-                                                             color: '#374151',
-                                                             fontSize: '14px',
-                                                             fontWeight: '500'
-                                                         }}>
-                                                             {userCompanyMap[u.id || u._id] || u.company_name || u.tenant_name || u.company || u.tenant?.name || 'N/A'}
-                                                         </span>
-                                                     </td>
-                                                 )}
-                                                <td style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
-                                                    <button 
-                                                        className="btn btn-sm" 
-                                                        style={{
-                                                            background: u.status === 'DISABLED' ? '#059669' : '#dc2626',
-                                                            color: 'white',
-                                                            fontSize: '12px',
-                                                            padding: '4px 8px'
-                                                        }}
-                                                        title={u.status === 'DISABLED' ? t[language].enableTooltip : t[language].disableTooltip} 
-                                                        onClick={() => userAction(u.id || u._id, u.status === 'DISABLED' ? 'enable' : 'disable')}
-                                                    >
-                                                        {u.status === 'DISABLED' ? t[language].enable : t[language].disable}
-                                                    </button>
-                                                    {canLockUnlockUsers(role) && canLockSpecificUser(role, u.role) && (
-                                                        <button 
-                                                            className="btn btn-sm" 
-                                                            style={{
-                                                                background: u.status === 'LOCKED' ? '#059669' : '#d97706',
-                                                                color: 'white',
-                                                                fontSize: '12px',
-                                                                padding: '4px 8px'
-                                                            }}
-                                                            title={u.status === 'LOCKED' ? t[language].unlockTooltip : t[language].lockTooltip} 
-                                                            onClick={() => userAction(u.id || u._id, u.status === 'LOCKED' ? 'unlock' : 'lock')}
-                                                        >
-                                                            {u.status === 'LOCKED' ? t[language].unlock : t[language].lock}
-                                                        </button>
-                                                    )}
-                                                    <button 
-                                                        className="btn btn-sm" 
-                                                        style={{
-                                                            background: '#0891b2',
-                                                            color: 'white',
-                                                            fontSize: '12px',
-                                                            padding: '4px 8px'
-                                                        }}
-                                                        title={t[language].resendTooltip} 
-                                                        onClick={() => userAction(u.id || u._id, 'invite')}
-                                                    >
-                                                        {t[language].resendInvite}
-                                                    </button>
-													{u.status === 'DISABLED' && canDeleteUsers(role) && (
-                                                        <button 
-                                                            className="btn btn-sm" 
-                                                            style={{
-                                                                background: '#dc2626',
-                                                                color: 'white',
-                                                                fontSize: '12px',
-                                                                padding: '4px 8px'
-                                                            }} 
-                                                            title={t[language].deleteTooltip} 
-                                                            onClick={() => userAction(u.id || u._id, 'delete')}
-                                                        >
-                                                            {t[language].delete}
-                                                        </button>
-													)}
-											</td>
-										</tr>
-										);
-										})}
-								</tbody>
+                  
+                  {(role === 'CustomerAdmin' || !['SystemAdmin', 'BusinessAdmin', 'admin'].includes(role) || activeTab === 'users') ? (
+                    <UserTable
+                      users={filteredUsers}
+                      role={role}
+                      language={language}
+                      translations={translations}
+                      onUserAction={userAction}
+                      getRoleDisplayName={(role) => getRoleDisplayName(role, language)}
+                    />
+                  ) : (
+                    <PartnersTable
+                      partners={partners?.data || []}
+                      language={language}
+                      translations={translations}
+                      onCompanyClick={showCompanyUsers}
+                    />
+                  )}
 							</table>
                             </div>
+              
+              {/* Messages */}
                             {message && (
                                 <div style={{
                                     marginTop: 16,
@@ -627,6 +485,7 @@ export default function UsersPartners(){
                                     {message}
                                 </div>
                             )}
+              
                             {lastInviteToken && (
                                 <div style={{
                                     marginTop: 12,
@@ -637,16 +496,34 @@ export default function UsersPartners(){
                                     border: '1px solid #fde68a',
                                     fontSize: '14px'
                                 }}>
-                                    <strong>{t[language].inviteToken}</strong> <code>{lastInviteToken}</code>
+                  <strong>{translations[language].inviteToken}</strong> <code>{lastInviteToken}</code>
                                     <br />
                                     <a href={`/Register?token=${lastInviteToken}`} style={{color: '#0891b2', textDecoration: 'underline'}}>
-                                        {t[language].openRegisterToActivate}
+                    {translations[language].openRegisterToActivate}
                                     </a>
                                 </div>
                             )}
+              
+              {/* Company Users Modal */}
+              <CompanyUsersModal
+                visible={showCompanyUsersModal}
+                onCancel={() => {
+                  setShowCompanyUsersModal(false);
+                  setSelectedCompany(null);
+                  setCompanyUsers([]);
+                  setModalInviteToken('');
+                }}
+                selectedCompany={selectedCompany}
+                companyUsers={companyUsers}
+                modalInviteToken={modalInviteToken}
+                role={role}
+                language={language}
+                translations={translations}
+                onModalUserAction={modalUserAction}
+                getRoleDisplayName={(role) => getRoleDisplayName(role, language)}
+              />
 						</Card>
 					</div>
-
 				</div>
 			</main>
 		</>

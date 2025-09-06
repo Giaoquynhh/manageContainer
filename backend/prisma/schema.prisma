@@ -92,6 +92,8 @@ model ServiceRequest {
     gate_checked_at DateTime?
     gate_checked_by String?
     gate_reason     String?
+    time_in         DateTime?  // Thời gian vào cổng
+    time_out        DateTime?  // Thời gian ra cổng
     history       Json?
     
     // Soft-delete theo scope

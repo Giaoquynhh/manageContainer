@@ -12,6 +12,8 @@ interface GateRequest {
   forwarded_at?: string;
   license_plate?: string; // Biển số xe
   driver_name?: string;   // Tên tài xế
+  time_in?: string;       // Thời gian vào
+  time_out?: string;      // Thời gian ra
   docs: any[];
   attachments: any[];
 }
@@ -104,6 +106,8 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
               <th data-column="eta">{t('pages.gate.tableHeaders.eta')}</th>
               <th data-column="driver">{t('pages.gate.tableHeaders.driverName')}</th>
               <th data-column="license-plate">{t('pages.gate.tableHeaders.licensePlate')}</th>
+              <th data-column="time-in">Thời gian vào</th>
+              <th data-column="time-out">Thời gian ra</th>
               <th data-column="documents">{t('pages.gate.tableHeaders.documents')}</th>
               <th data-column="actions">{t('pages.gate.tableHeaders.actions')}</th>
             </tr>
@@ -133,6 +137,16 @@ export default function GateRequestTable({ requests, loading, onRefresh }: GateR
                 <td>
                   <span className="license-plate">
                     {request.license_plate || t('common.na')}
+                  </span>
+                </td>
+                <td>
+                  <span className="time-in">
+                    {request.time_in ? new Date(request.time_in).toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US') : t('common.na')}
+                  </span>
+                </td>
+                <td>
+                  <span className="time-out">
+                    {request.time_out ? new Date(request.time_out).toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US') : t('common.na')}
                   </span>
                 </td>
                 <td>

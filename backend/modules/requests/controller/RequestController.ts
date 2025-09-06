@@ -9,31 +9,33 @@ export class RequestController {
 		try {
 			// Xử lý form data với file upload
 			const formData = req.body;
-			const file = (req as any).file;
+			const files = (req as any).files || [];
 			
 			// Validate form data
 			const { error, value } = createRequestSchema.validate(formData);
 			if (error) return res.status(400).json({ message: error.message });
 			
-			// Validate file nếu có
-			if (file) {
+			// Validate files nếu có
+			if (files && files.length > 0) {
 				const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
 				const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
 				
-				const fileExtension = path.extname(file.originalname).toLowerCase();
-				const hasValidMimeType = allowedMimeTypes.includes(file.mimetype);
-				const hasValidExtension = allowedExtensions.includes(fileExtension);
-				
-				if (!hasValidMimeType && !hasValidExtension) {
-					return res.status(400).json({ message: 'Chỉ chấp nhận file PDF hoặc ảnh (JPG, PNG)' });
-				}
-				
-				if (file.size > 10 * 1024 * 1024) {
-					return res.status(400).json({ message: 'File quá lớn. Kích thước tối đa là 10MB' });
+				for (const file of files) {
+					const fileExtension = path.extname(file.originalname).toLowerCase();
+					const hasValidMimeType = allowedMimeTypes.includes(file.mimetype);
+					const hasValidExtension = allowedExtensions.includes(fileExtension);
+					
+					if (!hasValidMimeType && !hasValidExtension) {
+						return res.status(400).json({ message: `Chỉ chấp nhận file PDF hoặc ảnh (JPG, PNG): ${file.originalname}` });
+					}
+					
+					if (file.size > 10 * 1024 * 1024) {
+						return res.status(400).json({ message: `File quá lớn. Kích thước tối đa là 10MB: ${file.originalname}` });
+					}
 				}
 			}
 			
-			const result = await service.createByCustomer(req.user!, value, file);
+			const result = await service.createByCustomer(req.user!, value, files);
 			return res.status(201).json(result);
 		} catch (e: any) { 
 			return res.status(400).json({ message: e.message }); 
@@ -57,6 +59,14 @@ export class RequestController {
 		const { error, value } = updateRequestStatusSchema.validate(req.body);
 		if (error) return res.status(400).json({ message: error.message });
 		try { return res.json(await service.updateStatus(req.user!, req.params.id, value.status, value.reason)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async acceptScheduledRequest(req: AuthRequest, res: Response) {
+		try { 
+			return res.json(await service.acceptScheduledRequest(req.user!, req.params.id)); 
+		} catch (e: any) { 
+			return res.status(400).json({ message: e.message }); 
+		}
 	}
 	
 	async updateContainerNo(req: AuthRequest, res: Response) {
@@ -97,6 +107,20 @@ export class RequestController {
 		const { error, value } = uploadDocSchema.validate(req.body);
 		if (error) return res.status(400).json({ message: error.message });
 		try { return res.status(201).json(await service.uploadDocument(req.user!, req.params.id, value.type, (req as any).file)); } catch (e: any) { return res.status(400).json({ message: e.message }); }
+	}
+
+	async uploadMultipleDocs(req: AuthRequest, res: Response) {
+		const { error, value } = uploadDocSchema.validate(req.body);
+		if (error) return res.status(400).json({ message: error.message });
+		try { 
+			const files = (req as any).files || [];
+			if (files.length === 0) {
+				return res.status(400).json({ message: 'Không có file nào được upload' });
+			}
+			return res.status(201).json(await service.uploadMultipleDocuments(req.user!, req.params.id, value.type, files)); 
+		} catch (e: any) { 
+			return res.status(400).json({ message: e.message }); 
+		}
 	}
 	async listDocs(req: AuthRequest, res: Response) {
 		try { 

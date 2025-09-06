@@ -113,12 +113,16 @@ export class GateService {
       newStatus = 'GATE_IN'; // Default cho các loại khác
     }
 
+    const currentTime = new Date();
+    
     const updatedRequest = await prisma.serviceRequest.update({
       where: { id: requestId },
       data: {
         status: newStatus,
-        gate_checked_at: new Date(),
+        gate_checked_at: currentTime,
         gate_checked_by: actorId,
+        // Tự động điền thời gian vào khi chuyển sang GATE_IN
+        time_in: newStatus === 'GATE_IN' ? currentTime : null,
         // Lưu thông tin tài xế và biển số xe
         driver_name: data?.driver_name || null,
         license_plate: data?.license_plate || null,
@@ -128,7 +132,8 @@ export class GateService {
             ...(request as any).history?.gate_approve,
             driver_name: data?.driver_name || null,
             license_plate: data?.license_plate || null,
-            approved_at: new Date().toISOString()
+            approved_at: currentTime.toISOString(),
+            time_in: newStatus === 'GATE_IN' ? currentTime.toISOString() : null
           }
         }
       }
@@ -384,16 +389,21 @@ export class GateService {
       throw new Error(`Không thể chuyển từ trạng thái ${request.status} sang GATE_OUT. Chỉ cho phép từ IN_YARD hoặc IN_CAR.`);
     }
 
+    const currentTime = new Date();
+    
     const updatedRequest = await prisma.serviceRequest.update({
       where: { id: requestId },
       data: {
         status: 'GATE_OUT',
+        // Tự động điền thời gian ra khi chuyển sang GATE_OUT
+        time_out: currentTime,
         history: {
           ...(request.history as any || {}),
           gate_out: {
             previous_status: request.status,
-            gate_out_at: new Date().toISOString(),
-            gate_out_by: actorId
+            gate_out_at: currentTime.toISOString(),
+            gate_out_by: actorId,
+            time_out: currentTime.toISOString()
           }
         }
       }

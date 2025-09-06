@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useToast } from '../../../hooks/useToastHook';
@@ -24,6 +24,7 @@ export default function GateActionButtons({
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [plateNo, setPlateNo] = useState('');
   const [driverName, setDriverName] = useState('');
+  // Loại bỏ các state và effect cho thời gian vì sẽ tự động điền từ backend
 
   const statusLabel = (status: string) => {
     switch (status) {
@@ -68,6 +69,7 @@ export default function GateActionButtons({
         return;
       }
       
+      // Backend sẽ tự động điền thời gian khi chuyển trạng thái
       setIsLoading(true);
       await api.patch(`/gate/requests/${requestId}/approve`, { 
         license_plate: normalizedPlate,
@@ -80,7 +82,7 @@ export default function GateActionButtons({
       
       showSuccess(
         `✅ ${newStatusLabel}`,
-        `${t('pages.gate.tableHeaders.driverName')}: ${normalizedDriver}\n${t('pages.gate.tableHeaders.licensePlate')}: ${normalizedPlate}`,
+        `${t('pages.gate.tableHeaders.driverName')}: ${normalizedDriver}\n${t('pages.gate.tableHeaders.licensePlate')}: ${normalizedPlate}\nThời gian sẽ được tự động điền khi chuyển trạng thái`,
         6000
       );
       
@@ -290,9 +292,33 @@ export default function GateActionButtons({
               />
             </div>
 
+            <div style={{ 
+              marginBottom: 'var(--space-4)',
+              padding: 'var(--space-3)',
+              backgroundColor: 'var(--color-blue-50)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-blue-200)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                color: 'var(--color-blue-700)',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'var(--font-weight-medium)'
+              }}>
+                <span>ℹ️</span>
+                <span>Thời gian vào và ra sẽ được tự động điền khi chuyển trạng thái</span>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
               <button
-                onClick={() => { setIsApproveModalOpen(false); setPlateNo(''); setDriverName(''); }}
+                onClick={() => { 
+                  setIsApproveModalOpen(false); 
+                  setPlateNo(''); 
+                  setDriverName(''); 
+                }}
                 disabled={isLoading}
                 className="action-btn action-btn-secondary"
               >

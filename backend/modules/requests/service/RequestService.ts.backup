@@ -1,0 +1,152 @@
+import RequestBaseService from './RequestBaseService';
+import RequestCrudService from './RequestCrudService';
+import RequestStateService from './RequestStateService';
+import RequestDocumentService from './RequestDocumentService';
+import RequestPaymentService from './RequestPaymentService';
+import RequestCustomerService from './RequestCustomerService';
+import path from 'path';
+import fs from 'fs';
+
+export class RequestService {
+	// Base operations
+	async createByCustomer(actor: any, payload: { type: string; container_no?: string; eta?: Date }, files?: Express.Multer.File[]) {
+		const req = await RequestBaseService.createByCustomer(actor, payload, files);
+		
+		// Xử lý upload files chỉ khi có files (IMPORT)
+		if (files && files.length > 0) {
+			const uploadDir = path.join(process.cwd(), 'backend', 'uploads');
+			if (!fs.existsSync(uploadDir)) {
+				fs.mkdirSync(uploadDir, { recursive: true });
+			}
+			
+			// Xử lý từng file
+			for (const file of files) {
+				// Tạo tên file unique
+				const timestamp = Date.now();
+				const fileExtension = path.extname(file.originalname);
+				const fileName = `${timestamp}_${req.id}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+				const filePath = path.join(uploadDir, fileName);
+				
+				// Lưu file
+				fs.writeFileSync(filePath, file.buffer);
+				
+				// Tạo document record
+				const { default: repo } = await import('../repository/RequestRepository');
+				await repo.createDoc({
+					request_id: req.id,
+					type: 'INITIAL_DOC',
+					name: file.originalname,
+					size: file.size,
+					version: 1,
+					uploader_id: actor._id,
+					storage_key: fileName
+				});
+			}
+		}
+		
+		return req;
+	}
+
+	async createBySaleAdmin(actor: any, payload: any) {
+		return await RequestBaseService.createBySaleAdmin(actor, payload);
+	}
+
+	async getById(actor: any, id: string) {
+		return await RequestBaseService.getById(actor, id);
+	}
+
+	async list(actor: any, query: any) {
+		return await RequestBaseService.list(actor, query);
+	}
+
+	// CRUD operations
+	async updateStatus(actor: any, id: string, status: string, reason?: string) {
+		return await RequestCrudService.updateStatus(actor, id, status, reason);
+	}
+
+	async updateContainerNo(actor: any, id: string, containerNo: string) {
+		return await RequestCrudService.updateContainerNo(actor, id, containerNo);
+	}
+
+	async getAvailableContainersForExport(actor: any, searchQuery?: string) {
+		return await RequestCrudService.getAvailableContainersForExport(actor, searchQuery);
+	}
+
+	async softDeleteRequest(actor: any, id: string, scope: 'depot' | 'customer') {
+		return await RequestCrudService.softDeleteRequest(actor, id, scope);
+	}
+
+	async restoreRequest(actor: any, id: string, scope: 'depot' | 'customer') {
+		return await RequestCrudService.restoreRequest(actor, id, scope);
+	}
+
+	// State management
+	async forwardToGate(actor: any, requestId: string) {
+		return await RequestStateService.forwardToGate(actor, requestId);
+	}
+
+	async rejectRequest(actor: any, id: string, reason?: string) {
+		return await RequestStateService.rejectRequest(actor, id, reason);
+	}
+
+	async scheduleRequest(actor: any, id: string, appointmentData: any) {
+		return await RequestStateService.scheduleRequest(actor, id, appointmentData);
+	}
+
+	async updateAppointment(actor: any, id: string, appointmentData: any) {
+		return await RequestStateService.updateAppointment(actor, id, appointmentData);
+	}
+
+	async addInfoToRequest(actor: any, id: string, documents: any[], notes?: string) {
+		return await RequestStateService.addInfoToRequest(actor, id, documents, notes);
+	}
+
+	async sendToGate(actor: any, id: string) {
+		return await RequestStateService.sendToGate(actor, id);
+	}
+
+	async completeRequest(actor: any, id: string) {
+		return await RequestStateService.completeRequest(actor, id);
+	}
+
+	async getValidTransitions(actor: any, id: string) {
+		return await RequestStateService.getValidTransitions(actor, id);
+	}
+
+	async getStateInfo(state: string) {
+		return await RequestStateService.getStateInfo(state);
+	}
+
+	async getAppointmentInfo(id: string) {
+		return await RequestStateService.getAppointmentInfo(id);
+	}
+
+	// Document operations
+	async uploadDocument(actor: any, request_id: string, type: 'EIR'|'LOLO'|'INVOICE'|'SUPPLEMENT'|'EXPORT_DOC', file: Express.Multer.File) {
+		return await RequestDocumentService.uploadDocument(actor, request_id, type, file);
+	}
+
+	async listDocuments(actor: any, request_id: string, type?: string) {
+		return await RequestDocumentService.listDocuments(actor, request_id, type);
+	}
+
+	async deleteDocument(actor: any, id: string, reason?: string) {
+		return await RequestDocumentService.deleteDocument(actor, id, reason);
+	}
+
+	// Payment operations
+	async sendPaymentRequest(actor: any, request_id: string) {
+		return await RequestPaymentService.sendPaymentRequest(actor, request_id);
+	}
+
+	// Customer operations
+	async acceptRequest(actor: any, id: string) {
+		return await RequestCustomerService.acceptRequest(actor, id);
+	}
+
+	async rejectByCustomer(actor: any, id: string, reason: string) {
+		return await RequestCustomerService.rejectByCustomer(actor, id, reason);
+	}
+}
+
+export default new RequestService();

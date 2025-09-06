@@ -14,6 +14,9 @@ interface GateRequest {
   eta?: string;
   forwarded_at?: string;
   license_plate?: string; // Thêm trường biển số xe
+  driver_name?: string;   // Tên tài xế
+  time_in?: string;       // Thời gian vào
+  time_out?: string;      // Thời gian ra
   docs: any[];
   attachments: any[];
 }

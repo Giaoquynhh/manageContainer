@@ -2,31 +2,31 @@
 
 ## 🎯 Mục tiêu
 
-Tự động hóa quy trình xử lý yêu cầu xuất (EXPORT) bằng cách cho phép admin upload chứng từ và tự động chuyển trạng thái từ `PICK_CONTAINER` sang `SCHEDULED`.
+Tự động hóa quy trình xử lý yêu cầu xuất (EXPORT) bằng cách cho phép admin upload nhiều chứng từ cùng lúc và tự động chuyển trạng thái từ `PICK_CONTAINER` sang `SCHEDULED`.
 
 ## 🔄 Luồng hoạt động
 
 ```
 1. Khách hàng tạo yêu cầu EXPORT → Status: PENDING
 2. Admin tạo lịch hẹn → Status: PICK_CONTAINER  
-3. Admin upload chứng từ → Status: SCHEDULED (Tự động)
+3. Admin upload nhiều chứng từ cùng lúc → Status: SCHEDULED (Tự động)
 4. Hệ thống xử lý tiếp theo
 ```
 
 ## 🏗️ Kiến trúc hệ thống
 
 ### Backend
-- **Routes**: `/requests/:id/docs` với middleware RBAC
-- **Controller**: `RequestController.uploadDoc()`
-- **Service**: `RequestService.uploadDocument()` với auto status change
+- **Routes**: `/requests/:id/docs` (single) và `/requests/:id/docs/multiple` (multiple) với middleware RBAC
+- **Controller**: `RequestController.uploadDoc()` và `RequestController.uploadMultipleDocs()`
+- **Service**: `RequestService.uploadDocument()` và `RequestService.uploadMultipleDocuments()` với auto status change
 - **State Machine**: `RequestStateMachine` để validate transitions
 - **Validation**: Joi schema cho `EXPORT_DOC` type
 
 ### Frontend  
 - **Component**: `DepotRequestTable` với conditional rendering
-- **Hook**: `useDepotActions.handleAddDocument()`
-- **API**: FormData upload với multipart/form-data
-- **State**: Loading states, error handling, success feedback
+- **Hook**: `useDepotActions.handleUploadDocument()` cho multiple files
+- **API**: FormData upload với multipart/form-data cho multiple files
+- **State**: Loading states, error handling, success feedback với số lượng files
 
 ## 📁 File Structure
 
@@ -35,10 +35,10 @@ manageContainer/
 ├── backend/
 │   ├── modules/requests/
 │   │   ├── controller/
-│   │   │   ├── RequestRoutes.ts          # ✅ Updated: Added SystemAdmin, BusinessAdmin roles
-│   │   │   └── RequestController.ts      # ✅ Has uploadDoc method
+│   │   │   ├── RequestRoutes.ts          # ✅ Updated: Added multiple files upload routes
+│   │   │   └── RequestController.ts      # ✅ Has uploadDoc and uploadMultipleDocs methods
 │   │   ├── service/
-│   │   │   └── RequestService.ts         # ✅ Updated: Added EXPORT_DOC logic + auto status change
+│   │   │   └── RequestService.ts         # ✅ Updated: Added multiple files upload logic + auto status change
 │   │   ├── dto/
 │   │   │   └── RequestDtos.ts            # ✅ Updated: Added EXPORT_DOC to uploadDocSchema
 │   │   └── service/
@@ -49,9 +49,9 @@ manageContainer/
 ├── frontend/
 │   └── pages/Requests/
 │       ├── components/
-│       │   └── DepotRequestTable.tsx      # ✅ Updated: Added upload button + new columns
+│       │   └── DepotRequestTable.tsx      # ✅ Updated: Added multiple files upload button + new columns
 │       ├── hooks/
-│       │   └── useDepotActions.ts         # ✅ Updated: Added handleAddDocument
+│       │   └── useDepotActions.ts         # ✅ Updated: Added handleUploadDocument for multiple files
 │       ├── Depot.tsx                      # ✅ Updated: Uses DepotRequestTable
 │       └── styles/
 │           └── DepotRequestTable.css      # ✅ Added styling for new elements
@@ -228,17 +228,20 @@ const handleAddDocument = async (requestId: string, containerNo: string) => {
 ## 🧪 Testing
 
 ### Test Cases
-1. **✅ Success Case**: Upload PDF cho EXPORT request với status PICK_CONTAINER
-2. **❌ File Type Error**: Upload file không hợp lệ (txt, docx)
-3. **❌ Request Type Error**: Upload cho IMPORT request
-4. **❌ Status Error**: Upload cho request với status khác PICK_CONTAINER
-5. **❌ Role Error**: Upload với role không có quyền
+1. **✅ Success Case**: Upload multiple PDF files cho EXPORT request với status PICK_CONTAINER
+2. **✅ Success Case**: Upload mixed files (PDF + JPG + PNG) cho EXPORT request với status PICK_CONTAINER
+3. **❌ Too Many Files Error**: Upload quá 10 files cùng lúc
+4. **❌ File Type Error**: Upload file không hợp lệ (txt, docx)
+5. **❌ File Size Error**: Upload file quá 10MB
+6. **❌ Request Type Error**: Upload cho IMPORT request
+7. **❌ Status Error**: Upload cho request với status khác PICK_CONTAINER
+8. **❌ Role Error**: Upload với role không có quyền
 
 ### Manual Testing Steps
 1. Tạo yêu cầu EXPORT
 2. Tạo lịch hẹn để chuyển status sang PICK_CONTAINER
-3. Click "Thêm chứng từ"
-4. Chọn file PDF/JPG/PNG
+3. Click "Upload documents"
+4. Chọn nhiều files PDF/JPG/PNG (tối đa 10 files)
 5. Verify upload thành công và status chuyển sang SCHEDULED
 
 ## 🐛 Troubleshooting
@@ -284,12 +287,13 @@ db.documents.find({request_id: "request_id", type: "EXPORT_DOC"})
 ## 🔮 Future Enhancements
 
 ### Potential Improvements
-1. **Bulk Upload**: Upload nhiều file cùng lúc
-2. **Progress Bar**: Hiển thị tiến trình upload
+1. **✅ Bulk Upload**: Upload nhiều file cùng lúc (Đã implement)
+2. **Progress Bar**: Hiển thị tiến trình upload cho từng file
 3. **File Preview**: Preview file trước khi upload
 4. **Drag & Drop**: Kéo thả file để upload
 5. **Auto-retry**: Tự động thử lại khi upload fail
 6. **File Compression**: Nén file trước khi upload
+7. **Batch Processing**: Xử lý files theo batch để tối ưu performance
 
 ### Integration Opportunities
 1. **Email Notifications**: Gửi email khi status thay đổi

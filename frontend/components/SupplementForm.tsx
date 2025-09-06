@@ -9,29 +9,37 @@ interface SupplementFormProps {
 }
 
 export default function SupplementForm({ requestId, onSuccess }: SupplementFormProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      // Validate file type
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length > 0) {
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedTypes.includes(selectedFile.type)) {
-        toast.error(t('pages.requests.supplementFileTypeError'));
-        return;
+      const validFiles: File[] = [];
+      
+      for (const file of selectedFiles) {
+        // Validate file type
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`File ${file.name}: ${t('pages.requests.supplementFileTypeError')}`);
+          continue;
+        }
+
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`File ${file.name}: ${t('pages.requests.supplementFileSizeError')}`);
+          continue;
+        }
+
+        validFiles.push(file);
       }
 
-      // Validate file size (10MB)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        toast.error(t('pages.requests.supplementFileSizeError'));
-        return;
+      if (validFiles.length > 0) {
+        setFiles(prev => [...prev, ...validFiles]);
       }
-
-      setFile(selectedFile);
     }
   };
 
@@ -50,48 +58,69 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
     e.stopPropagation();
     setDragActive(false);
 
-    const droppedFile = e.dataTransfer.files?.[0];
-    if (droppedFile) {
-      // Validate file type
+    const droppedFiles = Array.from(e.dataTransfer.files || []);
+    if (droppedFiles.length > 0) {
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedTypes.includes(droppedFile.type)) {
-        toast.error(t('pages.requests.supplementFileTypeError'));
-        return;
+      const validFiles: File[] = [];
+      
+      for (const file of droppedFiles) {
+        // Validate file type
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`File ${file.name}: ${t('pages.requests.supplementFileTypeError')}`);
+          continue;
+        }
+
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`File ${file.name}: ${t('pages.requests.supplementFileSizeError')}`);
+          continue;
+        }
+
+        validFiles.push(file);
       }
 
-      // Validate file size (10MB)
-      if (droppedFile.size > 10 * 1024 * 1024) {
-        toast.error(t('pages.requests.supplementFileSizeError'));
-        return;
+      if (validFiles.length > 0) {
+        setFiles(prev => [...prev, ...validFiles]);
       }
-
-      setFile(droppedFile);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!file) {
+    if (files.length === 0) {
       toast.warning(t('pages.requests.supplementNoFileWarning'));
       return;
     }
 
     setIsUploading(true);
     try {
+      // Upload tất cả file cùng lúc
+      console.log('Uploading files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+      
       const formData = new FormData();
-      formData.append('file', file);
+      files.forEach(file => {
+        formData.append('files', file);
+      });
       formData.append('type', 'SUPPLEMENT');
 
-      const response = await api.post(`/requests/${requestId}/docs`, formData, {
+      console.log('FormData contents:', {
+        files: formData.getAll('files'),
+        type: formData.get('type'),
+        requestId
+      });
+
+      const response = await api.post(`/requests/${requestId}/docs/multiple`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
+      console.log('Upload response:', response.data);
 
       // Thông báo sẽ được hiển thị qua callback onSuccess
       
-      setFile(null);
+      setFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -124,7 +153,7 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
             </div>
 
             <div
-              className={`supplement-drop-zone ${dragActive ? 'drag-active' : ''} ${file ? 'has-file' : ''}`}
+              className={`supplement-drop-zone ${dragActive ? 'drag-active' : ''} ${files.length > 0 ? 'has-file' : ''}`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
@@ -135,32 +164,34 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
+                multiple
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
               />
               
-              {file ? (
-                <div className="file-info">
-                  <div className="file-icon">📄</div>
-                  <div className="file-details">
-                    <div className="file-name">{file.name}</div>
-                    <div className="file-size">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
+              {files.length > 0 ? (
+                <div className="files-list">
+                  {files.map((file, index) => (
+                    <div key={index} className="file-info">
+                      <div className="file-icon">📄</div>
+                      <div className="file-details">
+                        <div className="file-name">{file.name}</div>
+                        <div className="file-size">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="remove-file-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFiles(prev => prev.filter((_, i) => i !== index));
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="remove-file-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFile(null);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                      }
-                    }}
-                  >
-                    ✕
-                  </button>
+                  ))}
                 </div>
               ) : (
                 <div className="drop-zone-content">
@@ -179,9 +210,9 @@ export default function SupplementForm({ requestId, onSuccess }: SupplementFormP
               <button
                 type="submit"
                 className="supplement-upload-btn"
-                disabled={!file || isUploading}
+                disabled={files.length === 0 || isUploading}
               >
-                {isUploading ? `⏳ ${t('pages.requests.supplementUploading')}` : `📤 ${t('pages.requests.supplementUploadButton')}`}
+                {isUploading ? `⏳ ${t('pages.requests.supplementUploading')}` : `📤 ${t('pages.requests.supplementUploadButton')} (${files.length} file${files.length !== 1 ? 's' : ''})`}
               </button>
             </div>
           </div>

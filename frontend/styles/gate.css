@@ -312,6 +312,37 @@
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   border: 1px solid var(--color-gray-100);
+  max-height: 70vh; /* Giới hạn chiều cao tối đa */
+  overflow-y: auto; /* Thêm thanh trượt dọc */
+  overflow-x: auto; /* Thêm thanh trượt ngang */
+  position: relative;
+}
+
+/* Tùy chỉnh thanh trượt cho bảng */
+.gate-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; /* Chiều cao cho thanh trượt ngang */
+}
+
+.gate-table-container::-webkit-scrollbar-track {
+  background: var(--color-gray-100);
+  border-radius: 4px;
+}
+
+.gate-table-container::-webkit-scrollbar-thumb {
+  background: var(--color-gray-400);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.gate-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-500);
+}
+
+/* Firefox scrollbar */
+.gate-table-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-400) var(--color-gray-100);
 }
 
 .gate-table-header h2 {
@@ -323,8 +354,18 @@
 /* Table */
 .gate-table {
   width: 100%;
+  min-width: 1400px; /* Tăng chiều rộng tối thiểu để hiển thị đầy đủ tất cả cột */
   border-collapse: collapse;
   background: rgb(248, 248, 248);
+  position: relative;
+}
+
+/* Sticky header cho bảng */
+.gate-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-gray-50);
 }
 
 /* Header icons for Gate table */
@@ -341,6 +382,8 @@
 .gate-table th[data-column="eta"]::before { content: "⏰"; }
 .gate-table th[data-column="driver"]::before { content: "👤"; }
 .gate-table th[data-column="license-plate"]::before { content: "🚚"; }
+.gate-table th[data-column="time-in"]::before { content: "⏰"; }
+.gate-table th[data-column="time-out"]::before { content: "⏰"; }
 .gate-table th[data-column="documents"]::before { content: "📄"; }
 .gate-table th[data-column="actions"]::before { content: "⚙️"; }
 
@@ -354,11 +397,60 @@
   font-size: var(--font-size-sm);
 }
 
+/* Đảm bảo header cột Actions có đủ không gian */
+.gate-table th:last-child {
+  min-width: 200px; /* Chiều rộng tối thiểu cho header cột Actions */
+  text-align: center; /* Căn giữa cho header Actions */
+}
+
 .gate-table td {
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-gray-100);
   color: var(--color-gray-700);
   font-size: var(--font-size-sm);
+}
+
+/* Đảm bảo các cột có chiều rộng phù hợp */
+.gate-table td:last-child {
+  min-width: 200px; /* Chiều rộng tối thiểu cho cột Actions */
+  white-space: nowrap; /* Không xuống dòng */
+}
+
+/* Chiều rộng tối thiểu cho các cột quan trọng */
+.gate-table td[data-column="container"] {
+  min-width: 120px;
+}
+
+.gate-table td[data-column="type"] {
+  min-width: 100px;
+}
+
+.gate-table td[data-column="status"] {
+  min-width: 150px;
+}
+
+.gate-table td[data-column="eta"] {
+  min-width: 140px;
+}
+
+.gate-table td[data-column="driver"] {
+  min-width: 120px;
+}
+
+.gate-table td[data-column="license-plate"] {
+  min-width: 120px;
+}
+
+.gate-table td[data-column="time-in"] {
+  min-width: 140px;
+}
+
+.gate-table td[data-column="time-out"] {
+  min-width: 140px;
+}
+
+.gate-table td[data-column="documents"] {
+  min-width: 150px;
 }
 
 .gate-table tr:hover {
@@ -439,6 +531,38 @@
   text-align: center;
   font-size: var(--font-size-sm);
   letter-spacing: 0.5px;
+}
+
+/* Time In Styling */
+.time-in {
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-green-800);
+  background: var(--color-green-50);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-green-200);
+  display: inline-block;
+  min-width: 120px;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* Time Out Styling */
+.time-out {
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-blue-800);
+  background: var(--color-blue-50);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-blue-200);
+  display: inline-block;
+  min-width: 120px;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
 }
 
 /* Action Buttons */
@@ -1187,6 +1311,20 @@
   .filter-select {
     min-width: 100%;
   }
+  
+  /* Responsive cho thanh trượt bảng */
+  .gate-table-container {
+    max-height: 60vh; /* Giảm chiều cao trên mobile */
+  }
+  
+  .gate-table-container::-webkit-scrollbar {
+    width: 6px; /* Thanh trượt mỏng hơn trên mobile */
+    height: 6px; /* Chiều cao thanh trượt ngang trên mobile */
+  }
+  
+  .gate-table {
+    min-width: 1200px; /* Tăng chiều rộng tối thiểu trên tablet để hiển thị đầy đủ */
+  }
 }
 
 @media (max-width: 480px) {
@@ -1214,6 +1352,20 @@
   .clear-filters-btn {
     padding: var(--space-3);
     font-size: var(--font-size-sm);
+  }
+  
+  /* Responsive cho thanh trượt bảng trên màn hình rất nhỏ */
+  .gate-table-container {
+    max-height: 50vh; /* Giảm thêm chiều cao trên màn hình nhỏ */
+  }
+  
+  .gate-table-container::-webkit-scrollbar {
+    width: 4px; /* Thanh trượt rất mỏng trên màn hình nhỏ */
+    height: 4px; /* Chiều cao thanh trượt ngang trên màn hình nhỏ */
+  }
+  
+  .gate-table {
+    min-width: 1000px; /* Tăng chiều rộng tối thiểu trên màn hình nhỏ để hiển thị đầy đủ */
   }
 }
 

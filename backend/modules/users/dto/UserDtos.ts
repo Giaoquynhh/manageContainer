@@ -11,7 +11,8 @@ export const createCustomerUserSchema = Joi.object({
 	full_name: Joi.string().required(),
 	email: Joi.string().email().required(),
 	role: Joi.string().valid('CustomerAdmin','CustomerUser').required(),
-	tenant_id: Joi.string().optional()
+	tenant_id: Joi.string().optional(),
+	company_name: Joi.string().optional()
 });
 
 export const updateUserSchema = Joi.object({

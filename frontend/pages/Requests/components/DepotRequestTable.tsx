@@ -386,9 +386,9 @@ export default function DepotRequestTable({
 												className="btn btn-sm btn-success"
 												disabled={loadingId === item.id + 'UPLOAD_DOC'}
 												onClick={() => onUploadDocument?.(item.id)}
-												title={safeT('pages.requests.actions.uploadDocumentTitle', 'Upload export document')}
+												title={safeT('pages.requests.actions.uploadDocumentsTitle', 'Upload export documents (multiple files supported)')}
 											>
-											{loadingId === item.id + 'UPLOAD_DOC' ? '⏳' : '📄'} {safeT('pages.requests.actions.uploadDocument', 'Upload document')}
+											{loadingId === item.id + 'UPLOAD_DOC' ? '⏳' : '📄'} {safeT('pages.requests.actions.uploadDocuments', 'Upload documents')}
 											</button>
 											<button
 												className="btn btn-sm btn-danger"

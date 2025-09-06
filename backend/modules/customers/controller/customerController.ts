@@ -5,6 +5,7 @@ import { createCustomerSchema, updateCustomerSchema } from '../dto/CustomerDtos'
 
 export class CustomerController {
 	async list(req: AuthRequest, res: Response) { return res.json(await service.list(req.query)); }
+	async listPartners(req: AuthRequest, res: Response) { return res.json(await service.listPartners(req.query)); }
 	async create(req: AuthRequest, res: Response) {
 		const { error, value } = createCustomerSchema.validate(req.body);
 		if (error) return res.status(400).json({ message: error.message });

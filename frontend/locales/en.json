@@ -255,7 +255,11 @@
         "received": "Received",
         "rejected": "Rejected",
         "completed": "Completed",
-        "exported": "Exported"
+        "exported": "Exported",
+        "uploadDocumentTitle": "Upload export document",
+        "uploadDocumentsTitle": "Upload export documents (multiple files supported)",
+        "uploadDocument": "Upload document",
+        "uploadDocuments": "Upload documents"
       },
       "softDeleteConfirm": "Remove from Depot list?\\nRequest will still show Rejected on the Customer side.",
       "softDeleteTitle": "Remove from Depot list",
@@ -281,6 +285,10 @@
         "fileTooLarge": "File too large. Maximum size is 10MB",
         "invalidFileType": "Only PDF or image files (JPG, PNG) are accepted",
         "uploadDocumentFailed": "Cannot upload document",
+        "uploadDocumentsFailed": "Cannot upload documents",
+        "uploadDocumentsSuccess": "Documents uploaded successfully!",
+        "exportDocumentsUploadSuccess": "Successfully uploaded {count} export documents! Status automatically changed from PICK_CONTAINER to SCHEDULED.",
+        "tooManyFiles": "Maximum 10 files can be uploaded at once",
         "cannotAddDocument": "Cannot add document",
         "uploadDocumentSuccess": "File uploaded successfully!",
         "supplementUploadSuccessForwarded": "Supplement documents uploaded successfully. Request has been auto-forwarded.",
