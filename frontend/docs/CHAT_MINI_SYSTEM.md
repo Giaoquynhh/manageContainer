@@ -117,6 +117,79 @@ components/chat/
 
 ## 🧩 Chi tiết Components
 
+### 🔗 Code mapping (FE)
+Các chỉnh sửa chính đã được áp dụng trong codebase để phản ánh rule chat mới và điều kiện thanh toán:
+
+1) `pages/Requests/components/DepotRequestTable.tsx` – Luôn hiển thị nút Chat, disable khi `PENDING`/`PICK_CONTAINER` hoặc `is_paid` true, và không render chat khi đã thanh toán:
+
+```tsx
+{(() => {
+  const isChatAllowedByStatus = !['PENDING', 'PICK_CONTAINER'].includes(demoItem.status);
+  const isPaid = !!demoItem.is_paid;
+  const canOpenChat = isChatAllowedByStatus && !isPaid;
+  const title = canOpenChat
+    ? (activeChatRequests.has(demoItem.id) ? safeT('pages.requests.chat.close', 'Close chat') : safeT('pages.requests.chat.open', 'Open chat with customer'))
+    : isPaid
+      ? safeT('pages.requests.payment.paid', 'Đã thanh toán')
+      : safeT('pages.requests.chat.availableWhenScheduled', 'Chat khả dụng từ trạng thái Scheduled');
+  return (
+    <button
+      onClick={() => canOpenChat && onToggleChat?.(demoItem.id)}
+      className="btn btn-sm btn-outline depot-chat-mini-trigger"
+      title={title}
+      disabled={!canOpenChat}
+    >
+      💬 {safeT('pages.requests.tableHeaders.chat', 'Chat')}
+    </button>
+  );
+})()}
+
+{/* Chỉ render chat khi chưa thanh toán */}
+{activeChatRequests.has(demoItem.id) && !demoItem.is_paid && (
+  <DepotChatMini
+    requestId={demoItem.id}
+    containerNo={demoItem.container_no}
+    requestType={demoItem.type}
+    requestStatus={demoItem.status}
+    isPaid={!!demoItem.is_paid}
+    onClose={() => onCloseChat?.(demoItem.id)}
+  />
+)}
+```
+
+2) `pages/Requests/components/DepotChatMini.tsx` – Rule trạng thái cho phép chat (chỉ chặn `PENDING`, `PICK_CONTAINER`):
+
+```tsx
+// Check if chat is allowed based on request status
+const isChatAllowed = !['PENDING', 'PICK_CONTAINER'].includes(requestStatus);
+```
+
+3) `pages/Requests/components/DepotChatWindow.tsx` – Rule tương tự ở cửa sổ chat:
+
+```tsx
+// Check if chat is allowed based on request status (chỉ chặn PENDING, PICK_CONTAINER)
+const isChatAllowed = !['PENDING', 'PICK_CONTAINER'].includes(requestStatus);
+```
+
+4) `components/chat/ChatWindow.tsx` – Rule cho phía Customer + khóa input khi paid (prop `isPaid`):
+
+```tsx
+// Cho phép chat nếu không nằm trong 2 trạng thái bị chặn
+const isChatAllowed = !['PENDING', 'PICK_CONTAINER'].includes(currentRequestStatus);
+
+<ChatInput
+  onSendMessage={sendMessage}
+  disabled={!isChatAllowed || isPaid}
+  placeholder={
+    isPaid
+      ? 'Chat đã khóa vì đơn hàng đã thanh toán'
+      : !isChatAllowed
+        ? 'Chat chỉ khả dụng khi trạng thái khác PENDING/PICK_CONTAINER'
+        : 'Nhập tin nhắn...'
+  }
+/>
+```
+
 ### 1. ChatMini.tsx (Main Component)
 **Chức năng:** Container chính quản lý state và position của chat window
 

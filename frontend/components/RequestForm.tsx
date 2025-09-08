@@ -27,6 +27,7 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [previews, setPreviews] = useState<{ url: string; type: 'image' | 'pdf' | 'other'; name: string; size: number }[]>([]);
 
   // Thiết lập thời gian mặc định khi component mount
   useEffect(() => {
@@ -37,6 +38,32 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
       etaTime: time
     }));
   }, []);
+
+  // Tạo URL xem trước cho file ảnh/PDF
+  useEffect(() => {
+    const nextPreviews: { url: string; type: 'image' | 'pdf' | 'other'; name: string; size: number }[] = [];
+    const objectUrls: string[] = [];
+
+    for (const file of selectedFiles) {
+      const url = URL.createObjectURL(file);
+      objectUrls.push(url);
+      const mime = (file.type || '').toLowerCase();
+      const isImage = mime.startsWith('image/');
+      const isPdf = mime === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      nextPreviews.push({
+        url,
+        type: isImage ? 'image' : isPdf ? 'pdf' : 'other',
+        name: file.name,
+        size: file.size
+      });
+    }
+
+    setPreviews(nextPreviews);
+
+    return () => {
+      objectUrls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [selectedFiles]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,40 +232,28 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
               </label>
             </div>
             
-            {/* Hiển thị danh sách files đã chọn */}
-            {selectedFiles.length > 0 && (
-              <div className="files-list">
-                <div className="files-header">
+            {/* Xem trước nội dung tài liệu */}
+            {previews.length > 0 && (
+              <div>
+                <div className="files-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                   <span>Files đã chọn ({selectedFiles.length}):</span>
-                  <button 
-                    type="button" 
-                    onClick={clearAllFiles}
-                    className="clear-all-btn"
-                  >
-                    Xóa tất cả
-                  </button>
+                  <button type="button" onClick={clearAllFiles} className="clear-all-btn">Xóa tất cả</button>
                 </div>
-                {selectedFiles.map((file, index) => (
-                  <div key={index} className="file-preview">
-                    <span className="file-name" style={{ 
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: '200px'
-                    }}>
-                      {file.name}
-                    </span>
-                    <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                    <button 
-                      type="button" 
-                      onClick={() => removeFile(index)}
-                      className="file-remove"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                <div className="file-previews" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
+                  {previews.map((p, idx) => (
+                    <div key={idx} style={{ position: 'relative', border: '1px solid #e5e7eb', borderRadius: 8, padding: 8, background: '#fafafa' }}>
+                      <button type="button" aria-label="remove" onClick={() => removeFile(idx)} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12, border: 'none', background: '#ef4444', color: '#fff', cursor: 'pointer' }}>✕</button>
+                      <div style={{ fontSize: 12, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</div>
+                      {p.type === 'image' ? (
+                        <img src={p.url} alt={p.name} style={{ width: '100%', height: 180, objectFit: 'contain', background: '#fff', borderRadius: 4 }} />
+                      ) : p.type === 'pdf' ? (
+                        <iframe src={p.url} title={p.name} style={{ width: '100%', height: 220, border: 'none', borderRadius: 4, background: '#fff' }} />
+                      ) : (
+                        <div style={{ fontSize: 12, color: '#6b7280' }}>Không thể xem trước – {(p.size / 1024 / 1024).toFixed(2)} MB</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             
@@ -298,32 +313,28 @@ export default function RequestForm({ onSuccess, onCancel }: RequestFormProps) {
             </label>
           </div>
           
-          {/* Hiển thị danh sách files đã chọn */}
-          {selectedFiles.length > 0 && (
-            <div className="files-list">
-              <div className="files-header">
+          {/* Xem trước nội dung tài liệu */}
+          {previews.length > 0 && (
+            <div>
+              <div className="files-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                 <span>Files đã chọn ({selectedFiles.length}):</span>
-                <button 
-                  type="button" 
-                  onClick={clearAllFiles}
-                  className="clear-all-btn"
-                >
-                  Xóa tất cả
-                </button>
+                <button type="button" onClick={clearAllFiles} className="clear-all-btn">Xóa tất cả</button>
               </div>
-              {selectedFiles.map((file, index) => (
-                <div key={index} className="file-preview">
-                  <span className="file-name">{file.name}</span>
-                  <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                  <button 
-                    type="button" 
-                    onClick={() => removeFile(index)}
-                    className="file-remove"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+              <div className="file-previews" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
+                {previews.map((p, idx) => (
+                  <div key={idx} style={{ position: 'relative', border: '1px solid #e5e7eb', borderRadius: 8, padding: 8, background: '#fafafa' }}>
+                    <button type="button" aria-label="remove" onClick={() => removeFile(idx)} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12, border: 'none', background: '#ef4444', color: '#fff', cursor: 'pointer' }}>✕</button>
+                    <div style={{ fontSize: 12, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</div>
+                    {p.type === 'image' ? (
+                      <img src={p.url} alt={p.name} style={{ width: '100%', height: 180, objectFit: 'contain', background: '#fff', borderRadius: 4 }} />
+                    ) : p.type === 'pdf' ? (
+                      <iframe src={p.url} title={p.name} style={{ width: '100%', height: 220, border: 'none', borderRadius: 4, background: '#fff' }} />
+                    ) : (
+                      <div style={{ fontSize: 12, color: '#6b7280' }}>Không thể xem trước – {(p.size / 1024 / 1024).toFixed(2)} MB</div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           

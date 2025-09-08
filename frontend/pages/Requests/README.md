@@ -47,6 +47,27 @@ pages/Requests/
   - `state`: Tất cả state (search, filters, modals, etc.)
   - `actions`: Tất cả actions (API calls, state setters)
 
+### 5. Customer + RequestForm (Tạo request và xem trước tài liệu)
+- `pages/Requests/Customer.tsx`: cấu hình `Modal` tạo yêu cầu, đã tăng `width` từ `500` → `900` để đủ không gian xem trước tài liệu.
+- `components/RequestForm.tsx`: xử lý chọn file (PDF/JPG/PNG), validation, và hiển thị preview trực tiếp trong popup bằng `URL.createObjectURL`.
+- Cách render:
+  - Ảnh: `<img />`
+  - PDF: `<iframe />`
+  - Khác: chỉ hiển thị tên/kích thước
+
+- UI hiện tại (đã cập nhật):
+  - Không còn danh sách tên file riêng.
+  - Chỉ hiển thị lưới preview nội dung file.
+  - Mỗi thẻ preview có nút `✕` để xóa file đó.
+  - Có nút "Xóa tất cả" phía trên khu vực preview.
+
+### 6. Ánh xạ BE/FE cho documents
+- FE rewrite: `frontend/next.config.js`
+  - `source: '/backend/:path*'` → `destination: 'http://localhost:1000/:path*'`
+- BE (public serve): `backend/main.ts`
+  - `app.use('/requests/documents', documentRoutes);`
+- FE truy cập file: `/backend/requests/documents/:storage_key`
+
 ## 🔄 Luồng dữ liệu
 
 ```

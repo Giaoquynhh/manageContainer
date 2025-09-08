@@ -45,6 +45,9 @@ router.post('/:id/docs', requireRoles('SaleAdmin','Accountant','CustomerAdmin','
 
 // Documents - Multiple files upload
 router.post('/:id/docs/multiple', requireRoles('SaleAdmin','Accountant','CustomerAdmin','CustomerUser','SystemAdmin','BusinessAdmin'), upload.array('files', 10), (req, res) => controller.uploadMultipleDocs(req as any, res));
+
+// Public serve documents (main.ts)
+app.use('/requests/documents', documentRoutes);
 ```
 
 ### 2. Controller (`RequestController.ts`)
@@ -207,6 +210,14 @@ const handleAddDocument = async (requestId: string, containerNo: string) => {
 const response = await api.post(`/requests/${requestId}/docs`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
 });
+
+// Xem tài liệu trực tiếp (FE → BE rewrite)
+// next.config.js
+rewrites: [
+  { source: '/backend/:path*', destination: 'http://localhost:1000/:path*' }
+]
+
+// Truy cập file: `/backend/requests/documents/:storage_key`
 ```
 
 ## File Structure
@@ -227,13 +238,16 @@ manageContainer/
 │   └── shared/middlewares/
 │       ├── auth.ts                       # Authentication middleware
 │       └── rbac.ts                       # Role-based access control
+│   └── main.ts                           # Mount public documentRoutes
 └── frontend/
     └── pages/Requests/
         ├── components/
         │   └── DepotRequestTable.tsx      # UI component với nút upload
         ├── hooks/
         │   └── useDepotActions.ts         # Logic xử lý upload
-        └── Depot.tsx                      # Main page component
+        ├── Depot.tsx                      # Main page component
+        ├── Customer.tsx                   # Create Request modal (width 900)
+        └── ../../components/RequestForm.tsx # Preview tài liệu trong popup (không còn danh sách tên file; xóa file ngay trên preview)
 ```
 
 ## Error Handling

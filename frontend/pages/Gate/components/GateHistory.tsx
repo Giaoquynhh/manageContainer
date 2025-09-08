@@ -47,7 +47,7 @@ export default function GateHistory({ onBack }: GateHistoryProps) {
       if (searchParams.license_plate) params.append('license_plate', searchParams.license_plate);
       params.append('page', searchParams.page.toString());
       params.append('limit', searchParams.limit.toString());
-      params.append('status', 'GATE_OUT'); // Chỉ lấy các xe đã ra khỏi cổng
+      // Không ép status=GATE_OUT nữa; trang lịch sử cần tất cả xe đã có time_in
 
       console.log('🔍 Frontend: Calling API with params:', params.toString());
       const response = await api.get(`/gate/history?${params.toString()}`);
@@ -324,7 +324,11 @@ export default function GateHistory({ onBack }: GateHistoryProps) {
                 Danh sách xe đã ra khỏi cổng ({pagination.total} xe)
               </h3>
             </div>
-            <div className="table-responsive">
+            <div className="table-responsive" style={{
+              maxHeight: '60vh',
+              overflowY: 'auto',
+              overflowX: 'auto'
+            }}>
               <table className="history-table" style={{
                 width: '100%',
                 borderCollapse: 'collapse'

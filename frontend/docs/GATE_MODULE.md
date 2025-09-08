@@ -39,6 +39,7 @@ frontend/pages/Gate/
 - `handleSearch()`: Xử lý tìm kiếm
 - `handlePageChange()`: Xử lý thay đổi trang
 - `handleStatusChange()`: Xử lý thay đổi trạng thái filter
+- `goToHistory()`: Điều hướng sang trang lịch sử (`/Gate/History`)
 
 ### 2. GateSearchBar
 **File**: `components/GateSearchBar.tsx`
@@ -163,6 +164,19 @@ const response = await api.get(`/gate/requests/search?${params.toString()}`);
 setRequests(response.data.data);
 setPagination(response.data.pagination);
 ```
+
+### 1.1 Gate History (FE)
+Trang: `frontend/pages/Gate/History.tsx` → render `components/GateHistory`.
+
+Component: `frontend/pages/Gate/components/GateHistory.tsx`
+- Gọi API `GET /gate/history` với các tham số `container_no`, `driver_name`, `license_plate`, `page`, `limit`.
+- Không ép `status=GATE_OUT` nữa. Logic mới: hiển thị tất cả requests có `time_in != null`. Khi `time_out` có giá trị, cột thời gian ra tự hiển thị.
+- Thanh cuộn dọc cho bảng: wrapper `.table-responsive` đặt `maxHeight: 60vh; overflow-y: auto; overflow-x: auto;`.
+
+Ánh xạ mã nguồn:
+- `frontend/pages/Gate/History.tsx`
+- `frontend/pages/Gate/components/GateHistory.tsx`
+- Nút điều hướng: `frontend/pages/Gate/components/GateDashboard.tsx` (button “Lịch sử ra vào”)
 
 ### 2. Accept Gate
 ```typescript

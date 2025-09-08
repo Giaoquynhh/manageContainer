@@ -145,6 +145,31 @@ Authorization: Bearer <token>
 Role: YardManager | SaleAdmin
 ```
 
+### 6. Gate History (Lịch sử ra/vào)
+```http
+GET /gate/history?container_no=ISO123&driver_name=An&license_plate=51C-123.45&page=1&limit=20
+Authorization: Bearer <token>
+Role: SystemAdmin | BusinessAdmin | YardManager | SaleAdmin | MaintenanceManager
+```
+
+**Logic (đã cập nhật):**
+- Mặc định hiển thị TẤT CẢ requests có `time_in != null` (không phụ thuộc trạng thái).
+- Có thể truyền `status` tuỳ chọn để lọc sâu hơn (ví dụ chỉ `GATE_OUT`).
+- Sắp xếp ưu tiên `time_out desc`, sau đó `time_in desc`.
+- Trả về các trường: `id, container_no, type, driver_name, license_plate, time_in, time_out, status, createdAt, updatedAt`.
+
+**Query Parameters:**
+- `container_no` (optional): tìm mờ (case-insensitive)
+- `driver_name` (optional): tìm mờ (case-insensitive)
+- `license_plate` (optional): tìm mờ (case-insensitive)
+- `status` (optional): nếu truyền sẽ áp dụng kèm điều kiện `time_in != null`
+- `page` (default: 1), `limit` (default: 20)
+
+**Ánh xạ mã nguồn:**
+- Route: `backend/modules/gate/controller/GateRoutes.ts` (`GET /gate/history`)
+- Controller: `backend/modules/gate/controller/GateController.ts#getGateHistory`
+- Service: `backend/modules/gate/service/GateService.ts#getGateHistory`
+
 ## Business Logic
 
 ### 1. Forward Request

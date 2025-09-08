@@ -260,7 +260,7 @@ export default function CustomerRequests() {
 					title={t('pages.requests.createRequestTitle')}
 					visible={showCreateModal}
 					onCancel={handleCreateCancel}
-					width={500}
+					width={900}
 				>
 					<RequestForm 
 						onSuccess={handleCreateSuccess}

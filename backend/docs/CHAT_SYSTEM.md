@@ -194,6 +194,21 @@ const blockedStatuses = ['PENDING', 'PICK_CONTAINER'];
 **Lưu ý:** Nếu request đang ở `PENDING` hoặc `PICK_CONTAINER`, API `POST /chat/:chat_room_id/messages`
 sẽ trả 400 với message: "Chat chỉ bị khóa khi đơn hàng đang ở trạng thái PENDING hoặc PICK_CONTAINER".
 
+#### 🔗 Code mapping (BE)
+Logic kiểm tra trạng thái được thực hiện tại:
+
+```ts
+// manageContainer/backend/modules/chat/service/ChatService.ts
+const chatRoom = await repo.findChatRoomById(chat_room_id);
+if (chatRoom && chatRoom.request) {
+  const requestStatus = chatRoom.request.status;
+  const blockedStatuses = ['PENDING', 'PICK_CONTAINER'];
+  if (blockedStatuses.includes(requestStatus)) {
+    throw new Error('Chat chỉ bị khóa khi đơn hàng đang ở trạng thái PENDING hoặc PICK_CONTAINER');
+  }
+}
+```
+
 ## 🗄️ **Database Schema**
 
 ### **ChatRoom Model**

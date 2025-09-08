@@ -578,7 +578,8 @@ export class GateService {
       license_plate,
       page = 1,
       limit = 20,
-      status = 'GATE_OUT'
+      // Bỏ mặc định theo status; trang lịch sử cần tất cả xe đã có time_in
+      status
     } = params;
 
     // Convert string to number for pagination
@@ -588,8 +589,14 @@ export class GateService {
 
     // Tạo điều kiện where
     const where: any = {
-      status: status
+      // Trang lịch sử: hiển thị tất cả xe đã có time_in
+      NOT: { time_in: null }
     };
+
+    // Nếu vẫn truyền status (tùy biến), áp dụng thêm bộ lọc
+    if (status) {
+      where.status = status;
+    }
 
     if (container_no) {
       where.container_no = {
@@ -628,9 +635,11 @@ export class GateService {
           createdAt: true,
           updatedAt: true
         },
-        orderBy: {
-          time_out: 'desc' // Sắp xếp theo thời gian ra mới nhất
-        },
+        orderBy: [
+          // Ưu tiên hiển thị xe đã ra trước (time_out mới nhất), sau đó xe đã vào (time_in mới nhất)
+          { time_out: 'desc' },
+          { time_in: 'desc' }
+        ],
         skip,
         take: limitNum
       }),
