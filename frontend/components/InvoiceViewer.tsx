@@ -98,7 +98,7 @@ export default function InvoiceViewer({ requestId, visible, onClose }: InvoiceVi
     
     try {
       // Gọi API trực tiếp để lấy file EIR
-      const eirUrl = `http://localhost:5002/finance/eir/container/${encodeURIComponent(invoice.serviceRequest.container_no)}`;
+      const eirUrl = `/finance/eir/container/${encodeURIComponent(invoice.serviceRequest.container_no)}`;
       
       // Tạo một iframe ẩn để mở file EIR
       const iframe = document.createElement('iframe');
