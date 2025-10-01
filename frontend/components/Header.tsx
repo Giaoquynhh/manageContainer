@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/router';
-import { canViewUsersPartners, canUseGate, isSystemAdmin, isYardManager, isMaintenanceManager, isSecurity, isCustomerRole, isDriver, canManageYard, canManageContainers, canManageForklift, canManageMaintenance, canManageFinance, canManageSeals } from '@utils/rbac';
+import { canViewUsersPartners, canUseGate, isSystemAdmin, isYardManager, isMaintenanceManager, isSecurity, isCustomerRole, isDriver, canManageYard, canManageContainers, canManageForklift, canManageMaintenance, canManageFinance, canManageSeals, canViewStatistics } from '@utils/rbac';
 import { hasPermission } from '@utils/permissionsCatalog';
 import { api } from '@services/api';
 import { useTranslation } from '../hooks/useTranslation';
@@ -656,7 +656,7 @@ export default function Header() {
                         href="/UsersPartners" 
                         onClick={handleSubmenuLinkClick}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                           <circle cx="9" cy="7" r="4"></circle>
                           <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -677,7 +677,7 @@ export default function Header() {
                         href="/Permissions" 
                         onClick={handleSubmenuLinkClick}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                         </svg>
                         <span>{t('sidebar.permissions')}</span>
@@ -686,6 +686,23 @@ export default function Header() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Statistics Dashboard */}
+            {(() => {
+              const allow = canViewStatistics(me?.role);
+              const ok = Array.isArray(me?.permissions) && me!.permissions!.length > 0
+                ? hasPermission(me?.permissions, 'statistics.view')
+                : allow;
+              return ok;
+            })() && (
+              <Link className={`sidebar-link ${router.pathname === '/Statistics' ? 'active' : ''}`} href="/Statistics" onClick={handleSidebarLinkClick}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
+                </svg>
+                <span>{t('sidebar.statistics')}</span>
+              </Link>
             )}
 
             {/* Lower Container Module with Submenu */}
@@ -772,7 +789,7 @@ export default function Header() {
                 : allow;
               return ok;
             })() && (
-                <Link className={`sidebar-link ${router.pathname === '/ManagerCont' ? 'active' : ''}`} href="http://localhost:5002/ManagerCont" onClick={handleSidebarLinkClick}>
+                <Link className={`sidebar-link ${router.pathname === '/ManagerCont' ? 'active' : ''}`} href="/ManagerCont" onClick={handleSidebarLinkClick}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
                     <line x1="8" y1="21" x2="16" y2="21"></line>
