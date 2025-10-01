@@ -11,12 +11,12 @@ const nextConfig = {
 	devIndicators: {
 		position: 'bottom-right',
 	},
-	rewrites: async () => ([
+	rewrites: async () => [
 		{
 			source: '/backend/:path*',
-			destination: 'http://localhost:1000/:path*'
+			destination: process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/:path*` : 'http://localhost:1000/:path*'
 		}
-	])
+	]
 };
 
 module.exports = nextConfig;
