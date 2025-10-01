@@ -1,6 +1,26 @@
 import axios from 'axios';
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:1000';
+// Tự động detect ngrok và sử dụng proxy
+const getApiBase = () => {
+	// Nếu có environment variable, sử dụng nó
+	if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+		return process.env.NEXT_PUBLIC_API_BASE_URL;
+	}
+	
+	// Nếu đang chạy trên browser và detect ngrok
+	if (typeof window !== 'undefined') {
+		const hostname = window.location.hostname;
+		if (hostname.includes('ngrok')) {
+			// Sử dụng proxy qua Next.js
+			return '/backend';
+		}
+	}
+	
+	// Mặc định localhost
+	return 'http://localhost:1000';
+};
+
+export const API_BASE = getApiBase();
 export const api = axios.create({ baseURL: API_BASE });
 
 export async function feLog(message: string, meta?: any){
