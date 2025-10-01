@@ -85,7 +85,7 @@ export const ContainerSearchInput: React.FC<ContainerSearchInputProps> = ({
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:1000/yard/search-containers?q=${encodeURIComponent(query)}&limit=10`, {
+      const response = await fetch(`/backend/yard/search-containers?q=${encodeURIComponent(query)}&limit=10`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
