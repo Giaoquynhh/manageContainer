@@ -19,7 +19,7 @@ export default function TestContainerEmpty({ onTest }: TestContainerEmptyProps) 
        </p>
        <ol style={{ margin: '0 0 12px 0', paddingLeft: '20px', fontSize: '14px', color: '#6b7280' }}>
          <li>Đăng nhập với tài khoản SystemAdmin</li>
-         <li>Vào trang Yard (http://localhost:5002/Yard)</li>
+         <li>Vào trang Yard (/Yard)</li>
          <li>Click vào một slot và bấm "HOLD tier kế tiếp"</li>
          <li>Nhập container number tùy ý và bấm "Confirm"</li>
          <li>Vào trang ContainersPage và chọn filter "Container rỗng có trong bãi"</li>
