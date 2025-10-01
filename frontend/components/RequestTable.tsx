@@ -130,7 +130,7 @@ export default function RequestTable({ data, loading, userRole }: RequestTablePr
     if (window.confirm('Bạn có chắc chắn muốn thanh toán hóa đơn này?')) {
       try {
         // Cập nhật trạng thái thanh toán
-        const response = await fetch(`http://localhost:5002/requests/${requestId}/payment-status`, {
+        const response = await fetch(`/requests/${requestId}/payment-status`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
